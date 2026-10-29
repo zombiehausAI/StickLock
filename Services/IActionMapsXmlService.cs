@@ -6,6 +6,7 @@ public interface IActionMapsXmlService {
     Task<SyncStatus> CheckSyncStatusAsync();
     Task<MappingAlignmentCheck> CheckAlignmentAsync();
     Task<SyncResult> SyncAsync(bool force = false);
+    Task<SyncResult> PropagateActiveToDetectedInstallsAsync(bool force = false);
     Task<SyncResult> FixAndSyncAsync(bool force = false);
     Task<SyncResult> AutoLockAndAlignFromXmlAsync(bool force = false);
     Task<IReadOnlyList<XmlStickMapping>> GetXmlMappingsAsync();

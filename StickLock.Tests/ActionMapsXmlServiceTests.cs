@@ -454,6 +454,72 @@ public class ActionMapsXmlServiceTests : IDisposable {
         Assert.Equal($"pp_resortdevices joystick {min} {max}", command);
     }
 
+    [Fact]
+    public async Task SyncAsync_And_Propagate_UpdatesMultipleDetectedInstalls() {
+        var guidRight = Guid.NewGuid();
+        var guidLeft = Guid.NewGuid();
+
+        var scRoot = Path.Combine(_tempDir, "StarCitizen");
+        var liveProfileDir = Path.Combine(scRoot, "LIVE", "USER", "Client", "0", "Profiles", "default");
+        var ptuProfileDir = Path.Combine(scRoot, "PTU", "USER", "Client", "0", "Profiles", "default");
+        var techDir = Path.Combine(scRoot, "TECH-PREVIEW");
+
+        Directory.CreateDirectory(liveProfileDir);
+        Directory.CreateDirectory(ptuProfileDir);
+        Directory.CreateDirectory(techDir);
+
+        var xmlTemplate = $@"<ActionMaps version=""1"">
+            <options type=""joystick"" instance=""1"" Product=""VKB Right {{{guidRight}}}""/>
+            <options type=""joystick"" instance=""2"" Product=""VKB Left {{{guidLeft}}}""/>
+            <actionmap name=""flight"">
+                <action name=""fire""><rebind input=""js1_button1""/></action>
+            </actionmap>
+        </ActionMaps>";
+
+        var liveXml = Path.Combine(liveProfileDir, "actionmaps.xml");
+        var ptuXml = Path.Combine(ptuProfileDir, "actionmaps.xml");
+        await File.WriteAllTextAsync(liveXml, xmlTemplate);
+        await File.WriteAllTextAsync(ptuXml, xmlTemplate);
+
+        var customConfigPath = Path.Combine(_tempDir, ".sticklock", "config.json");
+        var configService = new AppConfigService(customConfigPath);
+        await configService.SetStarCitizenRootFolderAsync(scRoot);
+        await configService.SetSyncAllDetectedInstallsAsync(true);
+
+        await configService.SetCanonicalStickAsync(1, new DirectInputDevice { SlotIndex = 2, ProductName = "VKB Right", InstanceGuid = guidRight, ProductGuid = guidRight }, "Right Stick");
+        await configService.SetCanonicalStickAsync(2, new DirectInputDevice { SlotIndex = 1, ProductName = "VKB Left", InstanceGuid = guidLeft, ProductGuid = guidLeft }, "Left Stick");
+
+        // Windows has Left on slot 1, Right on slot 2
+        var diService = new TestDirectInputService();
+        diService.SetDevices(new List<DirectInputDevice> {
+            new() { SlotIndex = 1, ProductName = "VKB Left", InstanceGuid = guidLeft, ProductGuid = guidLeft },
+            new() { SlotIndex = 2, ProductName = "VKB Right", InstanceGuid = guidRight, ProductGuid = guidRight }
+        });
+
+        var detector = new TestStarCitizenDetector();
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        // 1. SyncAsync should align both LIVE and PTU simultaneously
+        var syncResult = await xmlService.SyncAsync();
+        Assert.True(syncResult.Success);
+        Assert.True(syncResult.ChangesMade);
+
+        var liveUpdated = await File.ReadAllTextAsync(liveXml);
+        var ptuUpdated = await File.ReadAllTextAsync(ptuXml);
+        Assert.Contains(@"instance=""1"" Product=""VKB Left", liveUpdated);
+        Assert.Contains(@"instance=""1"" Product=""VKB Left", ptuUpdated);
+
+        // 2. PropagateActiveToDetectedInstallsAsync should also populate TECH-PREVIEW's actionmaps.xml
+        var propResult = await xmlService.PropagateActiveToDetectedInstallsAsync();
+        Assert.True(propResult.Success);
+
+        var techXml = Path.Combine(techDir, "USER", "Client", "0", "Profiles", "default", "actionmaps.xml");
+        Assert.True(File.Exists(techXml));
+        var techContent = await File.ReadAllTextAsync(techXml);
+        Assert.Contains(@"instance=""1"" Product=""VKB Left", techContent);
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {

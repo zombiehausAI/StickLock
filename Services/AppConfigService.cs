@@ -57,8 +57,14 @@ public class AppConfigService : IAppConfigService {
             }
 
             _config = new AppConfig();
+            if (TryAutoDetectStarCitizenRoot(out var detectedRoot)) {
+                _config.StarCitizenRootPath = detectedRoot;
+            }
             if (TryAutoDetectStarCitizenPath(out var detectedPath)) {
                 _config.StarCitizenPath = detectedPath;
+                if (string.IsNullOrWhiteSpace(_config.StarCitizenRootPath)) {
+                    _config.StarCitizenRootPath = ExtractStarCitizenRoot(detectedPath);
+                }
             }
             await SaveConfigAsync();
             ConfigChanged?.Invoke();
@@ -75,8 +81,24 @@ public class AppConfigService : IAppConfigService {
             _config = new AppConfig();
         }
 
+        var changed = false;
         if (string.IsNullOrWhiteSpace(_config.StarCitizenPath) && TryAutoDetectStarCitizenPath(out var autoPath)) {
             _config.StarCitizenPath = autoPath;
+            changed = true;
+        }
+        if (string.IsNullOrWhiteSpace(_config.StarCitizenRootPath)) {
+            if (!string.IsNullOrWhiteSpace(_config.StarCitizenPath)) {
+                var inferredRoot = ExtractStarCitizenRoot(_config.StarCitizenPath);
+                if (!string.IsNullOrWhiteSpace(inferredRoot)) {
+                    _config.StarCitizenRootPath = inferredRoot;
+                    changed = true;
+                }
+            } else if (TryAutoDetectStarCitizenRoot(out var autoRoot)) {
+                _config.StarCitizenRootPath = autoRoot;
+                changed = true;
+            }
+        }
+        if (changed) {
             await SaveConfigAsync();
         }
 
@@ -105,6 +127,11 @@ public class AppConfigService : IAppConfigService {
         await SaveConfigAsync();
     }
 
+    public async Task SetSyncAllDetectedInstallsAsync(bool enable) {
+        _config.SyncAllDetectedInstalls = enable;
+        await SaveConfigAsync();
+    }
+
     public async Task SetStartMinimizedAsync(bool enable) {
         _config.StartMinimizedToTray = enable;
         await SaveConfigAsync();
@@ -122,15 +149,137 @@ public class AppConfigService : IAppConfigService {
 
     public async Task SetStarCitizenPathAsync(string path) {
         _config.StarCitizenPath = path.Trim();
+        var inferredRoot = ExtractStarCitizenRoot(_config.StarCitizenPath);
+        if (!string.IsNullOrWhiteSpace(inferredRoot)) {
+            _config.StarCitizenRootPath = inferredRoot;
+        }
+        await SaveConfigAsync();
+    }
+
+    public async Task SetStarCitizenRootFolderAsync(string folderPath) {
+        var root = ExtractStarCitizenRoot(folderPath.Trim());
+        _config.StarCitizenRootPath = !string.IsNullOrWhiteSpace(root) ? root : folderPath.Trim();
+
+        var installs = GetDetectedInstalls();
+        var preferred = installs.FirstOrDefault(i => i.Environment == _config.SelectedEnvironment && i.HasActionMapsXml)
+                        ?? installs.FirstOrDefault(i => i.HasActionMapsXml)
+                        ?? installs.FirstOrDefault(i => i.IsDirectoryPresent)
+                        ?? installs.FirstOrDefault();
+
+        if (preferred != null) {
+            _config.SelectedEnvironment = preferred.Environment;
+            _config.StarCitizenPath = preferred.ActionMapsPath;
+        }
+
         await SaveConfigAsync();
     }
 
     public async Task SwitchEnvironmentAsync(ScEnvironment env) {
         _config.SelectedEnvironment = env;
-        if (!string.IsNullOrWhiteSpace(_config.StarCitizenPath)) {
+        var installs = GetDetectedInstalls();
+        var match = installs.FirstOrDefault(i => i.Environment == env);
+        if (match != null && !string.IsNullOrWhiteSpace(match.ActionMapsPath) && !string.IsNullOrWhiteSpace(_config.StarCitizenRootPath)) {
+            _config.StarCitizenPath = match.ActionMapsPath;
+        } else if (!string.IsNullOrWhiteSpace(_config.StarCitizenPath)) {
             _config.StarCitizenPath = ResolveActionMapsPath(_config.StarCitizenPath, env);
         }
         await SaveConfigAsync();
+    }
+
+    public IReadOnlyList<DetectedScInstall> GetDetectedInstalls() {
+        var root = _config.StarCitizenRootPath;
+        if (string.IsNullOrWhiteSpace(root) && !string.IsNullOrWhiteSpace(_config.StarCitizenPath)) {
+            root = ExtractStarCitizenRoot(_config.StarCitizenPath);
+        }
+
+        var results = new List<DetectedScInstall>();
+        var channels = new (ScEnvironment Env, string DisplayName, string[] FolderNames)[] {
+            (ScEnvironment.LIVE, "LIVE", new[] { "LIVE" }),
+            (ScEnvironment.PTU, "PTU", new[] { "PTU" }),
+            (ScEnvironment.EPTU, "EPTU", new[] { "EPTU" }),
+            (ScEnvironment.TechPreview, "TECH-PREVIEW", new[] { "TECH-PREVIEW", "TECHPREVIEW" })
+        };
+
+        foreach (var (env, displayName, folderNames) in channels) {
+            var resolvedFolder = folderNames[0];
+            var channelDir = string.Empty;
+            var actionMapsPath = string.Empty;
+            var mappingsDir = string.Empty;
+            var dirPresent = false;
+            var xmlPresent = false;
+
+            if (!string.IsNullOrWhiteSpace(root)) {
+                foreach (var candidateFolder in folderNames) {
+                    var candidateDir = Path.Combine(root, candidateFolder);
+                    if (Directory.Exists(candidateDir)) {
+                        resolvedFolder = candidateFolder;
+                        break;
+                    }
+                }
+
+                channelDir = Path.Combine(root, resolvedFolder);
+                actionMapsPath = Path.Combine(channelDir, "USER", "Client", "0", "Profiles", "default", "actionmaps.xml");
+                mappingsDir = Path.Combine(channelDir, "USER", "Client", "0", "Controls", "Mappings");
+                dirPresent = Directory.Exists(channelDir);
+                xmlPresent = File.Exists(actionMapsPath);
+            } else if (!string.IsNullOrWhiteSpace(_config.StarCitizenPath) && _config.SelectedEnvironment == env) {
+                actionMapsPath = _config.StarCitizenPath;
+                xmlPresent = File.Exists(actionMapsPath);
+                dirPresent = xmlPresent;
+            }
+
+            results.Add(new DetectedScInstall {
+                Environment = env,
+                ChannelName = displayName,
+                ChannelDirectory = channelDir,
+                ActionMapsPath = actionMapsPath,
+                MappingsDirectory = mappingsDir,
+                IsDirectoryPresent = dirPresent,
+                HasActionMapsXml = xmlPresent
+            });
+        }
+
+        return results;
+    }
+
+    public static string ExtractStarCitizenRoot(string path) {
+        if (string.IsNullOrWhiteSpace(path)) {
+            return string.Empty;
+        }
+
+        var trimmed = path.Trim().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var knownChannels = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            "LIVE", "PTU", "EPTU", "TECH-PREVIEW", "TECHPREVIEW", "HOTFIX"
+        };
+
+        // Check if path points directly to "Roberts Space Industries" parent containing "StarCitizen"
+        var scChild = Path.Combine(trimmed, "StarCitizen");
+        if (Directory.Exists(scChild)) {
+            return scChild;
+        }
+
+        // Check if path itself has LIVE/PTU/EPTU/TECH-PREVIEW subdirectories or is named StarCitizen
+        foreach (var ch in knownChannels) {
+            if (Directory.Exists(Path.Combine(trimmed, ch))) {
+                return trimmed;
+            }
+        }
+
+        // Walk up directory segments to see if an ancestor is a known channel folder (LIVE, PTU, EPTU, TECH-PREVIEW)
+        var current = trimmed;
+        while (!string.IsNullOrWhiteSpace(current)) {
+            var name = Path.GetFileName(current);
+            var parent = Path.GetDirectoryName(current);
+            if (!string.IsNullOrWhiteSpace(name) && knownChannels.Contains(name) && !string.IsNullOrWhiteSpace(parent)) {
+                return parent;
+            }
+            if (string.Equals(name, "StarCitizen", StringComparison.OrdinalIgnoreCase)) {
+                return current;
+            }
+            current = parent;
+        }
+
+        return string.Empty;
     }
 
     public async Task SetCanonicalStickAsync(int slot, DirectInputDevice device, string friendlyName) {
@@ -163,7 +312,7 @@ public class AppConfigService : IAppConfigService {
         }
 
         var targetEnvName = targetEnv.ToString().ToUpperInvariant();
-        var knownEnvs = new[] { "LIVE", "PTU", "EPTU", "TECHPREVIEW", "HOTFIX" };
+        var knownEnvs = new[] { "LIVE", "PTU", "EPTU", "TECH-PREVIEW", "TECHPREVIEW", "HOTFIX" };
 
         foreach (var env in knownEnvs) {
             var token = Path.DirectorySeparatorChar + env + Path.DirectorySeparatorChar;
@@ -180,8 +329,47 @@ public class AppConfigService : IAppConfigService {
         return currentPath;
     }
 
+    public bool TryAutoDetectStarCitizenRoot(out string detectedRoot) {
+        detectedRoot = string.Empty;
+        var driveLetters = DriveInfo.GetDrives()
+            .Where(d => d.IsReady && d.DriveType == DriveType.Fixed)
+            .Select(d => d.Name.TrimEnd('\\', '/', ':'))
+            .Union(new[] { "C", "D", "E", "F", "G" }, StringComparer.OrdinalIgnoreCase);
+
+        var candidateSubDirs = new[] {
+            @"Program Files\Roberts Space Industries\StarCitizen",
+            @"Roberts Space Industries\StarCitizen",
+            @"Games\Roberts Space Industries\StarCitizen",
+            @"Games\StarCitizen",
+            @"StarCitizen"
+        };
+
+        foreach (var drive in driveLetters) {
+            foreach (var sub in candidateSubDirs) {
+                var full = $@"{drive}:\{sub}";
+                if (Directory.Exists(full)) {
+                    detectedRoot = full;
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public bool TryAutoDetectStarCitizenPath(out string detectedPath) {
         detectedPath = string.Empty;
+        if (TryAutoDetectStarCitizenRoot(out var root)) {
+            var channels = new[] { "LIVE", "PTU", "EPTU", "TECH-PREVIEW", "TECHPREVIEW", "HOTFIX" };
+            foreach (var ch in channels) {
+                var xml = Path.Combine(root, ch, "USER", "Client", "0", "Profiles", "default", "actionmaps.xml");
+                if (File.Exists(xml)) {
+                    detectedPath = xml;
+                    return true;
+                }
+            }
+        }
+
         var driveLetters = new[] { "C", "D", "E", "F", "G" };
         var candidateSubPaths = new[] {
             @"Program Files\Roberts Space Industries\StarCitizen\LIVE\USER\Client\0\Profiles\default\actionmaps.xml",

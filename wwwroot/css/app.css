@@ -32,16 +32,75 @@ html, body {
 }
 
 .mfd-card {
-    background: linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
-    border: 1px solid rgba(0, 229, 255, 0.15) !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
-    backdrop-filter: blur(8px);
+    background: linear-gradient(145deg, rgba(17, 24, 39, 0.92) 0%, rgba(11, 15, 25, 0.96) 100%) !important;
+    border: 1px solid rgba(0, 229, 255, 0.14) !important;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45) !important;
+    border-radius: 8px !important;
 }
 
 .mfd-card-header {
+    border-bottom: 1px solid rgba(0, 229, 255, 0.12);
+    background: rgba(0, 229, 255, 0.025);
+    padding: 12px 18px;
+}
+
+.env-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-family: 'Chakra Petch', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(15, 23, 42, 0.6);
+    color: #94A3B8;
+}
+
+.env-pill:hover {
+    border-color: rgba(0, 229, 255, 0.5);
+    color: #F8FAFC;
+}
+
+.env-pill.active {
+    border-color: #00E5FF;
+    background: rgba(0, 229, 255, 0.12);
+    color: #00E5FF;
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+}
+
+.env-pill.missing {
+    opacity: 0.45;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-dot.detected {
+    background-color: #00E676;
+    box-shadow: 0 0 6px #00E676;
+}
+
+.status-dot.folder-only {
+    background-color: #FFAB00;
+}
+
+.status-dot.none {
+    background-color: #475569;
+}
+
+.mud-tabs-tabbar {
+    background: rgba(15, 23, 42, 0.7) !important;
     border-bottom: 1px solid rgba(0, 229, 255, 0.15);
-    background: rgba(0, 229, 255, 0.03);
-    padding: 10px 16px;
+    border-radius: 8px 8px 0 0;
 }
 
 /* Glowing accent effects */

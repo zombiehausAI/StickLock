@@ -14,11 +14,15 @@ public interface IAppConfigService {
     Task SetStartMinimizedAsync(bool enable);
     Task SetAllowSyncWhileGameRunningAsync(bool enable);
     Task SetAutoDeployToMappingsFolderAsync(bool enable);
+    Task SetSyncAllDetectedInstallsAsync(bool enable);
     Task SetStarCitizenPathAsync(string path);
+    Task SetStarCitizenRootFolderAsync(string folderPath);
     Task SwitchEnvironmentAsync(ScEnvironment env);
+    IReadOnlyList<DetectedScInstall> GetDetectedInstalls();
     Task SetCanonicalStickAsync(int slot, DirectInputDevice device, string friendlyName);
     Task RemoveCanonicalStickAsync(int slot);
     string ResolveActionMapsPath(string currentPath, ScEnvironment targetEnv);
+    bool TryAutoDetectStarCitizenRoot(out string detectedRoot);
     bool TryAutoDetectStarCitizenPath(out string detectedPath);
     Task ExportConfigAsync(string destinationPath);
     Task ImportConfigAsync(string sourcePath);

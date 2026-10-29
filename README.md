@@ -32,6 +32,10 @@ Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.
   - Allows custom folder selection on any drive via command-line or native Windows folder browser GUI.
   - User-level install (`%LOCALAPPDATA%\StickLock\app`) requiring no Administrator UAC prompts.
   - Integrates with Windows Add/Remove Programs (Installed Apps) and creates Desktop / Start Menu shortcuts.
+- **Multi-Install Star Citizen Auto-Detection & Cross-Channel Sync (`LIVE`, `PTU`, `EPTU`, `TECH-PREVIEW`)**:
+  - Point StickLock at your root `StarCitizen` folder (or click **Auto-Detect**), and it automatically discovers all installed environments (`LIVE`, `PTU`, `EPTU`, `TECH-PREVIEW`) and their `actionmaps.xml` files.
+  - **Sync All Detected Installs**: Automatically aligns joystick slot assignments and deploys `layout_StickLock_Active.xml` across every detected Star Citizen channel simultaneously.
+  - **1-Click Propagate to All**: Copies and aligns your active bindings across all detected Star Citizen environments (`LIVE`, `PTU`, `EPTU`, `TECH-PREVIEW`) in a single click.
 - **Automatic Misalignment Detection & 1-Click Fix & Backup**:
   - Automatically parses existing Star Citizen `actionmaps.xml` to detect which joystick owns which slot (`js1`, `js2`, etc.).
   - Compares the game's expected device slots against live Windows DirectInput enumeration.

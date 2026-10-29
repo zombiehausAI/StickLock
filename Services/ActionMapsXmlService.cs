@@ -238,50 +238,85 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                 return SyncResult.Fail($"Disconnected sticks: {missingNames}", SyncStatus.SticksDisconnected);
             }
 
-            var xmlMappings = await GetXmlMappingsAsync();
-            var swapMap = ComputeSlotSwapMap(canonical, liveDevices, xmlMappings);
-            if (swapMap.Count == 0) {
+            // Collect all target XML paths to sync (primary + any other detected SC installs if SyncAllDetectedInstalls is enabled)
+            var targetPaths = new List<string> { xmlPath };
+            if (_configService.Config.SyncAllDetectedInstalls) {
+                foreach (var install in _configService.GetDetectedInstalls()) {
+                    if (install.HasActionMapsXml &&
+                        !string.IsNullOrWhiteSpace(install.ActionMapsPath) &&
+                        !targetPaths.Contains(install.ActionMapsPath, StringComparer.OrdinalIgnoreCase)) {
+                        targetPaths.Add(install.ActionMapsPath);
+                    }
+                }
+            }
+
+            var syncedChannels = new List<string>();
+            string? primaryBackupPath = null;
+            Dictionary<int, int>? primarySwapMap = null;
+
+            foreach (var targetXml in targetPaths) {
+                var targetMappings = await ParseXmlMappingsFromFileAsync(targetXml);
+                var swapMap = ComputeSlotSwapMap(canonical, liveDevices, targetMappings);
+                if (swapMap.Count == 0) {
+                    continue;
+                }
+
+                if (string.Equals(targetXml, xmlPath, StringComparison.OrdinalIgnoreCase)) {
+                    primarySwapMap = swapMap;
+                }
+
+                var bPath = await Task.Run(() => {
+                    var backup = CreateBackup(targetXml);
+                    var doc = XDocument.Load(targetXml);
+                    ApplyTransform(doc, swapMap);
+                    doc.Save(targetXml);
+
+                    if (string.Equals(targetXml, xmlPath, StringComparison.OrdinalIgnoreCase)) {
+                        try {
+                            Directory.CreateDirectory(_configService.MappingsDirectory);
+                            var persistentActivePath = Path.Combine(_configService.MappingsDirectory, "active_actionmaps.xml");
+                            doc.Save(persistentActivePath);
+                        } catch { }
+                    }
+
+                    if (_configService.Config.AutoDeployToMappingsFolder) {
+                        try {
+                            var scMappingsDir = ResolveMappingsDirectoryForXml(targetXml);
+                            if (!string.IsNullOrWhiteSpace(scMappingsDir)) {
+                                Directory.CreateDirectory(scMappingsDir);
+                                var activeDeployPath = Path.Combine(scMappingsDir, "layout_StickLock_Active.xml");
+                                doc.Save(activeDeployPath);
+                            }
+                        } catch { }
+                    }
+
+                    return backup;
+                });
+
+                if (primaryBackupPath == null || string.Equals(targetXml, xmlPath, StringComparison.OrdinalIgnoreCase)) {
+                    primaryBackupPath = bPath;
+                }
+
+                syncedChannels.Add(ResolveChannelLabel(targetXml));
+            }
+
+            if (syncedChannels.Count == 0) {
                 _logService.LogSuccess("Sticks are already aligned with actionmaps.xml.");
                 return SyncResult.Ok("Sticks are already aligned with actionmaps.xml.", changesMade: false, status: SyncStatus.Aligned);
             }
 
-            // Perform backup and XML two-pass transformation strictly on background thread
-            var backupPath = await Task.Run(() => {
-                var bPath = CreateBackup(xmlPath);
-                var doc = XDocument.Load(xmlPath);
-                ApplyTransform(doc, swapMap);
-                doc.Save(xmlPath);
-
-                // Mirror current active profile in .sticklock/mappings/active_actionmaps.xml
-                try {
-                    Directory.CreateDirectory(_configService.MappingsDirectory);
-                    var persistentActivePath = Path.Combine(_configService.MappingsDirectory, "active_actionmaps.xml");
-                    doc.Save(persistentActivePath);
-                } catch { }
-
-                // Auto-deploy to Star Citizen Controls\Mappings folder for in-game import
-                if (_configService.Config.AutoDeployToMappingsFolder) {
-                    try {
-                        var scMappingsDir = GetStarCitizenMappingsDirectory();
-                        if (!string.IsNullOrWhiteSpace(scMappingsDir)) {
-                            Directory.CreateDirectory(scMappingsDir);
-                            var activeDeployPath = Path.Combine(scMappingsDir, "layout_StickLock_Active.xml");
-                            doc.Save(activeDeployPath);
-                        }
-                    } catch { }
-                }
-
-                return bPath;
-            });
-
-            var swapDescriptions = swapMap.Select(kv => $"js{kv.Key} -> js{kv.Value}");
+            var activeSwap = primarySwapMap ?? new Dictionary<int, int>();
+            var swapDescriptions = activeSwap.Count > 0
+                ? string.Join(", ", activeSwap.Select(kv => $"js{kv.Key} -> js{kv.Value}"))
+                : "aligned slots";
+            var channelLabel = string.Join(", ", syncedChannels.Distinct(StringComparer.OrdinalIgnoreCase));
             var deployNote = _configService.Config.AutoDeployToMappingsFolder
-                ? " (Deployed to Controls\\Mappings\\layout_StickLock_Active.xml)"
+                ? " (Deployed layout_StickLock_Active.xml)"
                 : "";
-            var summary = $"Synced actionmaps.xml: {string.Join(", ", swapDescriptions)}{deployNote}";
-            _logService.LogSuccess(summary, $"Backup created: {Path.GetFileName(backupPath)}");
+            var summary = $"Synced [{channelLabel}] actionmaps.xml: {swapDescriptions}{deployNote}";
+            _logService.LogSuccess(summary, primaryBackupPath != null ? $"Backup created: {Path.GetFileName(primaryBackupPath)}" : "");
 
-            return SyncResult.Ok(summary, changesMade: true, backupPath: backupPath, status: SyncStatus.Aligned);
+            return SyncResult.Ok(summary, changesMade: true, backupPath: primaryBackupPath, status: SyncStatus.Aligned);
         } catch (Exception ex) {
             _logService.LogError($"Sync error: {ex.Message}", ex.ToString());
             return SyncResult.Fail($"Error during sync: {ex.Message}");
@@ -290,8 +325,68 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         }
     }
 
+    public async Task<SyncResult> PropagateActiveToDetectedInstallsAsync(bool force = false) {
+        var isGameRunning = _starCitizenDetector.IsGameRunning();
+        if (isGameRunning && !force && !_configService.Config.AllowSyncWhileGameRunning) {
+            return SyncResult.Fail("Star Citizen is currently running. Close the game or enable Force Sync before propagating across installs.", SyncStatus.StarCitizenActive);
+        }
+
+        var sourceXml = _configService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(sourceXml) || !File.Exists(sourceXml)) {
+            return SyncResult.Fail("Active actionmaps.xml not found to propagate.", SyncStatus.FileNotFound);
+        }
+
+        // First ensure the active XML itself is aligned with live DirectInput order
+        if (_configService.Config.CanonicalSticks.Count >= 2) {
+            await SyncAsync(force);
+        }
+
+        var installs = _configService.GetDetectedInstalls()
+            .Where(i => i.IsDirectoryPresent && !string.IsNullOrWhiteSpace(i.ActionMapsPath))
+            .ToList();
+
+        if (installs.Count == 0) {
+            return SyncResult.Fail("No Star Citizen environment folders (LIVE, PTU, EPTU, TECH-PREVIEW) detected.");
+        }
+
+        var updatedChannels = new List<string>();
+        try {
+            await Task.Run(() => {
+                foreach (var install in installs) {
+                    if (!string.Equals(install.ActionMapsPath, sourceXml, StringComparison.OrdinalIgnoreCase)) {
+                        var targetDir = Path.GetDirectoryName(install.ActionMapsPath);
+                        if (!string.IsNullOrWhiteSpace(targetDir)) {
+                            Directory.CreateDirectory(targetDir);
+                            if (File.Exists(install.ActionMapsPath)) {
+                                CreateBackup(install.ActionMapsPath);
+                            }
+                            File.Copy(sourceXml, install.ActionMapsPath, overwrite: true);
+                        }
+                    }
+
+                    if (_configService.Config.AutoDeployToMappingsFolder && !string.IsNullOrWhiteSpace(install.MappingsDirectory)) {
+                        Directory.CreateDirectory(install.MappingsDirectory);
+                        File.Copy(sourceXml, Path.Combine(install.MappingsDirectory, "layout_StickLock_Active.xml"), overwrite: true);
+                    }
+
+                    updatedChannels.Add(install.ChannelName);
+                }
+            });
+
+            var msg = $"Synchronized active mappings across {updatedChannels.Count} install(s): {string.Join(", ", updatedChannels)}";
+            _logService.LogSuccess(msg);
+            return SyncResult.Ok(msg, changesMade: true, status: SyncStatus.Aligned);
+        } catch (Exception ex) {
+            _logService.LogError($"Failed to propagate across installs: {ex.Message}");
+            return SyncResult.Fail($"Failed to propagate across installs: {ex.Message}");
+        }
+    }
+
     public async Task<IReadOnlyList<XmlStickMapping>> GetXmlMappingsAsync() {
-        var xmlPath = _configService.Config.StarCitizenPath;
+        return await ParseXmlMappingsFromFileAsync(_configService.Config.StarCitizenPath);
+    }
+
+    private async Task<IReadOnlyList<XmlStickMapping>> ParseXmlMappingsFromFileAsync(string? xmlPath) {
         if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
             return Array.Empty<XmlStickMapping>();
         }
@@ -334,6 +429,29 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         } catch {
             return Array.Empty<XmlStickMapping>();
         }
+    }
+
+    private string? ResolveMappingsDirectoryForXml(string xmlPath) {
+        try {
+            var profilesDefaultDir = Path.GetDirectoryName(xmlPath);
+            var profilesDir = Path.GetDirectoryName(profilesDefaultDir);
+            var clientZeroDir = Path.GetDirectoryName(profilesDir);
+            if (!string.IsNullOrWhiteSpace(clientZeroDir)) {
+                return Path.Combine(clientZeroDir, "Controls", "Mappings");
+            }
+        } catch { }
+        return GetStarCitizenMappingsDirectory();
+    }
+
+    private static string ResolveChannelLabel(string xmlPath) {
+        var known = new[] { "LIVE", "PTU", "EPTU", "TECH-PREVIEW", "TECHPREVIEW", "HOTFIX" };
+        foreach (var ch in known) {
+            if (xmlPath.Contains(Path.DirectorySeparatorChar + ch + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                xmlPath.Contains("/" + ch + "/", StringComparison.OrdinalIgnoreCase)) {
+                return string.Equals(ch, "TECHPREVIEW", StringComparison.OrdinalIgnoreCase) ? "TECH-PREVIEW" : ch.ToUpperInvariant();
+            }
+        }
+        return "ACTIVE";
     }
 
     public async Task<IReadOnlyList<string>> GetConsoleResortCommandsAsync() {
@@ -662,20 +780,22 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             return SyncResult.Fail($"Profile not found in .sticklock library: {profileFileName}");
         }
 
-        var scMappingsDir = GetStarCitizenMappingsDirectory();
-        if (string.IsNullOrWhiteSpace(scMappingsDir)) {
+        var targetDirs = GetTargetMappingsDirectories();
+        if (targetDirs.Count == 0) {
             return SyncResult.Fail("Star Citizen directory could not be resolved. Please verify your game path.");
         }
 
         try {
             await Task.Run(() => {
-                Directory.CreateDirectory(scMappingsDir);
-                var destPath = Path.Combine(scMappingsDir, profileFileName);
-                File.Copy(sourcePath, destPath, overwrite: true);
+                foreach (var dir in targetDirs) {
+                    Directory.CreateDirectory(dir);
+                    var destPath = Path.Combine(dir, profileFileName);
+                    File.Copy(sourcePath, destPath, overwrite: true);
+                }
             });
 
-            _logService.LogSuccess($"Copied '{profileFileName}' to Star Citizen Controls\\Mappings.", scMappingsDir);
-            return SyncResult.Ok($"Copied '{profileFileName}' to Star Citizen Controls\\Mappings folder. You can now load it in-game!");
+            _logService.LogSuccess($"Copied '{profileFileName}' to {targetDirs.Count} Star Citizen Controls\\Mappings folder(s).", string.Join("; ", targetDirs));
+            return SyncResult.Ok($"Copied '{profileFileName}' to {targetDirs.Count} Star Citizen Controls\\Mappings folder(s). You can now load it in-game!");
         } catch (Exception ex) {
             _logService.LogError($"Failed to copy profile to Star Citizen: {ex.Message}", ex.ToString());
             return SyncResult.Fail($"Failed to copy profile to Star Citizen: {ex.Message}");
@@ -683,8 +803,8 @@ public class ActionMapsXmlService : IActionMapsXmlService {
     }
 
     public async Task<SyncResult> CopyAllProfilesToStarCitizenAsync() {
-        var scMappingsDir = GetStarCitizenMappingsDirectory();
-        if (string.IsNullOrWhiteSpace(scMappingsDir)) {
+        var targetDirs = GetTargetMappingsDirectories();
+        if (targetDirs.Count == 0) {
             return SyncResult.Fail("Star Citizen directory could not be resolved. Please verify your game path.");
         }
 
@@ -695,19 +815,41 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             }
 
             await Task.Run(() => {
-                Directory.CreateDirectory(scMappingsDir);
-                foreach (var file in files) {
-                    var fileName = Path.GetFileName(file);
-                    File.Copy(file, Path.Combine(scMappingsDir, fileName), overwrite: true);
+                foreach (var dir in targetDirs) {
+                    Directory.CreateDirectory(dir);
+                    foreach (var file in files) {
+                        var fileName = Path.GetFileName(file);
+                        File.Copy(file, Path.Combine(dir, fileName), overwrite: true);
+                    }
                 }
             });
 
-            _logService.LogSuccess($"Copied {files.Length} profile(s) to Star Citizen Controls\\Mappings.", scMappingsDir);
-            return SyncResult.Ok($"Successfully copied {files.Length} profile(s) to Star Citizen USER folder!");
+            _logService.LogSuccess($"Copied {files.Length} profile(s) to {targetDirs.Count} Star Citizen Controls\\Mappings folder(s).", string.Join("; ", targetDirs));
+            return SyncResult.Ok($"Successfully copied {files.Length} profile(s) across {targetDirs.Count} Star Citizen USER folder(s)!");
         } catch (Exception ex) {
             _logService.LogError($"Failed to copy profiles to Star Citizen: {ex.Message}", ex.ToString());
             return SyncResult.Fail($"Failed to copy profiles: {ex.Message}");
         }
+    }
+
+    private List<string> GetTargetMappingsDirectories() {
+        var dirs = new List<string>();
+        var primary = GetStarCitizenMappingsDirectory();
+        if (!string.IsNullOrWhiteSpace(primary)) {
+            dirs.Add(primary);
+        }
+
+        if (_configService.Config.SyncAllDetectedInstalls) {
+            foreach (var install in _configService.GetDetectedInstalls()) {
+                if (install.IsDirectoryPresent &&
+                    !string.IsNullOrWhiteSpace(install.MappingsDirectory) &&
+                    !dirs.Contains(install.MappingsDirectory, StringComparer.OrdinalIgnoreCase)) {
+                    dirs.Add(install.MappingsDirectory);
+                }
+            }
+        }
+
+        return dirs;
     }
 
     public async Task<SyncResult> PullProfilesFromStarCitizenAsync() {

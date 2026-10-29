@@ -10,467 +10,384 @@
 @inject IJSRuntime JSRuntime
 @inject IBrowserService BrowserService
 
-<MudGrid Spacing="3">
+<div class="d-flex flex-column gap-3">
     <!-- Flight Controller Alignment Alert Banner -->
     @if (_alignmentCheck.IsMisaligned || _status == SyncStatus.NeedsSync) {
-        <MudItem xs="12">
-            <MudPaper Elevation="4" Class="pa-4" Style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(245, 158, 11, 0.15) 100%); border: 1.5px solid #EF4444; border-radius: 8px; box-shadow: 0 0 20px rgba(239, 68, 68, 0.35);">
-                <div class="d-flex flex-column flex-md-row align-start align-md-center justify-space-between gap-4">
-                    <div class="d-flex align-start gap-3">
-                        <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Color="Color.Error" Size="Size.Large" Class="mt-1" />
-                        <div>
-                            <div class="d-flex align-center gap-2">
-                                <MudText Typo="Typo.h6" Class="mfd-title" Style="color: #EF4444; font-weight: 800; letter-spacing: 1px;">
-                                    FLIGHT CONTROLLER MISALIGNMENT DETECTED!
-                                </MudText>
-                                <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="font-weight-bold">
-                                    Binds Inverted
-                                </MudChip>
-                                @if (_alignmentCheck.IsGameRunning) {
-                                    <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Outlined" Class="font-weight-bold">
-                                        Star Citizen Active
-                                    </MudChip>
-                                }
-                            </div>
-                            <MudText Typo="Typo.body2" Class="mt-1" Style="color: #F8FAFC;">
-                                Windows DirectInput slot enumeration does not match Star Citizen's saved <span class="mfd-code" style="color: #00E5FF;">actionmaps.xml</span> bindings. If you launch or fly in Star Citizen now, your flight sticks will be reversed in-game!
+        <MudPaper Elevation="4" Class="pa-4" Style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.16) 0%, rgba(245, 158, 11, 0.12) 100%); border: 1.5px solid #EF4444; border-radius: 8px; box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);">
+            <div class="d-flex flex-column flex-md-row align-start align-md-center justify-space-between gap-4">
+                <div class="d-flex align-start gap-3">
+                    <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Color="Color.Error" Size="Size.Large" Class="mt-1" />
+                    <div>
+                        <div class="d-flex align-center gap-2">
+                            <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #EF4444; font-weight: 800;">
+                                FLIGHT CONTROLLER MISALIGNMENT DETECTED
                             </MudText>
-
-                            @if (_alignmentCheck.Mismatches.Count > 0) {
-                                <div class="d-flex flex-wrap gap-2 mt-2">
-                                    @foreach (var m in _alignmentCheck.Mismatches) {
-                                        <div class="pa-1 px-2 rounded d-flex align-center gap-2" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(239, 68, 68, 0.5); font-size: 0.8rem;">
-                                            <span style="color: #F1F5F9; font-weight: 600;">@m.DeviceName:</span>
-                                            <span class="mfd-code" style="color: #94A3B8;">Star Citizen has:</span>
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning" Class="py-0 px-1" Style="height: 20px;">
-                                                js@(m.XmlInstance)
-                                            </MudChip>
-                                            <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" Style="color: #EF4444;" />
-                                            <span class="mfd-code" style="color: #94A3B8;">Windows sees:</span>
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Error" Class="py-0 px-1" Style="height: 20px;">
-                                                js@(m.LiveWindowsSlot)
-                                            </MudChip>
-                                        </div>
-                                    }
-                                </div>
-                            }
-
+                            <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="font-weight-bold">
+                                Binds Inverted
+                            </MudChip>
                             @if (_alignmentCheck.IsGameRunning) {
-                                <div class="mt-2" style="font-size: 0.85rem; color: #FCD34D;">
-                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" Style="vertical-align: text-bottom;" />
-                                    Star Citizen is running. You can copy the live console command, or click <strong>Force Sync</strong> to update disk and deploy <span class="mfd-code">layout_StickLock_Active</span> for in-game profile import!
-                                </div>
+                                <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Outlined" Class="font-weight-bold">
+                                    Star Citizen Active
+                                </MudChip>
                             }
                         </div>
+                        <MudText Typo="Typo.body2" Class="mt-1" Style="color: #E2E8F0;">
+                            Windows DirectInput slot enumeration does not match Star Citizen's <span class="mfd-code" style="color: #00E5FF;">actionmaps.xml</span>.
+                        </MudText>
+
+                        @if (_alignmentCheck.Mismatches.Count > 0) {
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                @foreach (var m in _alignmentCheck.Mismatches) {
+                                    <div class="pa-1 px-2 rounded d-flex align-center gap-2" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(239, 68, 68, 0.45); font-size: 0.8rem;">
+                                        <span style="color: #F1F5F9; font-weight: 600;">@m.DeviceName:</span>
+                                        <span class="mfd-code" style="color: #94A3B8;">XML:</span>
+                                        <span class="mfd-code font-weight-bold" style="color: #FFAB00;">js@(m.XmlInstance)</span>
+                                        <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" Style="color: #EF4444;" />
+                                        <span class="mfd-code" style="color: #94A3B8;">Windows:</span>
+                                        <span class="mfd-code font-weight-bold" style="color: #EF4444;">js@(m.LiveWindowsSlot)</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="d-flex flex-column align-end gap-2" style="min-width: 240px;">
+                    @if (!_alignmentCheck.IsGameRunning || ConfigService.Config.AllowSyncWhileGameRunning) {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Error"
+                                   Size="Size.Medium"
+                                   StartIcon="@Icons.Material.Filled.Build"
+                                   Disabled="@_isSyncing"
+                                   OnClick="@(() => FixAndSyncSticksAsync(force: _alignmentCheck.IsGameRunning))"
+                                   Class="mfd-title"
+                                   Style="font-weight: 800; color: #FFFFFF; background-color: #DC2626; width: 100%;">
+                            @if (_isSyncing) {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                <span>FIXING...</span>
+                            } else {
+                                <span>FIX &amp; SYNC MAPPINGS</span>
+                            }
+                        </MudButton>
+                    } else {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Warning"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.FlashOn"
+                                   Disabled="@_isSyncing"
+                                   OnClick="@(() => FixAndSyncSticksAsync(force: true))"
+                                   Class="mfd-title"
+                                   Style="font-weight: 800; color: #0B0F19; width: 100%;">
+                            FORCE SYNC &amp; DEPLOY
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Secondary"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.ContentCopy"
+                                   OnClick="CopyConsoleCommandAsync"
+                                   Style="width: 100%;">
+                            Copy In-Game Cmd
+                        </MudButton>
+                    }
+                </div>
+            </div>
+        </MudPaper>
+    } else if (_lastFixedBackupPath != null) {
+        <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Dense="true" Class="mfd-card" Style="background-color: rgba(16, 185, 129, 0.16); border: 1px solid #10B981;">
+            <div class="d-flex flex-wrap align-center justify-space-between gap-2">
+                <span style="color: #10B981; font-weight: 700;">
+                    Mappings aligned &amp; backed up (<span class="mfd-code" style="color: #00E5FF;">@Path.GetFileName(_lastFixedBackupPath)</span>)
+                </span>
+                <MudButton Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.History" OnClick="RestoreBackupAsync">
+                    Undo / Restore
+                </MudButton>
+            </div>
+        </MudAlert>
+    } else if (_status == SyncStatus.Unknown && _alignmentCheck.ExistingXmlDevices.Count >= 2 && ConfigService.Config.CanonicalSticks.Count == 0) {
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true" Class="mfd-card">
+            <div class="d-flex flex-wrap align-center justify-space-between gap-2">
+                <div>
+                    <span class="font-weight-bold" style="color: #38BDF8;">DETECTED STAR CITIZEN JOYSTICKS: </span>
+                    <span class="mfd-code" style="color: #CBD5E1;">
+                        @string.Join(", ", _alignmentCheck.ExistingXmlDevices.Select(d => $"js{d.Instance} ({d.ProductName})"))
+                    </span>
+                </div>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.AutoFixHigh"
+                           OnClick="AutoLockFromStarCitizenXmlAsync"
+                           Style="color: #0B0F19; font-weight: 700;">
+                    Auto-Lock from XML
+                </MudButton>
+            </div>
+        </MudAlert>
+    }
+
+    <!-- Compact Star Citizen Root & Multi-Install Bar -->
+    <MudPaper Class="mfd-card pa-3">
+        <div class="d-flex flex-column gap-3">
+            <!-- Row 1: Star Citizen Folder & Browse Actions -->
+            <div class="d-flex flex-wrap align-center justify-space-between gap-2">
+                <div class="d-flex align-center gap-2 flex-grow-1" style="min-width: 280px;">
+                    <MudIcon Icon="@Icons.Material.Filled.FolderSpecial" Color="Color.Primary" Size="Size.Medium" />
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-center gap-2">
+                            <span class="mfd-title" style="color: #00E5FF; font-size: 0.8rem;">STAR CITIZEN FOLDER</span>
+                            @if (_detectedInstalls.Any(i => i.HasActionMapsXml)) {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined" Class="py-0 px-2" Style="height: 18px; font-size: 0.68rem;">
+                                    @(_detectedInstalls.Count(i => i.HasActionMapsXml)) XML Detected
+                                </MudChip>
+                            }
+                        </div>
+                        <div class="mfd-code" style="color: #CBD5E1; font-size: 0.8rem; word-break: break-all;">
+                            @(!string.IsNullOrWhiteSpace(ConfigService.Config.StarCitizenRootPath)
+                                ? ConfigService.Config.StarCitizenRootPath
+                                : (!string.IsNullOrWhiteSpace(ConfigService.Config.StarCitizenPath) ? ConfigService.Config.StarCitizenPath : "No Star Citizen folder configured"))
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-center gap-2">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.FolderOpen"
+                               OnClick="BrowseGameFolderAsync"
+                               Class="mfd-title"
+                               Style="color: #0B0F19; font-weight: 700;">
+                        Set SC Folder
+                    </MudButton>
+                    <MudTooltip Text="Auto-detect Star Citizen installation folder across drives">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.TravelExplore"
+                                   OnClick="AutoDetectScFolderAsync"
+                                   Class="mfd-title">
+                            Auto-Detect
+                        </MudButton>
+                    </MudTooltip>
+                    <MudTooltip Text="Select a custom actionmaps.xml file directly">
+                        <MudIconButton Icon="@Icons.Material.Filled.InsertDriveFile"
+                                       Color="Color.Default"
+                                       Size="Size.Small"
+                                       OnClick="BrowseXmlFileAsync" />
+                    </MudTooltip>
+                </div>
+            </div>
+
+            <MudDivider Style="border-color: rgba(0, 229, 255, 0.1);" />
+
+            <!-- Row 2: Detected Environments Pills & Multi-Install Sync -->
+            <div class="d-flex flex-wrap align-center justify-space-between gap-2">
+                <div class="d-flex flex-wrap align-center gap-2">
+                    <span class="mfd-title mr-1" style="color: #94A3B8; font-size: 0.75rem;">INSTALLS:</span>
+                    @foreach (var install in _detectedInstalls) {
+                        var isSelected = ConfigService.Config.SelectedEnvironment == install.Environment;
+                        var pillClass = $"env-pill {(isSelected ? "active" : "")} {(!install.IsDirectoryPresent ? "missing" : "")}";
+                        var dotClass = install.HasActionMapsXml ? "status-dot detected" : (install.IsDirectoryPresent ? "status-dot folder-only" : "status-dot none");
+                        var tooltip = install.HasActionMapsXml
+                            ? $"{install.ChannelName}: actionmaps.xml detected ({install.ActionMapsPath})"
+                            : (install.IsDirectoryPresent ? $"{install.ChannelName}: Folder found, no actionmaps.xml yet" : $"{install.ChannelName}: Not installed");
+
+                        <MudTooltip Text="@tooltip">
+                            <div class="@pillClass" @onclick="@(() => OnEnvironmentSelected(install.Environment))">
+                                <span class="@dotClass"></span>
+                                <span>@install.ChannelName</span>
+                            </div>
+                        </MudTooltip>
+                    }
+                </div>
+
+                <div class="d-flex align-center gap-3">
+                    <MudSwitch Value="ConfigService.Config.SyncAllDetectedInstalls"
+                               ValueChanged="@((bool val) => OnSyncAllInstallsChanged(val))"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               Label="Sync All Detected Installs" />
+
+                    @if (_detectedInstalls.Count(i => i.IsDirectoryPresent) > 1) {
+                        <MudTooltip Text="Copy & align active mappings across all detected installs (LIVE, PTU, EPTU, TECH-PREVIEW)">
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Secondary"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.SyncAlt"
+                                       OnClick="PropagateAcrossAllInstallsAsync"
+                                       Class="mfd-title">
+                                Propagate to All
+                            </MudButton>
+                        </MudTooltip>
+                    }
+                </div>
+            </div>
+        </div>
+    </MudPaper>
+
+    <!-- Focused MFD Workspace Tabs -->
+    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" Class="mfd-card" TabPanelsClass="pa-3">
+        <!-- TAB 1: CONTROLLERS & SLOTS -->
+        <MudTabPanel Text="CONTROLLERS & SLOTS" Icon="@Icons.Material.Filled.SportsEsports">
+            <MudGrid Spacing="3">
+                <!-- Left: Live DirectInput Enumeration -->
+                <MudItem xs="12" lg="6">
+                    <div class="d-flex align-center justify-space-between mb-2">
+                        <div class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Sensors" Color="Color.Primary" Size="Size.Small" Class="mr-2" />
+                            <MudText Typo="Typo.subtitle2" Class="mfd-title" Style="color: #00E5FF;">LIVE WINDOWS DIRECTINPUT</MudText>
+                        </div>
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Refresh"
+                                   Disabled="@_isRefreshingDevices"
+                                   OnClick="RefreshDevicesAsync"
+                                   Class="mfd-title">
+                            Refresh
+                        </MudButton>
                     </div>
 
-                    <div class="d-flex flex-column align-end gap-2" style="min-width: 270px;">
-                        @if (!_alignmentCheck.IsGameRunning || ConfigService.Config.AllowSyncWhileGameRunning) {
-                            <MudButton Variant="Variant.Filled"
-                                       Color="Color.Error"
-                                       Size="Size.Large"
-                                       StartIcon="@Icons.Material.Filled.Build"
-                                       Disabled="@_isSyncing"
-                                       OnClick="@(() => FixAndSyncSticksAsync(force: _alignmentCheck.IsGameRunning))"
-                                       Class="mfd-title"
-                                       Style="font-weight: 800; letter-spacing: 1px; color: #FFFFFF; background-color: #DC2626; width: 100%; box-shadow: 0 0 15px rgba(220, 38, 38, 0.5);">
-                                @if (_isSyncing) {
-                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                                    <span>FIXING &amp; BACKING UP...</span>
-                                } else {
-                                    <span>FIX &amp; UPDATE MAPPINGS</span>
-                                }
-                            </MudButton>
-                        } else {
-                            <MudButton Variant="Variant.Filled"
-                                       Color="Color.Warning"
-                                       Size="Size.Medium"
-                                       StartIcon="@Icons.Material.Filled.FlashOn"
-                                       Disabled="@_isSyncing"
-                                       OnClick="@(() => FixAndSyncSticksAsync(force: true))"
-                                       Class="mfd-title"
-                                       Style="font-weight: 800; letter-spacing: 1px; color: #0B0F19; width: 100%;">
-                                @if (_isSyncing) {
-                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                                    <span>FORCE SYNCING...</span>
-                                } else {
-                                    <span>FORCE SYNC &amp; DEPLOY</span>
-                                }
-                            </MudButton>
-                            <MudButton Variant="Variant.Outlined"
+                    @if (_liveDevices.Count == 0) {
+                        <div class="pa-6 text-center rounded" style="background: rgba(15, 23, 42, 0.5); border: 1px dashed rgba(148, 163, 184, 0.2);">
+                            <MudIcon Icon="@Icons.Material.Filled.UsbOff" Size="Size.Large" Color="Color.Default" Class="mb-2" />
+                            <MudText Typo="Typo.body2" Style="color: #94A3B8;">No Flight Controllers Detected</MudText>
+                            <MudText Typo="Typo.caption" Style="color: #64748B;">Connect your sticks or throttle via USB to lock slot order.</MudText>
+                        </div>
+                    } else {
+                        <MudTable Items="_liveDevices" Dense="true" Hover="true" Elevation="0" Class="transparent">
+                            <HeaderContent>
+                                <MudTh Style="color: #00E5FF; font-weight: 700;">SLOT</MudTh>
+                                <MudTh Style="color: #00E5FF; font-weight: 700;">CONTROLLER</MudTh>
+                                <MudTh Style="color: #00E5FF; font-weight: 700; text-align: right;">LOCK SLOT</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>
+                                    <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled" Class="font-weight-bold">
+                                        @context.SlotName
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd>
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold" Style="color: #F8FAFC;">@context.ProductName</MudText>
+                                    <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #64748B;">
+                                        @(context.InstanceGuidString.Length > 8 ? context.InstanceGuidString.Substring(0, 8) + "..." : context.InstanceGuidString)
+                                    </MudText>
+                                </MudTd>
+                                <MudTd Style="text-align: right;">
+                                    <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary">
+                                        <MudButton Size="Size.Small"
+                                                   Variant="@(IsStickAssignedToSlot(context, 1) ? Variant.Filled : Variant.Outlined)"
+                                                   OnClick="@(() => AssignDeviceAsync(context, 1, "Right Stick (Primary)"))">
+                                            JS1
+                                        </MudButton>
+                                        <MudButton Size="Size.Small"
+                                                   Variant="@(IsStickAssignedToSlot(context, 2) ? Variant.Filled : Variant.Outlined)"
+                                                   OnClick="@(() => AssignDeviceAsync(context, 2, "Left Stick (Throttle)"))">
+                                            JS2
+                                        </MudButton>
+                                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true">
+                                            <MudMenuItem OnClick="@(() => AssignDeviceAsync(context, 3, "Pedals / Rudder"))">Lock as JS3 (Pedals)</MudMenuItem>
+                                            <MudMenuItem OnClick="@(() => AssignDeviceAsync(context, 4, "Button Box / Aux"))">Lock as JS4 (Aux)</MudMenuItem>
+                                        </MudMenu>
+                                    </MudButtonGroup>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                </MudItem>
+
+                <!-- Right: Locked Canonical Assignment vs Active XML -->
+                <MudItem xs="12" lg="6">
+                    <div class="d-flex align-center justify-space-between mb-2">
+                        <div class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Lock" Color="Color.Primary" Size="Size.Small" Class="mr-2" />
+                            <MudText Typo="Typo.subtitle2" Class="mfd-title" Style="color: #00E5FF;">
+                                LOCKED SLOTS (@ConfigService.Config.SelectedEnvironment)
+                            </MudText>
+                        </div>
+                        <MudTooltip Text="@($"Copy in-game console resort command: '{_dynamicResortCommand}'")">
+                            <MudButton Variant="Variant.Text"
                                        Color="Color.Secondary"
                                        Size="Size.Small"
                                        StartIcon="@Icons.Material.Filled.ContentCopy"
                                        OnClick="CopyConsoleCommandAsync"
-                                       Style="width: 100%;">
-                                Copy In-Game Cmd
+                                       Class="mfd-title">
+                                Copy Resort Cmd
                             </MudButton>
-                        }
-                        <MudText Typo="Typo.caption" Class="mfd-code text-center" Style="color: #94A3B8; font-size: 0.75rem;">
-                            Auto-backs up to <span style="color: #FFAB00;">~/.sticklock/backups/</span>
-                        </MudText>
+                        </MudTooltip>
                     </div>
-                </div>
-            </MudPaper>
-        </MudItem>
-    } else if (_lastFixedBackupPath != null) {
-        <MudItem xs="12">
-            <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Dense="false" Class="mfd-card" Style="background-color: rgba(16, 185, 129, 0.2); border: 1px solid #10B981;">
-                <div class="d-flex flex-wrap align-center justify-space-between gap-2">
-                    <div class="d-flex align-center">
-                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="mr-2" />
-                        <div>
-                            <span class="font-weight-bold" style="color: #10B981;">STAR CITIZEN MAPPINGS SUCCESSFULLY FIXED &amp; UPDATED!</span>
-                            <div class="mfd-code" style="font-size: 0.8rem; color: #E2E8F0; margin-top: 2px;">
-                                Original backup safely stored in: <span style="color: #00E5FF;">@_lastFixedBackupPath</span>
-                            </div>
+
+                    @if (ConfigService.Config.CanonicalSticks.Count == 0) {
+                        <div class="pa-6 text-center rounded" style="background: rgba(15, 23, 42, 0.5); border: 1px dashed rgba(148, 163, 184, 0.2);">
+                            <MudIcon Icon="@Icons.Material.Filled.LockOpen" Size="Size.Large" Color="Color.Default" Class="mb-2" />
+                            <MudText Typo="Typo.body2" Style="color: #94A3B8;">No Canonical Slots Locked</MudText>
+                            <MudText Typo="Typo.caption" Style="color: #64748B;">Click JS1 / JS2 on the left to lock your primary and secondary flight sticks.</MudText>
                         </div>
-                    </div>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Success"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.History"
-                               OnClick="RestoreBackupAsync">
-                        Restore This Backup
-                    </MudButton>
-                </div>
-            </MudAlert>
-        </MudItem>
-    } else if (_status == SyncStatus.Unknown && _alignmentCheck.ExistingXmlDevices.Count >= 2 && ConfigService.Config.CanonicalSticks.Count == 0) {
-        <MudItem xs="12">
-            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="false" Class="mfd-card">
-                <div class="d-flex flex-wrap align-center justify-space-between gap-2">
-                    <div>
-                        <span class="font-weight-bold" style="color: #38BDF8;">EXISTING STAR CITIZEN JOYSTICK MAPPINGS DETECTED</span>
-                        <div class="mfd-code" style="font-size: 0.8rem; color: #CBD5E1; margin-top: 2px;">
-                            Found @(_alignmentCheck.ExistingXmlDevices.Count) flight controllers in Star Citizen actionmaps.xml:
-                            @string.Join(", ", _alignmentCheck.ExistingXmlDevices.Select(d => $"js{d.Instance} ({d.ProductName})"))
-                        </div>
-                    </div>
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.AutoFixHigh"
-                               OnClick="AutoLockFromStarCitizenXmlAsync"
-                               Style="color: #0B0F19; font-weight: 700;">
-                        Lock &amp; Monitor from Star Citizen
-                    </MudButton>
-                </div>
-            </MudAlert>
-        </MudItem>
-    }
-
-    <!-- Top Row: Path & Settings Card -->
-    <MudItem xs="12">
-        <MudCard Class="mfd-card">
-            <div class="mfd-card-header d-flex align-center justify-space-between">
-                <div class="d-flex align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.FolderSpecial" Color="Color.Primary" Class="mr-2" />
-                    <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #00E5FF;">STAR CITIZEN PROFILE CONFIGURATION</MudText>
-                </div>
-                <div class="d-flex align-center gap-2">
-                    <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary">
-                        <MudButton Variant="@(ConfigService.Config.SelectedEnvironment == ScEnvironment.LIVE ? Variant.Filled : Variant.Outlined)"
-                                   OnClick="@(() => OnEnvironmentSelected(ScEnvironment.LIVE))">LIVE</MudButton>
-                        <MudButton Variant="@(ConfigService.Config.SelectedEnvironment == ScEnvironment.PTU ? Variant.Filled : Variant.Outlined)"
-                                   OnClick="@(() => OnEnvironmentSelected(ScEnvironment.PTU))">PTU</MudButton>
-                        <MudButton Variant="@(ConfigService.Config.SelectedEnvironment == ScEnvironment.EPTU ? Variant.Filled : Variant.Outlined)"
-                                   OnClick="@(() => OnEnvironmentSelected(ScEnvironment.EPTU))">EPTU</MudButton>
-                        <MudButton Variant="@(ConfigService.Config.SelectedEnvironment == ScEnvironment.TechPreview ? Variant.Filled : Variant.Outlined)"
-                                   OnClick="@(() => OnEnvironmentSelected(ScEnvironment.TechPreview))">TECH</MudButton>
-                    </MudButtonGroup>
-                </div>
-            </div>
-            <MudCardContent Class="pt-3">
-                <MudGrid Spacing="2" Class="align-center">
-                    <MudItem xs="12" md="8">
-                        <MudTextField @bind-Value="ConfigService.Config.StarCitizenPath"
-                                      Label="Path to actionmaps.xml"
-                                      Variant="Variant.Outlined"
-                                      Adornment="Adornment.Start"
-                                      AdornmentIcon="@Icons.Material.Filled.Description"
-                                      AdornmentColor="Color.Primary"
-                                      Placeholder="e.g. C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\USER\Client\0\Profiles\default\actionmaps.xml"
-                                      OnBlur="OnPathChanged"
-                                      Margin="Margin.Dense"
-                                      Class="mfd-code" />
-                    </MudItem>
-                    <MudItem xs="12" md="4" Class="d-flex gap-2">
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.FileOpen"
-                                   OnClick="BrowseXmlFileAsync"
-                                   FullWidth="true"
-                                   Class="mfd-title">
-                            Browse File
-                        </MudButton>
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Secondary"
-                                   StartIcon="@Icons.Material.Filled.FolderOpen"
-                                   OnClick="BrowseGameFolderAsync"
-                                   FullWidth="true"
-                                   Class="mfd-title">
-                            Detect Folder
-                        </MudButton>
-                    </MudItem>
-
-                    <!-- Toggle Switches -->
-                    <MudItem xs="12" md="4">
-                        <MudSwitch Value="ConfigService.Config.AutoSyncOnUsbChange"
-                                   ValueChanged="@((bool val) => OnAutoSyncChanged(val))"
-                                   Color="Color.Primary"
-                                   Label="Auto-Sync on USB Change" />
-                    </MudItem>
-                    <MudItem xs="12" md="4">
-                        <MudSwitch Value="ConfigService.Config.StartMinimizedToTray"
-                                   ValueChanged="@((bool val) => OnStartMinimizedChanged(val))"
-                                   Color="Color.Primary"
-                                   Label="Start Minimized to Tray" />
-                    </MudItem>
-                    <MudItem xs="12" md="4">
-                        <MudSwitch Value="ConfigService.Config.RunOnWindowsStartup"
-                                   ValueChanged="@((bool val) => OnRunStartupChanged(val))"
-                                   Color="Color.Primary"
-                                   Label="Launch on Windows Startup" />
-                    </MudItem>
-                    <MudItem xs="12" md="6">
-                        <MudSwitch Value="ConfigService.Config.AllowSyncWhileGameRunning"
-                                   ValueChanged="@((bool val) => OnAllowSyncWhileGameRunningChanged(val))"
-                                   Color="Color.Warning"
-                                   Label="Allow Sync while Star Citizen is running (Force Sync)" />
-                    </MudItem>
-                    <MudItem xs="12" md="6">
-                        <MudSwitch Value="ConfigService.Config.AutoDeployToMappingsFolder"
-                                   ValueChanged="@((bool val) => OnAutoDeployToMappingsFolderChanged(val))"
-                                   Color="Color.Secondary"
-                                   Label="Auto-Deploy to in-game Controls\Mappings on Sync" />
-                    </MudItem>
-
-                    <!-- Export & Import Controls Row -->
-                    <MudItem xs="12">
-                        <MudDivider Class="my-2" Style="border-color: rgba(0, 229, 255, 0.15);" />
-                        <div class="d-flex flex-wrap align-center justify-space-between gap-2 pt-1">
-                            <div class="d-flex align-center gap-2">
-                                <MudText Typo="Typo.caption" Class="mfd-title" Style="color: #94A3B8;">PROFILE & SETTINGS:</MudText>
-                                <MudButton Variant="Variant.Outlined"
-                                           Color="Color.Primary"
-                                           Size="Size.Small"
-                                           StartIcon="@Icons.Material.Filled.FileUpload"
-                                           OnClick="ExportProfileXmlAsync"
-                                           Class="mfd-title">
-                                    Export Profile XML
-                                </MudButton>
-                                <MudButton Variant="Variant.Filled"
-                                           Color="Color.Secondary"
-                                           Size="Size.Small"
-                                           StartIcon="@Icons.Material.Filled.FileDownload"
-                                           OnClick="ImportAndApplyProfileXmlAsync"
-                                           Class="mfd-title"
-                                           Style="color: #0B0F19; font-weight: 700;">
-                                    Import & Apply XML
-                                </MudButton>
-                            </div>
-                            <div class="d-flex align-center gap-2">
-                                <MudButton Variant="Variant.Filled"
-                                           Color="Color.Primary"
-                                           Size="Size.Small"
-                                           StartIcon="@Icons.Material.Filled.Backup"
-                                           OnClick="BackupCurrentSettingsAsync"
-                                           Class="mfd-title"
-                                           Style="color: #0B0F19; font-weight: 700;">
-                                    Backup Current Settings
-                                </MudButton>
-                                <MudButton Variant="Variant.Outlined"
-                                           Color="Color.Default"
-                                           Size="Size.Small"
-                                           StartIcon="@Icons.Material.Filled.Save"
-                                           OnClick="ExportSettingsJsonAsync"
-                                           Class="mfd-title">
-                                    Export Settings
-                                </MudButton>
-                                <MudButton Variant="Variant.Outlined"
-                                           Color="Color.Default"
-                                           Size="Size.Small"
-                                           StartIcon="@Icons.Material.Filled.Restore"
-                                           OnClick="ImportSettingsJsonAsync"
-                                           Class="mfd-title">
-                                    Import Settings
-                                </MudButton>
-                            </div>
-                        </div>
-                    </MudItem>
-                </MudGrid>
-            </MudCardContent>
-        </MudCard>
-    </MudItem>
-
-    <!-- Middle Row: Left = Live DirectInput Enumeration, Right = Canonical & XML Mapping -->
-    <MudItem xs="12" lg="6">
-        <MudCard Class="mfd-card h-100">
-            <div class="mfd-card-header d-flex align-center justify-space-between">
-                <div class="d-flex align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Sensors" Color="Color.Primary" Class="mr-2" />
-                    <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #00E5FF;">LIVE DIRECTINPUT ENUMERATION</MudText>
-                </div>
-                <MudTooltip Text="Refresh Devices">
-                    <MudIconButton Icon="@Icons.Material.Filled.Refresh"
-                                   Color="Color.Primary"
-                                   Size="Size.Small"
-                                   Disabled="@_isRefreshingDevices"
-                                   OnClick="RefreshDevicesAsync" />
-                </MudTooltip>
-            </div>
-            <MudCardContent Class="pa-2">
-                @if (_liveDevices.Count == 0) {
-                    <div class="pa-6 text-center">
-                        <MudIcon Icon="@Icons.Material.Filled.UsbOff" Size="Size.Large" Color="Color.Default" Class="mb-2" />
-                        <MudText Typo="Typo.body1" Style="color: #94A3B8;">No Game Controllers Detected</MudText>
-                        <MudText Typo="Typo.caption" Style="color: #64748B;">Connect your joysticks or throttle via USB to lock bindings.</MudText>
-                    </div>
-                } else {
-                    <MudTable Items="_liveDevices" Dense="true" Hover="true" Elevation="0" Class="transparent">
-                        <HeaderContent>
-                            <MudTh Style="color: #00E5FF; font-weight: 700;">SLOT</MudTh>
-                            <MudTh Style="color: #00E5FF; font-weight: 700;">DEVICE NAME</MudTh>
-                            <MudTh Style="color: #00E5FF; font-weight: 700;">INSTANCE GUID</MudTh>
-                            <MudTh Style="color: #00E5FF; font-weight: 700; text-align: right;">LOCK AS</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd>
-                                <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled" Class="font-weight-bold">
-                                    @context.SlotName
-                                </MudChip>
-                            </MudTd>
-                            <MudTd>
-                                <MudText Typo="Typo.body2" Class="font-weight-bold" Style="color: #F8FAFC;">@context.ProductName</MudText>
-                            </MudTd>
-                            <MudTd>
-                                <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8;">
-                                    @(context.InstanceGuidString.Length > 8 ? context.InstanceGuidString.Substring(0, 8) + "..." : context.InstanceGuidString)
-                                </MudText>
-                            </MudTd>
-                            <MudTd Style="text-align: right;">
-                                <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary">
-                                    <MudButton Size="Size.Small"
-                                               Variant="@(IsStickAssignedToSlot(context, 1) ? Variant.Filled : Variant.Outlined)"
-                                               OnClick="@(() => AssignDeviceAsync(context, 1, "Right Stick (Primary)"))">
-                                        JS1
-                                    </MudButton>
-                                    <MudButton Size="Size.Small"
-                                               Variant="@(IsStickAssignedToSlot(context, 2) ? Variant.Filled : Variant.Outlined)"
-                                               OnClick="@(() => AssignDeviceAsync(context, 2, "Left Stick (Throttle)"))">
-                                        JS2
-                                    </MudButton>
-                                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true">
-                                        <MudMenuItem OnClick="@(() => AssignDeviceAsync(context, 3, "Pedals / Rudder"))">Assign as JS3 (Pedals)</MudMenuItem>
-                                        <MudMenuItem OnClick="@(() => AssignDeviceAsync(context, 4, "Button Box / Aux"))">Assign as JS4 (Aux)</MudMenuItem>
-                                    </MudMenu>
-                                </MudButtonGroup>
-                            </MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                }
-            </MudCardContent>
-        </MudCard>
-    </MudItem>
-
-    <!-- Canonical Profile & XML Status Card -->
-    <MudItem xs="12" lg="6">
-        <MudCard Class="mfd-card h-100">
-            <div class="mfd-card-header d-flex align-center justify-space-between">
-                <div class="d-flex align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Lock" Color="Color.Primary" Class="mr-2" />
-                    <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #00E5FF;">LOCKED CANONICAL ASSIGNMENT VS XML</MudText>
-                </div>
-                <MudTooltip Text="@($"Copy console command: '{_dynamicResortCommand}'")">
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Secondary"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.ContentCopy"
-                               OnClick="CopyConsoleCommandAsync">
-                        Copy Resort Cmd
-                    </MudButton>
-                </MudTooltip>
-            </div>
-            <MudCardContent Class="pa-2">
-                @if (ConfigService.Config.CanonicalSticks.Count == 0) {
-                    <div class="pa-6 text-center">
-                        <MudIcon Icon="@Icons.Material.Filled.LockOpen" Size="Size.Large" Color="Color.Default" Class="mb-2" />
-                        <MudText Typo="Typo.body1" Style="color: #94A3B8;">No Canonical Sticks Locked</MudText>
-                        <MudText Typo="Typo.caption" Style="color: #64748B;">Use the "Lock As" buttons on the left to designate your Primary (js1) and Secondary (js2) sticks.</MudText>
-                    </div>
-                } else {
-                    <MudTable Items="ConfigService.Config.CanonicalSticks" Dense="true" Hover="true" Elevation="0" Class="transparent">
-                        <HeaderContent>
-                            <MudTh Style="color: #00E5FF; font-weight: 700;">ROLE</MudTh>
-                            <MudTh Style="color: #00E5FF; font-weight: 700;">LOCKED STICK</MudTh>
-                            <MudTh Style="color: #00E5FF; font-weight: 700;">CURRENT WINDOWS</MudTh>
-                            <MudTh Style="color: #00E5FF; font-weight: 700;">XML INSTANCE</MudTh>
-                            <MudTh Style="color: #00E5FF; font-weight: 700; text-align: right;">ACTION</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd>
-                                <MudChip T="string" Color="Color.Secondary" Size="Size.Small" Variant="Variant.Outlined" Class="font-weight-bold">
-                                    @context.SlotName: @context.FriendlyRoleName
-                                </MudChip>
-                            </MudTd>
-                            <MudTd>
-                                <MudText Typo="Typo.body2" Class="font-weight-bold" Style="color: #F8FAFC;">@context.ProductName</MudText>
-                                <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #64748B;">@(context.InstanceGuidString.Length > 8 ? context.InstanceGuidString.Substring(0, 8) + "..." : context.InstanceGuidString)</MudText>
-                            </MudTd>
-                            <MudTd>
-                                @{
-                                    var liveSlot = GetLiveSlotForStick(context);
-                                }
-                                @if (liveSlot > 0) {
-                                    <MudChip T="string" Color="@(liveSlot == context.RoleSlot ? Color.Success : Color.Warning)" Size="Size.Small" Variant="Variant.Filled">
-                                        js@(liveSlot)
+                    } else {
+                        <MudTable Items="ConfigService.Config.CanonicalSticks" Dense="true" Hover="true" Elevation="0" Class="transparent">
+                            <HeaderContent>
+                                <MudTh Style="color: #00E5FF; font-weight: 700;">LOCKED</MudTh>
+                                <MudTh Style="color: #00E5FF; font-weight: 700;">DEVICE</MudTh>
+                                <MudTh Style="color: #00E5FF; font-weight: 700;">WIN</MudTh>
+                                <MudTh Style="color: #00E5FF; font-weight: 700;">XML</MudTh>
+                                <MudTh Style="color: #00E5FF; font-weight: 700; text-align: right;"></MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>
+                                    <MudChip T="string" Color="Color.Secondary" Size="Size.Small" Variant="Variant.Outlined" Class="font-weight-bold">
+                                        @context.SlotName
                                     </MudChip>
-                                } else {
-                                    <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Outlined">
-                                        OFFLINE
-                                    </MudChip>
-                                }
-                            </MudTd>
-                            <MudTd>
-                                @{
-                                    var xmlInst = GetXmlInstanceForStick(context);
-                                }
-                                @if (xmlInst > 0) {
-                                    <MudChip T="string" Color="@(xmlInst == context.RoleSlot ? Color.Success : Color.Warning)" Size="Size.Small" Variant="Variant.Outlined">
-                                        js@(xmlInst)
-                                    </MudChip>
-                                } else {
-                                    <MudText Typo="Typo.caption" Style="color: #64748B;">Not in XML</MudText>
-                                }
-                            </MudTd>
-                            <MudTd Style="text-align: right;">
-                                <MudTooltip Text="Unlock stick">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                </MudTd>
+                                <MudTd>
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold" Style="color: #F8FAFC;">@context.ProductName</MudText>
+                                    <MudText Typo="Typo.caption" Style="color: #64748B;">@context.FriendlyRoleName</MudText>
+                                </MudTd>
+                                <MudTd>
+                                    @{
+                                        var liveSlot = GetLiveSlotForStick(context);
+                                    }
+                                    @if (liveSlot > 0) {
+                                        <MudChip T="string" Color="@(liveSlot == context.RoleSlot ? Color.Success : Color.Warning)" Size="Size.Small" Variant="Variant.Filled">
+                                            js@(liveSlot)
+                                        </MudChip>
+                                    } else {
+                                        <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Outlined">
+                                            OFF
+                                        </MudChip>
+                                    }
+                                </MudTd>
+                                <MudTd>
+                                    @{
+                                        var xmlInst = GetXmlInstanceForStick(context);
+                                    }
+                                    @if (xmlInst > 0) {
+                                        <MudChip T="string" Color="@(xmlInst == context.RoleSlot ? Color.Success : Color.Warning)" Size="Size.Small" Variant="Variant.Outlined">
+                                            js@(xmlInst)
+                                        </MudChip>
+                                    } else {
+                                        <MudText Typo="Typo.caption" Style="color: #64748B;">—</MudText>
+                                    }
+                                </MudTd>
+                                <MudTd Style="text-align: right;">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Close"
                                                    Color="Color.Error"
                                                    Size="Size.Small"
                                                    OnClick="@(() => RemoveCanonicalStickAsync(context.RoleSlot))" />
-                                </MudTooltip>
-                            </MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                }
-            </MudCardContent>
-        </MudCard>
-    </MudItem>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>
 
-    <!-- Saved Mappings Library & Star Citizen Sync Card -->
-    <MudItem xs="12">
-        <MudCard Class="mfd-card">
-            <div class="mfd-card-header d-flex flex-wrap align-center justify-space-between gap-2">
-                <div class="d-flex align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.FolderSpecial" Color="Color.Primary" Class="mr-2" />
-                    <div>
-                        <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #00E5FF;">SAVED MAPPINGS LIBRARY & STAR CITIZEN USER SYNC</MudText>
-                        <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8;">
-                            Persistent in <span style="color: #FFAB00;">~/.sticklock/mappings/</span> — immune to Star Citizen re-installs &amp; USER folder wipes
-                        </MudText>
-                    </div>
+        <!-- TAB 2: PROFILES & MAPPINGS LIBRARY -->
+        <MudTabPanel Text="@($"PROFILES & MAPPINGS ({_savedProfiles.Count})")" Icon="@Icons.Material.Filled.LibraryBooks">
+            <div class="d-flex flex-wrap align-center justify-space-between gap-2 mb-3">
+                <div>
+                    <MudText Typo="Typo.subtitle2" Class="mfd-title" Style="color: #00E5FF;">PERSISTENT MAPPINGS LIBRARY</MudText>
+                    <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8;">
+                        Stored in <span style="color: #FFAB00;">~/.sticklock/mappings/</span> — deploys across @(ConfigService.Config.SyncAllDetectedInstalls ? "all detected SC installs" : ConfigService.Config.SelectedEnvironment.ToString())
+                    </MudText>
                 </div>
                 <div class="d-flex flex-wrap align-center gap-2">
                     <MudButton Variant="Variant.Filled"
@@ -480,7 +397,7 @@
                                OnClick="OpenSaveProfileDialogAsync"
                                Class="mfd-title"
                                Style="color: #0B0F19; font-weight: 700;">
-                        Save Active as Profile
+                        Save Active
                     </MudButton>
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Secondary"
@@ -488,7 +405,7 @@
                                StartIcon="@Icons.Material.Filled.CloudUpload"
                                OnClick="CopyAllToStarCitizenAsync"
                                Class="mfd-title">
-                        Sync All to Star Citizen
+                        Deploy All to SC
                     </MudButton>
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Default"
@@ -496,7 +413,23 @@
                                StartIcon="@Icons.Material.Filled.CloudDownload"
                                OnClick="PullFromStarCitizenAsync"
                                Class="mfd-title">
-                        Pull from Star Citizen
+                        Pull from SC
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.FileDownload"
+                               OnClick="ImportAndApplyProfileXmlAsync"
+                               Class="mfd-title">
+                        Import XML
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Default"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.FileUpload"
+                               OnClick="ExportProfileXmlAsync"
+                               Class="mfd-title">
+                        Export XML
                     </MudButton>
                     <MudTooltip Text="Open ~/.sticklock/mappings in Explorer">
                         <MudIconButton Icon="@Icons.Material.Filled.FolderOpen"
@@ -506,152 +439,201 @@
                     </MudTooltip>
                 </div>
             </div>
-            <MudCardContent Class="pa-2">
-                @if (_savedProfiles.Count == 0) {
-                    <div class="pa-6 text-center">
-                        <MudIcon Icon="@Icons.Material.Filled.FolderZip" Size="Size.Large" Color="Color.Default" Class="mb-2" />
-                        <MudText Typo="Typo.body1" Style="color: #94A3B8;">No Saved Profiles in .sticklock Library</MudText>
-                        <MudText Typo="Typo.caption" Style="color: #64748B;">
-                            Click "Save Active as Profile" to save your current bindings safely outside Star Citizen's install folder, or "Pull from Star Citizen" to import profiles from game folder.
-                        </MudText>
+
+            @if (_savedProfiles.Count == 0) {
+                <div class="pa-6 text-center rounded" style="background: rgba(15, 23, 42, 0.5); border: 1px dashed rgba(148, 163, 184, 0.2);">
+                    <MudIcon Icon="@Icons.Material.Filled.FolderZip" Size="Size.Large" Color="Color.Default" Class="mb-2" />
+                    <MudText Typo="Typo.body2" Style="color: #94A3B8;">No Saved Profiles Yet</MudText>
+                    <MudText Typo="Typo.caption" Style="color: #64748B;">
+                        Click "Save Active" to snapshot your current bindings, or "Pull from SC" to import your Star Citizen Control Profiles.
+                    </MudText>
+                </div>
+            } else {
+                <MudTable Items="_savedProfiles" Dense="true" Hover="true" Elevation="0" Class="transparent">
+                    <HeaderContent>
+                        <MudTh Style="color: #00E5FF; font-weight: 700;">PROFILE</MudTh>
+                        <MudTh Style="color: #00E5FF; font-weight: 700;">DEVICES</MudTh>
+                        <MudTh Style="color: #00E5FF; font-weight: 700;">BINDS</MudTh>
+                        <MudTh Style="color: #00E5FF; font-weight: 700;">STATUS</MudTh>
+                        <MudTh Style="color: #00E5FF; font-weight: 700; text-align: right;">ACTIONS</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <div class="d-flex flex-column">
+                                <span class="font-weight-bold" style="color: #F8FAFC;">@context.FileName</span>
+                                <span class="mfd-code" style="font-size: 0.72rem; color: #64748B;">@context.LastModified.ToString("yyyy-MM-dd HH:mm") • @(context.FileSizeBytes / 1024) KB</span>
+                            </div>
+                        </MudTd>
+                        <MudTd>
+                            <div class="d-flex flex-wrap gap-1">
+                                @if (context.DeviceNames.Count > 0) {
+                                    @foreach (var dev in context.DeviceNames) {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" Class="py-0 px-1" Style="font-size: 0.7rem; height: 20px;">
+                                            @dev
+                                        </MudChip>
+                                    }
+                                } else {
+                                    <span class="mfd-code" style="color: #64748B;">@context.JoystickOptionsCount device(s)</span>
+                                }
+                            </div>
+                        </MudTd>
+                        <MudTd>
+                            <span class="mfd-code" style="color: #CBD5E1;">@context.RebindCount</span>
+                        </MudTd>
+                        <MudTd>
+                            @if (context.ExistsInStarCitizen) {
+                                <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Filled">
+                                    Deployed
+                                </MudChip>
+                            } else {
+                                <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
+                                    Local Only
+                                </MudChip>
+                            }
+                        </MudTd>
+                        <MudTd Style="text-align: right;">
+                            <div class="d-flex align-center justify-end gap-1">
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           OnClick="@(() => ApplyProfileAsync(context.FileName))"
+                                           Style="color: #0B0F19; font-weight: 700; font-size: 0.75rem;">
+                                    Apply
+                                </MudButton>
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Secondary"
+                                           Size="Size.Small"
+                                           OnClick="@(() => CopyProfileToStarCitizenAsync(context.FileName))"
+                                           Style="font-size: 0.75rem;">
+                                    Deploy
+                                </MudButton>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               OnClick="@(() => DeleteProfileAsync(context.FileName))" />
+                            </div>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudTabPanel>
+
+        <!-- TAB 3: SETTINGS & ACTIVITY LOG -->
+        <MudTabPanel Text="SETTINGS & LOGS" Icon="@Icons.Material.Filled.Tune">
+            <MudGrid Spacing="3">
+                <!-- Left: Daemon & Sync Preferences -->
+                <MudItem xs="12" lg="5">
+                    <MudText Typo="Typo.subtitle2" Class="mfd-title mb-2" Style="color: #00E5FF;">DAEMON &amp; SYNC PREFERENCES</MudText>
+                    <div class="d-flex flex-column gap-1 pa-3 rounded" style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0, 229, 255, 0.1);">
+                        <MudSwitch Value="ConfigService.Config.SyncAllDetectedInstalls"
+                                   ValueChanged="@((bool val) => OnSyncAllInstallsChanged(val))"
+                                   Color="Color.Primary"
+                                   Label="Sync across all detected SC installs (LIVE, PTU, EPTU, TECH)" />
+                        <MudSwitch Value="ConfigService.Config.AutoSyncOnUsbChange"
+                                   ValueChanged="@((bool val) => OnAutoSyncChanged(val))"
+                                   Color="Color.Primary"
+                                   Label="Auto-Sync when USB controllers change" />
+                        <MudSwitch Value="ConfigService.Config.AutoDeployToMappingsFolder"
+                                   ValueChanged="@((bool val) => OnAutoDeployToMappingsFolderChanged(val))"
+                                   Color="Color.Secondary"
+                                   Label="Auto-Deploy layout_StickLock_Active.xml to Controls\Mappings" />
+                        <MudSwitch Value="ConfigService.Config.AllowSyncWhileGameRunning"
+                                   ValueChanged="@((bool val) => OnAllowSyncWhileGameRunningChanged(val))"
+                                   Color="Color.Warning"
+                                   Label="Allow Force Sync while Star Citizen is running" />
+                        <MudSwitch Value="ConfigService.Config.StartMinimizedToTray"
+                                   ValueChanged="@((bool val) => OnStartMinimizedChanged(val))"
+                                   Color="Color.Primary"
+                                   Label="Start minimized to Windows System Tray" />
+                        <MudSwitch Value="ConfigService.Config.RunOnWindowsStartup"
+                                   ValueChanged="@((bool val) => OnRunStartupChanged(val))"
+                                   Color="Color.Primary"
+                                   Label="Launch automatically on Windows Startup" />
+
+                        <MudDivider Class="my-2" Style="border-color: rgba(0, 229, 255, 0.1);" />
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.Backup"
+                                       OnClick="BackupCurrentSettingsAsync"
+                                       Class="mfd-title"
+                                       Style="color: #0B0F19; font-weight: 700;">
+                                Backup Settings
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Default"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.Save"
+                                       OnClick="ExportSettingsJsonAsync"
+                                       Class="mfd-title">
+                                Export JSON
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Default"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.Restore"
+                                       OnClick="ImportSettingsJsonAsync"
+                                       Class="mfd-title">
+                                Import JSON
+                            </MudButton>
+                        </div>
                     </div>
-                } else {
-                    <MudTable Items="_savedProfiles" Dense="true" Hover="true" Elevation="0" Class="transparent">
-                        <HeaderContent>
-                            <MudTh Style="color: #00E5FF; font-weight: 700;">PROFILE FILE</MudTh>
-                            <MudTh Style="color: #00E5FF; font-weight: 700;">DEVICES IN XML</MudTh>
-                            <MudTh Style="color: #00E5FF; font-weight: 700;">BINDS</MudTh>
-                            <MudTh Style="color: #00E5FF; font-weight: 700;">SC USER STATUS</MudTh>
-                            <MudTh Style="color: #00E5FF; font-weight: 700; text-align: right;">ACTIONS</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd>
-                                <div class="d-flex flex-column">
-                                    <span class="font-weight-bold" style="color: #F8FAFC;">@context.FileName</span>
-                                    <span class="mfd-code" style="font-size: 0.75rem; color: #64748B;">@context.LastModified.ToString("yyyy-MM-dd HH:mm:ss") • @(context.FileSizeBytes / 1024) KB</span>
-                                </div>
-                            </MudTd>
-                            <MudTd>
-                                <div class="d-flex flex-wrap gap-1">
-                                    @if (context.DeviceNames.Count > 0) {
-                                        @foreach (var dev in context.DeviceNames) {
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" Class="py-0 px-1" Style="font-size: 0.7rem; height: 20px;">
-                                                @dev
-                                            </MudChip>
-                                        }
-                                    } else {
-                                        <span class="mfd-code" style="color: #64748B;">@context.JoystickOptionsCount device(s)</span>
+                </MudItem>
+
+                <!-- Right: Activity & Backup Log -->
+                <MudItem xs="12" lg="7">
+                    <div class="d-flex align-center justify-space-between mb-2">
+                        <MudText Typo="Typo.subtitle2" Class="mfd-title" Style="color: #00E5FF;">ACTIVITY &amp; BACKUP LOG</MudText>
+                        <div class="d-flex gap-2">
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Warning"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.History"
+                                       OnClick="RestoreBackupAsync"
+                                       Class="mfd-title">
+                                Restore Latest XML Backup
+                            </MudButton>
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Default"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.ClearAll"
+                                       OnClick="ClearLog">
+                                Clear
+                            </MudButton>
+                        </div>
+                    </div>
+
+                    <div style="height: 260px; overflow-y: auto; background: rgba(11, 15, 25, 0.9); border: 1px solid #1E293B; border-radius: 6px; padding: 10px;">
+                        @if (LogService.Entries.Count == 0) {
+                            <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #64748B;">StickLock log ready. Monitoring USB activity and Star Citizen installs.</MudText>
+                        } else {
+                            @foreach (var entry in LogService.Entries) {
+                                <div class="d-flex align-start mb-1" style="font-size: 0.8rem;">
+                                    <span class="mfd-code mr-2" style="color: #64748B;">[@entry.TimeFormatted]</span>
+                                    <MudChip T="string" Color="@GetLogLevelColor(entry.Level)" Size="Size.Small" Variant="Variant.Filled" Class="mr-2 py-0 px-1" Style="font-size: 0.65rem; height: 18px;">
+                                        @entry.Level.ToUpperInvariant()
+                                    </MudChip>
+                                    <span style="color: #E2E8F0; flex-grow: 1;">@entry.Message</span>
+                                    @if (!string.IsNullOrWhiteSpace(entry.Details)) {
+                                        <span class="mfd-code ml-2" style="color: #94A3B8;">@entry.Details</span>
                                     }
                                 </div>
-                            </MudTd>
-                            <MudTd>
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Dark" Class="font-weight-bold">
-                                    @context.RebindCount binds
-                                </MudChip>
-                            </MudTd>
-                            <MudTd>
-                                @if (context.ExistsInStarCitizen) {
-                                    <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.CheckCircle">
-                                        In SC USER Mappings
-                                    </MudChip>
-                                } else {
-                                    <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.CloudOff">
-                                        Not in SC USER
-                                    </MudChip>
-                                }
-                            </MudTd>
-                            <MudTd Style="text-align: right;">
-                                <div class="d-flex align-center justify-end gap-1">
-                                    <MudTooltip Text="Apply directly to active game actionmaps.xml and align stick slots">
-                                        <MudButton Variant="Variant.Filled"
-                                                   Color="Color.Primary"
-                                                   Size="Size.Small"
-                                                   StartIcon="@Icons.Material.Filled.PlayArrow"
-                                                   OnClick="@(() => ApplyProfileAsync(context.FileName))"
-                                                   Style="color: #0B0F19; font-weight: 700; font-size: 0.75rem;">
-                                            Apply
-                                        </MudButton>
-                                    </MudTooltip>
-                                    <MudTooltip Text="Copy this profile to Star Citizen Controls\Mappings folder so you can load it in-game">
-                                        <MudButton Variant="Variant.Outlined"
-                                                   Color="Color.Secondary"
-                                                   Size="Size.Small"
-                                                   StartIcon="@Icons.Material.Filled.FileUpload"
-                                                   OnClick="@(() => CopyProfileToStarCitizenAsync(context.FileName))"
-                                                   Style="font-size: 0.75rem;">
-                                            Deploy to SC
-                                        </MudButton>
-                                    </MudTooltip>
-                                    <MudTooltip Text="Delete from .sticklock library">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                       Color="Color.Error"
-                                                       Size="Size.Small"
-                                                       OnClick="@(() => DeleteProfileAsync(context.FileName))" />
-                                    </MudTooltip>
-                                </div>
-                            </MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                }
-            </MudCardContent>
-        </MudCard>
-    </MudItem>
-
-    <!-- Bottom Row: Activity & Backup Log Paper -->
-    <MudItem xs="12">
-        <MudPaper Class="mfd-card pa-3">
-            <div class="d-flex align-center justify-space-between mb-2">
-                <div class="d-flex align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Terminal" Color="Color.Primary" Class="mr-2" />
-                    <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #00E5FF;">STICKLOCK ACTIVITY & BACKUP LOG</MudText>
-                </div>
-                <div class="d-flex gap-2">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Warning"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.History"
-                               OnClick="RestoreBackupAsync"
-                               Class="mfd-title"
-                               Style="font-weight: 700; color: #0B0F19;">
-                        Restore Latest Backup
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Default"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.ClearAll"
-                               OnClick="ClearLog">
-                        Clear Log
-                    </MudButton>
-                </div>
-            </div>
-
-            <!-- Log Entries List -->
-            <div style="height: 180px; overflow-y: auto; background: rgba(11, 15, 25, 0.9); border: 1px solid #1E293B; border-radius: 4px; padding: 8px;">
-                @if (LogService.Entries.Count == 0) {
-                    <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #64748B;">StickLock log ready. Awaiting USB activity or manual sync.</MudText>
-                } else {
-                    @foreach (var entry in LogService.Entries) {
-                        <div class="d-flex align-start mb-1" style="font-size: 0.8rem;">
-                            <span class="mfd-code mr-2" style="color: #64748B;">[@entry.TimeFormatted]</span>
-                            <MudChip T="string" Color="@GetLogLevelColor(entry.Level)" Size="Size.Small" Variant="Variant.Filled" Class="mr-2 py-0 px-1" Style="font-size: 0.65rem; height: 18px;">
-                                @entry.Level.ToUpperInvariant()
-                            </MudChip>
-                            <span style="color: #E2E8F0; flex-grow: 1;">@entry.Message</span>
-                            @if (!string.IsNullOrWhiteSpace(entry.Details)) {
-                                <span class="mfd-code ml-2" style="color: #94A3B8;">@entry.Details</span>
                             }
-                        </div>
-                    }
-                }
-            </div>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+                        }
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>
+    </MudTabs>
+</div>
 
 @code {
     private IReadOnlyList<DirectInputDevice> _liveDevices = Array.Empty<DirectInputDevice>();
     private IReadOnlyList<XmlStickMapping> _xmlMappings = Array.Empty<XmlStickMapping>();
     private IReadOnlyList<SavedMappingProfile> _savedProfiles = Array.Empty<SavedMappingProfile>();
+    private IReadOnlyList<DetectedScInstall> _detectedInstalls = Array.Empty<DetectedScInstall>();
     private MappingAlignmentCheck _alignmentCheck = new();
     private string? _lastFixedBackupPath = null;
     private SyncStatus _status = SyncStatus.Unknown;
@@ -665,6 +647,7 @@
         LogService.EntryAdded += _ => InvokeAsync(StateHasChanged);
 
         _liveDevices = DirectInputService.CurrentDevices;
+        _detectedInstalls = ConfigService.GetDetectedInstalls();
         await RefreshAlignmentCheckAsync();
         await ReloadXmlMappingsAsync();
         await ReloadSavedProfilesAsync();
@@ -680,6 +663,7 @@
 
     private void OnConfigChanged() {
         _ = InvokeAsync(async () => {
+            _detectedInstalls = ConfigService.GetDetectedInstalls();
             await RefreshAlignmentCheckAsync();
             await ReloadXmlMappingsAsync();
             await ReloadSavedProfilesAsync();
@@ -732,10 +716,8 @@
             if (result.Success) {
                 _lastFixedBackupPath = result.BackupPath;
                 Snackbar.Add(result.Message, Severity.Success);
-                LogService.LogSuccess($"Fixed mappings: {result.Message}", result.BackupPath != null ? $"Backup: {Path.GetFileName(result.BackupPath)}" : "");
             } else {
                 Snackbar.Add(result.Message, Severity.Error);
-                LogService.LogError($"Failed to fix mappings: {result.Message}");
             }
             await RefreshAlignmentCheckAsync();
             await ReloadXmlMappingsAsync();
@@ -764,6 +746,24 @@
         }
     }
 
+    private async Task PropagateAcrossAllInstallsAsync() {
+        _isSyncing = true;
+        StateHasChanged();
+        try {
+            var result = await XmlService.PropagateActiveToDetectedInstallsAsync(force: ConfigService.Config.AllowSyncWhileGameRunning);
+            if (result.Success) {
+                Snackbar.Add(result.Message, Severity.Success);
+                _detectedInstalls = ConfigService.GetDetectedInstalls();
+            } else {
+                Snackbar.Add(result.Message, Severity.Warning);
+            }
+            await RefreshAlignmentCheckAsync();
+        } finally {
+            _isSyncing = false;
+            StateHasChanged();
+        }
+    }
+
     private async Task RefreshDevicesAsync() {
         if (_isRefreshingDevices) {
             return;
@@ -783,13 +783,10 @@
 
     private async Task OnEnvironmentSelected(ScEnvironment env) {
         await ConfigService.SwitchEnvironmentAsync(env);
+        _detectedInstalls = ConfigService.GetDetectedInstalls();
         await ReloadXmlMappingsAsync();
-        Snackbar.Add($"Switched to {env} environment.", Severity.Info);
-    }
-
-    private async Task OnPathChanged() {
-        await ConfigService.SetStarCitizenPathAsync(ConfigService.Config.StarCitizenPath);
-        await ReloadXmlMappingsAsync();
+        await RefreshAlignmentCheckAsync();
+        Snackbar.Add($"Switched active view to {env}.", Severity.Info);
     }
 
     private async Task BrowseXmlFileAsync() {
@@ -800,6 +797,7 @@
         var selected = await FileDialog.PickActionMapsXmlFileAsync(initialDir);
         if (!string.IsNullOrWhiteSpace(selected)) {
             await ConfigService.SetStarCitizenPathAsync(selected);
+            _detectedInstalls = ConfigService.GetDetectedInstalls();
             await ReloadXmlMappingsAsync();
             Snackbar.Add("Selected actionmaps.xml path updated.", Severity.Success);
         }
@@ -808,23 +806,38 @@
     private async Task BrowseGameFolderAsync() {
         var selected = await FileDialog.PickStarCitizenFolderAsync();
         if (!string.IsNullOrWhiteSpace(selected)) {
-            // Check if folder is directly actionmaps or contains LIVE/USER...
-            var candidate1 = Path.Combine(selected, "USER", "Client", "0", "Profiles", "default", "actionmaps.xml");
-            var candidate2 = Path.Combine(selected, "LIVE", "USER", "Client", "0", "Profiles", "default", "actionmaps.xml");
-
-            string finalPath;
-            if (File.Exists(candidate1)) {
-                finalPath = candidate1;
-            } else if (File.Exists(candidate2)) {
-                finalPath = candidate2;
-            } else {
-                finalPath = Path.Combine(selected, "actionmaps.xml");
-            }
-
-            await ConfigService.SetStarCitizenPathAsync(finalPath);
+            await ConfigService.SetStarCitizenRootFolderAsync(selected);
+            _detectedInstalls = ConfigService.GetDetectedInstalls();
             await ReloadXmlMappingsAsync();
-            Snackbar.Add($"Configured path to {Path.GetFileName(finalPath)}", Severity.Success);
+            await RefreshAlignmentCheckAsync();
+
+            var foundChannels = _detectedInstalls.Where(i => i.IsDirectoryPresent).Select(i => i.ChannelName).ToList();
+            var xmlCount = _detectedInstalls.Count(i => i.HasActionMapsXml);
+            if (foundChannels.Count > 0) {
+                LogService.LogSuccess($"Star Citizen folder set. Detected: {string.Join(", ", foundChannels)} ({xmlCount} with actionmaps.xml).");
+                Snackbar.Add($"Detected { string.Join(", ", foundChannels) } ({xmlCount} XML found).", Severity.Success);
+            } else {
+                Snackbar.Add($"Star Citizen folder set to {selected}", Severity.Info);
+            }
         }
+    }
+
+    private async Task AutoDetectScFolderAsync() {
+        if (ConfigService.TryAutoDetectStarCitizenRoot(out var root)) {
+            await ConfigService.SetStarCitizenRootFolderAsync(root);
+            _detectedInstalls = ConfigService.GetDetectedInstalls();
+            await ReloadXmlMappingsAsync();
+            await RefreshAlignmentCheckAsync();
+            var found = _detectedInstalls.Where(i => i.IsDirectoryPresent).Select(i => i.ChannelName).ToList();
+            Snackbar.Add($"Auto-detected Star Citizen at {root} ({string.Join(", ", found)})", Severity.Success);
+        } else {
+            Snackbar.Add("Could not auto-detect Star Citizen in standard drive locations. Use 'Set SC Folder' to select it.", Severity.Warning);
+        }
+    }
+
+    private async Task OnSyncAllInstallsChanged(bool val) {
+        await ConfigService.SetSyncAllDetectedInstallsAsync(val);
+        Snackbar.Add($"Sync across all detected SC installs is now {(val ? "ENABLED" : "DISABLED")}.", Severity.Info);
     }
 
     private async Task OnAutoSyncChanged(bool val) {
@@ -885,7 +898,6 @@
             return mapping.Instance;
         }
 
-        // Fallback by instance number
         var fallback = _xmlMappings.FirstOrDefault(x => x.Instance == stick.RoleSlot);
         return fallback?.Instance ?? 0;
     }
@@ -1127,7 +1139,6 @@
         }
 
         try {
-            // E.g. <Install>\LIVE\USER\Client\0\Profiles\default\actionmaps.xml -> <Install>\LIVE\USER\Client\0\Controls\Mappings
             var profilesDir = Path.GetDirectoryName(activePath);
             var zeroDir = Path.GetDirectoryName(profilesDir);
             var clientZeroDir = Path.GetDirectoryName(zeroDir);

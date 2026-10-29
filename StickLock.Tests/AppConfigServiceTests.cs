@@ -97,5 +97,56 @@ public class AppConfigServiceTests {
             }
         }
     }
+
+    [Fact]
+    public async Task SetStarCitizenRootFolder_AutoDetectsMultipleInstallsAndXmls() {
+        var tempRoot = Path.Combine(Path.GetTempPath(), $"sc_root_{Guid.NewGuid():N}");
+        var scDir = Path.Combine(tempRoot, "StarCitizen");
+        var isolatedConfig = Path.Combine(tempRoot, ".sticklock", "config.json");
+        try {
+            // Create LIVE, PTU, and TECH-PREVIEW folders; put actionmaps.xml in LIVE and TECH-PREVIEW
+            var liveProfileDir = Path.Combine(scDir, "LIVE", "USER", "Client", "0", "Profiles", "default");
+            var ptuDir = Path.Combine(scDir, "PTU");
+            var techProfileDir = Path.Combine(scDir, "TECH-PREVIEW", "USER", "Client", "0", "Profiles", "default");
+
+            Directory.CreateDirectory(liveProfileDir);
+            Directory.CreateDirectory(ptuDir);
+            Directory.CreateDirectory(techProfileDir);
+
+            var liveXml = Path.Combine(liveProfileDir, "actionmaps.xml");
+            var techXml = Path.Combine(techProfileDir, "actionmaps.xml");
+            await File.WriteAllTextAsync(liveXml, "<ActionMaps/>");
+            await File.WriteAllTextAsync(techXml, "<ActionMaps/>");
+
+            var service = new AppConfigService(isolatedConfig);
+            await service.SetStarCitizenRootFolderAsync(scDir);
+
+            Assert.Equal(scDir, service.Config.StarCitizenRootPath);
+            Assert.Equal(liveXml, service.Config.StarCitizenPath);
+
+            var installs = service.GetDetectedInstalls();
+            Assert.Equal(4, installs.Count);
+
+            var live = installs.Single(i => i.Environment == ScEnvironment.LIVE);
+            Assert.True(live.IsDirectoryPresent);
+            Assert.True(live.HasActionMapsXml);
+
+            var ptu = installs.Single(i => i.Environment == ScEnvironment.PTU);
+            Assert.True(ptu.IsDirectoryPresent);
+            Assert.False(ptu.HasActionMapsXml);
+
+            var eptu = installs.Single(i => i.Environment == ScEnvironment.EPTU);
+            Assert.False(eptu.IsDirectoryPresent);
+
+            var tech = installs.Single(i => i.Environment == ScEnvironment.TechPreview);
+            Assert.True(tech.IsDirectoryPresent);
+            Assert.True(tech.HasActionMapsXml);
+            Assert.Equal(techXml, tech.ActionMapsPath);
+        } finally {
+            if (Directory.Exists(tempRoot)) {
+                Directory.Delete(tempRoot, true);
+            }
+        }
+    }
 }
 
