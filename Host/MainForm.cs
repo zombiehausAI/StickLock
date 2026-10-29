@@ -168,6 +168,17 @@ public class MainForm : Form {
     }
 
     private static Icon CreateAppIcon() {
+        try {
+            var icoPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "icon.ico");
+            if (File.Exists(icoPath)) {
+                return new Icon(icoPath);
+            }
+            var exeIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            if (exeIcon != null) {
+                return exeIcon;
+            }
+        } catch { }
+
         using var bitmap = new Bitmap(32, 32);
         using var g = Graphics.FromImage(bitmap);
         g.SmoothingMode = SmoothingMode.AntiAlias;

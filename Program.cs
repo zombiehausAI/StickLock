@@ -7,7 +7,8 @@ namespace StickLock;
 
 static class Program {
     [STAThread]
-    static async Task Main(string[] args) {
+    static void Main(string[] args) {
+        Directory.SetCurrentDirectory(AppContext.BaseDirectory);
         ApplicationConfiguration.Initialize();
 
         var services = new ServiceCollection();
@@ -15,7 +16,7 @@ static class Program {
         var serviceProvider = services.BuildServiceProvider();
 
         var configService = serviceProvider.GetRequiredService<IAppConfigService>();
-        await configService.LoadConfigAsync();
+        Task.Run(() => configService.LoadConfigAsync()).GetAwaiter().GetResult();
 
         var launchMinimized = args.Any(a => string.Equals(a, "--minimized", StringComparison.OrdinalIgnoreCase)
                                          || string.Equals(a, "-m", StringComparison.OrdinalIgnoreCase));

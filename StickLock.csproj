@@ -7,14 +7,16 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>StickLock</RootNamespace>
+    <ApplicationIcon>wwwroot\icon.ico</ApplicationIcon>
     <NoWarn>$(NoWarn);MSB3277</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="StickLock.Tests\**" />
-    <Content Remove="StickLock.Tests\**" />
-    <EmbeddedResource Remove="StickLock.Tests\**" />
-    <None Remove="StickLock.Tests\**" />
+    <Compile Remove="StickLock.Tests\**;artifacts\**;installer\**" />
+    <Content Remove="StickLock.Tests\**;artifacts\**;installer\**" />
+    <EmbeddedResource Remove="StickLock.Tests\**;artifacts\**;installer\**" />
+    <None Remove="StickLock.Tests\**;artifacts\**;installer\**" />
+    <Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

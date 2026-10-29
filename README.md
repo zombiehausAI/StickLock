@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="wwwroot/icon.png" alt="StickLock Icon" width="128" height="128" />
+</p>
+
 # StickLock
 
 [![Windows](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-blue?logo=windows)](https://microsoft.com)
