@@ -321,18 +321,40 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         }
     }
 
-    public async Task<string> GetConsoleResortCommandAsync() {
+    public async Task<IReadOnlyList<string>> GetConsoleResortCommandsAsync() {
         var canonical = _configService.Config.CanonicalSticks;
         var liveDevices = _directInputService.CurrentDevices;
+        if (liveDevices.Count == 0) {
+            liveDevices = await _directInputService.RefreshDevicesAsync();
+        }
+
         var xmlMappings = await GetXmlMappingsAsync();
         var swapMap = ComputeSlotSwapMap(canonical, liveDevices, xmlMappings);
 
-        if (swapMap.Count >= 2) {
-            var keys = swapMap.Keys.OrderBy(k => k).ToList();
-            return $"pp_resortdevices joystick {string.Join(" ", keys)}";
+        var commands = new List<string>();
+        if (swapMap.Count == 0) {
+            if (xmlMappings.Count >= 2) {
+                return new List<string> { $"pp_resortdevices joystick {xmlMappings[0].Instance} {xmlMappings[1].Instance}" };
+            }
+            return new List<string> { "pp_resortdevices joystick 1 2" };
         }
 
-        return "pp_resortdevices joystick 1 2";
+        var handledPairs = new HashSet<string>();
+        foreach (var (fromInst, toInst) in swapMap) {
+            var min = Math.Min(fromInst, toInst);
+            var max = Math.Max(fromInst, toInst);
+            var key = $"{min}_{max}";
+            if (handledPairs.Add(key)) {
+                commands.Add($"pp_resortdevices joystick {min} {max}");
+            }
+        }
+
+        return commands.Count > 0 ? commands : new List<string> { "pp_resortdevices joystick 1 2" };
+    }
+
+    public async Task<string> GetConsoleResortCommandAsync() {
+        var commands = await GetConsoleResortCommandsAsync();
+        return string.Join(" ; ", commands);
     }
 
     public async Task<SyncResult> RestoreLatestBackupAsync() {

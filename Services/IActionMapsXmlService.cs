@@ -10,6 +10,7 @@ public interface IActionMapsXmlService {
     Task<SyncResult> AutoLockAndAlignFromXmlAsync();
     Task<IReadOnlyList<XmlStickMapping>> GetXmlMappingsAsync();
     Task<string> GetConsoleResortCommandAsync();
+    Task<IReadOnlyList<string>> GetConsoleResortCommandsAsync();
     Task<SyncResult> RestoreLatestBackupAsync();
     IReadOnlyList<string> GetAvailableBackups();
     Task<SyncResult> ExportActiveXmlAsync(string destinationPath);

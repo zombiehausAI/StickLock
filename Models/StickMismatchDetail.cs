@@ -6,3 +6,4 @@ public class StickMismatchDetail {
     public int LiveWindowsSlot { get; set; }
     public bool IsFlipped => XmlInstance != LiveWindowsSlot;
 }
+

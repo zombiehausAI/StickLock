@@ -10,3 +10,4 @@ public class MappingAlignmentCheck {
     public bool CanAutoFix { get; set; }
     public string? LatestBackupPath { get; set; }
 }
+
