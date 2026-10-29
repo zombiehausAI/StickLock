@@ -26,9 +26,14 @@
                                 <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="font-weight-bold">
                                     Binds Inverted
                                 </MudChip>
+                                @if (_alignmentCheck.IsGameRunning) {
+                                    <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Outlined" Class="font-weight-bold">
+                                        Star Citizen Active
+                                    </MudChip>
+                                }
                             </div>
                             <MudText Typo="Typo.body2" Class="mt-1" Style="color: #F8FAFC;">
-                                Windows DirectInput slot enumeration does not match Star Citizen's saved <span class="mfd-code" style="color: #00E5FF;">actionmaps.xml</span> bindings. If you launch Star Citizen now, your flight sticks will be reversed in-game!
+                                Windows DirectInput slot enumeration does not match Star Citizen's saved <span class="mfd-code" style="color: #00E5FF;">actionmaps.xml</span> bindings. If you launch or fly in Star Citizen now, your flight sticks will be reversed in-game!
                             </MudText>
 
                             @if (_alignmentCheck.Mismatches.Count > 0) {
@@ -49,25 +54,58 @@
                                     }
                                 </div>
                             }
+
+                            @if (_alignmentCheck.IsGameRunning) {
+                                <div class="mt-2" style="font-size: 0.85rem; color: #FCD34D;">
+                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" Style="vertical-align: text-bottom;" />
+                                    Star Citizen is running. You can copy the live console command, or click <strong>Force Sync</strong> to update disk and deploy <span class="mfd-code">layout_StickLock_Active</span> for in-game profile import!
+                                </div>
+                            }
                         </div>
                     </div>
 
-                    <div class="d-flex flex-column align-end gap-1" style="min-width: 260px;">
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Error"
-                                   Size="Size.Large"
-                                   StartIcon="@Icons.Material.Filled.Build"
-                                   Disabled="@_isSyncing"
-                                   OnClick="FixAndSyncSticksAsync"
-                                   Class="mfd-title"
-                                   Style="font-weight: 800; letter-spacing: 1px; color: #FFFFFF; background-color: #DC2626; width: 100%; box-shadow: 0 0 15px rgba(220, 38, 38, 0.5);">
-                            @if (_isSyncing) {
-                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                                <span>FIXING &amp; BACKING UP...</span>
-                            } else {
-                                <span>FIX &amp; UPDATE MAPPINGS</span>
-                            }
-                        </MudButton>
+                    <div class="d-flex flex-column align-end gap-2" style="min-width: 270px;">
+                        @if (!_alignmentCheck.IsGameRunning || ConfigService.Config.AllowSyncWhileGameRunning) {
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Error"
+                                       Size="Size.Large"
+                                       StartIcon="@Icons.Material.Filled.Build"
+                                       Disabled="@_isSyncing"
+                                       OnClick="@(() => FixAndSyncSticksAsync(force: _alignmentCheck.IsGameRunning))"
+                                       Class="mfd-title"
+                                       Style="font-weight: 800; letter-spacing: 1px; color: #FFFFFF; background-color: #DC2626; width: 100%; box-shadow: 0 0 15px rgba(220, 38, 38, 0.5);">
+                                @if (_isSyncing) {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                    <span>FIXING &amp; BACKING UP...</span>
+                                } else {
+                                    <span>FIX &amp; UPDATE MAPPINGS</span>
+                                }
+                            </MudButton>
+                        } else {
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Warning"
+                                       Size="Size.Medium"
+                                       StartIcon="@Icons.Material.Filled.FlashOn"
+                                       Disabled="@_isSyncing"
+                                       OnClick="@(() => FixAndSyncSticksAsync(force: true))"
+                                       Class="mfd-title"
+                                       Style="font-weight: 800; letter-spacing: 1px; color: #0B0F19; width: 100%;">
+                                @if (_isSyncing) {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                    <span>FORCE SYNCING...</span>
+                                } else {
+                                    <span>FORCE SYNC &amp; DEPLOY</span>
+                                }
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Secondary"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.ContentCopy"
+                                       OnClick="CopyConsoleCommandAsync"
+                                       Style="width: 100%;">
+                                Copy In-Game Cmd
+                            </MudButton>
+                        }
                         <MudText Typo="Typo.caption" Class="mfd-code text-center" Style="color: #94A3B8; font-size: 0.75rem;">
                             Auto-backs up to <span style="color: #FFAB00;">~/.sticklock/backups/</span>
                         </MudText>
@@ -194,6 +232,18 @@
                                    ValueChanged="@((bool val) => OnRunStartupChanged(val))"
                                    Color="Color.Primary"
                                    Label="Launch on Windows Startup" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSwitch Value="ConfigService.Config.AllowSyncWhileGameRunning"
+                                   ValueChanged="@((bool val) => OnAllowSyncWhileGameRunningChanged(val))"
+                                   Color="Color.Warning"
+                                   Label="Allow Sync while Star Citizen is running (Force Sync)" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSwitch Value="ConfigService.Config.AutoDeployToMappingsFolder"
+                                   ValueChanged="@((bool val) => OnAutoDeployToMappingsFolderChanged(val))"
+                                   Color="Color.Secondary"
+                                   Label="Auto-Deploy to in-game Controls\Mappings on Sync" />
                     </MudItem>
 
                     <!-- Export & Import Controls Row -->
@@ -665,20 +715,20 @@
         }
     }
 
-    private async Task FixAndSyncSticksAsync() {
+    private async Task FixAndSyncSticksAsync(bool force = false) {
         if (_isSyncing) {
             return;
         }
 
-        if (GameDetector.IsGameRunning()) {
-            Snackbar.Add("Star Citizen is currently running. Please close the game before updating mappings.", Severity.Warning);
+        if (GameDetector.IsGameRunning() && !force && !ConfigService.Config.AllowSyncWhileGameRunning) {
+            Snackbar.Add("Star Citizen is currently running. Use Force Sync or the in-game console command.", Severity.Warning);
             return;
         }
 
         _isSyncing = true;
         StateHasChanged();
         try {
-            var result = await XmlService.FixAndSyncAsync();
+            var result = await XmlService.FixAndSyncAsync(force);
             if (result.Success) {
                 _lastFixedBackupPath = result.BackupPath;
                 Snackbar.Add(result.Message, Severity.Success);
@@ -790,6 +840,17 @@
     private async Task OnRunStartupChanged(bool val) {
         await ConfigService.SetRunOnStartupAsync(val);
         Snackbar.Add($"Launch on Windows startup is now {(val ? "ENABLED" : "DISABLED")}.", Severity.Info);
+    }
+
+    private async Task OnAllowSyncWhileGameRunningChanged(bool val) {
+        await ConfigService.SetAllowSyncWhileGameRunningAsync(val);
+        await RefreshAlignmentCheckAsync();
+        Snackbar.Add($"Sync while Star Citizen is running is now {(val ? "ENABLED (Force Sync allowed)" : "DISABLED (Safe Mode)")}.", Severity.Info);
+    }
+
+    private async Task OnAutoDeployToMappingsFolderChanged(bool val) {
+        await ConfigService.SetAutoDeployToMappingsFolderAsync(val);
+        Snackbar.Add($"Auto-deploy to in-game Controls\\Mappings is now {(val ? "ENABLED" : "DISABLED")}.", Severity.Info);
     }
 
     private async Task AssignDeviceAsync(DirectInputDevice device, int slot, string roleName) {

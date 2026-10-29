@@ -12,6 +12,8 @@ public interface IAppConfigService {
     Task SetRunOnStartupAsync(bool enable);
     Task SetAutoSyncAsync(bool enable);
     Task SetStartMinimizedAsync(bool enable);
+    Task SetAllowSyncWhileGameRunningAsync(bool enable);
+    Task SetAutoDeployToMappingsFolderAsync(bool enable);
     Task SetStarCitizenPathAsync(string path);
     Task SwitchEnvironmentAsync(ScEnvironment env);
     Task SetCanonicalStickAsync(int slot, DirectInputDevice device, string friendlyName);

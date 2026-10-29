@@ -163,6 +163,67 @@ public class ActionMapsXmlServiceTests : IDisposable {
     }
 
     [Fact]
+    public async Task SyncAsync_WithForce_SucceedsAndDeploysToControlsMappings_WhenStarCitizenRunning() {
+        var guidStick1 = Guid.NewGuid();
+        var guidStick2 = Guid.NewGuid();
+
+        // Star Citizen directory layout
+        var scRoot = Path.Combine(_tempDir, "LIVE");
+        var clientZero = Path.Combine(scRoot, "USER", "Client", "0");
+        var profileDefault = Path.Combine(clientZero, "Profiles", "default");
+        Directory.CreateDirectory(profileDefault);
+
+        var scXmlPath = Path.Combine(profileDefault, "actionmaps.xml");
+        var originalXml = $@"<ActionMaps version=""1"">
+            <options type=""joystick"" instance=""1"" Product=""VKB Right {{{guidStick1}}}""/>
+            <options type=""joystick"" instance=""2"" Product=""VKB Left {{{guidStick2}}}""/>
+            <actionmap name=""spaceship_general"">
+                <action name=""fire""><rebind input=""js1_button1""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(scXmlPath, originalXml);
+
+        var customConfigPath = Path.Combine(_tempDir, ".sticklock", "config.json");
+        var configService = new AppConfigService(customConfigPath);
+        await configService.SetStarCitizenPathAsync(scXmlPath);
+        await configService.SetAutoDeployToMappingsFolderAsync(true);
+
+        // Windows has them reversed: Left is slot 1, Right is slot 2
+        var diService = new TestDirectInputService();
+        diService.SetDevices(new List<DirectInputDevice> {
+            new() { SlotIndex = 1, ProductName = "VKB Left", InstanceGuid = guidStick2, ProductGuid = guidStick2 },
+            new() { SlotIndex = 2, ProductName = "VKB Right", InstanceGuid = guidStick1, ProductGuid = guidStick1 }
+        });
+
+        // Set canonical sticks
+        await configService.SetCanonicalStickAsync(1, new DirectInputDevice { SlotIndex = 2, ProductName = "VKB Right", InstanceGuid = guidStick1, ProductGuid = guidStick1 }, "Right Stick");
+        await configService.SetCanonicalStickAsync(2, new DirectInputDevice { SlotIndex = 1, ProductName = "VKB Left", InstanceGuid = guidStick2, ProductGuid = guidStick2 }, "Left Stick");
+
+        var detector = new TestStarCitizenDetector { Running = true };
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        // 1. Without force and without config setting, sync is blocked
+        var blockedResult = await xmlService.SyncAsync(force: false);
+        Assert.False(blockedResult.Success);
+        Assert.Equal(SyncStatus.StarCitizenActive, blockedResult.Status);
+
+        // 2. With force = true, sync succeeds even while game is running
+        var forceResult = await xmlService.SyncAsync(force: true);
+        Assert.True(forceResult.Success);
+        Assert.True(forceResult.ChangesMade);
+
+        // 3. Verify actionmaps.xml on disk was updated
+        var updatedXml = await File.ReadAllTextAsync(scXmlPath);
+        Assert.Contains(@"instance=""1"" Product=""VKB Left", updatedXml);
+        Assert.Contains(@"instance=""2"" Product=""VKB Right", updatedXml);
+
+        // 4. Verify layout_StickLock_Active.xml was deployed to Controls\Mappings
+        var deployedProfile = Path.Combine(clientZero, "Controls", "Mappings", "layout_StickLock_Active.xml");
+        Assert.True(File.Exists(deployedProfile));
+    }
+
+    [Fact]
     public async Task ExportAndImport_PreservesAndAppliesProfile() {
         var guid1 = Guid.NewGuid();
         var originalXml = $@"<ActionMaps version=""1"">

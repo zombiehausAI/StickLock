@@ -110,6 +110,16 @@ public class AppConfigService : IAppConfigService {
         await SaveConfigAsync();
     }
 
+    public async Task SetAllowSyncWhileGameRunningAsync(bool enable) {
+        _config.AllowSyncWhileGameRunning = enable;
+        await SaveConfigAsync();
+    }
+
+    public async Task SetAutoDeployToMappingsFolderAsync(bool enable) {
+        _config.AutoDeployToMappingsFolder = enable;
+        await SaveConfigAsync();
+    }
+
     public async Task SetStarCitizenPathAsync(string path) {
         _config.StarCitizenPath = path.Trim();
         await SaveConfigAsync();

@@ -8,6 +8,8 @@ public class MappingAlignmentCheck {
     public List<XmlStickMapping> ExistingXmlDevices { get; set; } = new();
     public bool HasCanonicalConfigured { get; set; }
     public bool CanAutoFix { get; set; }
+    public bool IsGameRunning { get; set; }
+    public string? InGameResortCommand { get; set; }
     public string? LatestBackupPath { get; set; }
 }
 

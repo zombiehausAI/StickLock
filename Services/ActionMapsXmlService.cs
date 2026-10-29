@@ -66,12 +66,7 @@ public class ActionMapsXmlService : IActionMapsXmlService {
 
     public async Task<MappingAlignmentCheck> CheckAlignmentAsync() {
         var check = new MappingAlignmentCheck();
-
-        if (_starCitizenDetector.IsGameRunning()) {
-            check.Status = SyncStatus.StarCitizenActive;
-            check.StatusMessage = "Star Citizen is currently running. Auto-sync is paused.";
-            return check;
-        }
+        check.IsGameRunning = _starCitizenDetector.IsGameRunning();
 
         var xmlPath = _configService.Config.StarCitizenPath;
         if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
@@ -138,14 +133,19 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             }
         }
 
-        check.CanAutoFix = check.IsMisaligned && !_starCitizenDetector.IsGameRunning();
+        check.InGameResortCommand = await GetConsoleResortCommandAsync();
 
         if (check.IsMisaligned) {
             check.Status = SyncStatus.NeedsSync;
-            check.StatusMessage = "Star Citizen joystick slot assignments do not match current Windows DirectInput enumeration order!";
+            check.CanAutoFix = !check.IsGameRunning || _configService.Config.AllowSyncWhileGameRunning;
+            check.StatusMessage = check.IsGameRunning
+                ? "Star Citizen is running and joystick slot order is inverted! Use in-game console command or Force Sync."
+                : "Star Citizen joystick slot assignments do not match current Windows DirectInput enumeration order!";
         } else if (canonical.Count >= 2 || (xmlMappings.Count >= 2 && check.Mismatches.Count >= 2)) {
-            check.Status = SyncStatus.Aligned;
-            check.StatusMessage = "All flight sticks are correctly aligned with Star Citizen mappings.";
+            check.Status = check.IsGameRunning ? SyncStatus.StarCitizenActive : SyncStatus.Aligned;
+            check.StatusMessage = check.IsGameRunning
+                ? "Star Citizen is running. Sticks are currently aligned."
+                : "All flight sticks are correctly aligned with Star Citizen mappings.";
         } else {
             check.Status = SyncStatus.Unknown;
             check.StatusMessage = "Awaiting flight stick configuration or device connection.";
@@ -159,16 +159,16 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         return check;
     }
 
-    public async Task<SyncResult> FixAndSyncAsync() {
+    public async Task<SyncResult> FixAndSyncAsync(bool force = false) {
         var canonical = _configService.Config.CanonicalSticks;
         if (canonical.Count < 2) {
-            return await AutoLockAndAlignFromXmlAsync();
+            return await AutoLockAndAlignFromXmlAsync(force);
         }
 
-        return await SyncAsync();
+        return await SyncAsync(force);
     }
 
-    public async Task<SyncResult> AutoLockAndAlignFromXmlAsync() {
+    public async Task<SyncResult> AutoLockAndAlignFromXmlAsync(bool force = false) {
         var xmlMappings = await GetXmlMappingsAsync();
         if (xmlMappings.Count == 0) {
             return SyncResult.Fail("No joystick mappings found in Star Citizen actionmaps.xml.");
@@ -201,21 +201,22 @@ public class ActionMapsXmlService : IActionMapsXmlService {
 
         var status = await CheckSyncStatusAsync();
         if (status == SyncStatus.NeedsSync) {
-            return await SyncAsync();
+            return await SyncAsync(force);
         }
 
         return SyncResult.Ok($"Locked {added} joystick(s) from Star Citizen. Devices are aligned with current Windows order.", changesMade: false, status: SyncStatus.Aligned);
     }
 
-    public async Task<SyncResult> SyncAsync() {
+    public async Task<SyncResult> SyncAsync(bool force = false) {
         await _syncLock.WaitAsync();
         try {
-            if (_starCitizenDetector.IsGameRunning()) {
+            var isGameRunning = _starCitizenDetector.IsGameRunning();
+            if (isGameRunning && !force && !_configService.Config.AllowSyncWhileGameRunning) {
                 var resortCmd = await GetConsoleResortCommandAsync();
                 _logService.LogWarning(
                     "Star Citizen is running. Auto-sync skipped to avoid file lock conflict.",
                     $"Use game console (~) command: {resortCmd}");
-                return SyncResult.Fail("Star Citizen is currently running. Close game or use in-game console resort command.", SyncStatus.StarCitizenActive);
+                return SyncResult.Fail("Star Citizen is currently running. Use in-game console resort command or enable Force Sync.", SyncStatus.StarCitizenActive);
             }
 
             var xmlPath = _configService.Config.StarCitizenPath;
@@ -259,11 +260,26 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                     doc.Save(persistentActivePath);
                 } catch { }
 
+                // Auto-deploy to Star Citizen Controls\Mappings folder for in-game import
+                if (_configService.Config.AutoDeployToMappingsFolder) {
+                    try {
+                        var scMappingsDir = GetStarCitizenMappingsDirectory();
+                        if (!string.IsNullOrWhiteSpace(scMappingsDir)) {
+                            Directory.CreateDirectory(scMappingsDir);
+                            var activeDeployPath = Path.Combine(scMappingsDir, "layout_StickLock_Active.xml");
+                            doc.Save(activeDeployPath);
+                        }
+                    } catch { }
+                }
+
                 return bPath;
             });
 
             var swapDescriptions = swapMap.Select(kv => $"js{kv.Key} -> js{kv.Value}");
-            var summary = $"Synced actionmaps.xml: {string.Join(", ", swapDescriptions)}";
+            var deployNote = _configService.Config.AutoDeployToMappingsFolder
+                ? " (Deployed to Controls\\Mappings\\layout_StickLock_Active.xml)"
+                : "";
+            var summary = $"Synced actionmaps.xml: {string.Join(", ", swapDescriptions)}{deployNote}";
             _logService.LogSuccess(summary, $"Backup created: {Path.GetFileName(backupPath)}");
 
             return SyncResult.Ok(summary, changesMade: true, backupPath: backupPath, status: SyncStatus.Aligned);
