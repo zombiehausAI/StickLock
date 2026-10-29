@@ -430,3 +430,4 @@ if (-not $Unattended -and -not [Console]::IsInputRedirected) {
         Start-Process -FilePath $targetExe -WorkingDirectory $InstallPath
     }
 }
+

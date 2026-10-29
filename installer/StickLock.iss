@@ -43,3 +43,4 @@ Filename: "{app}\StickLock.exe"; Description: "{cm:LaunchProgram,StickLock}"; Fl
 
 [Registry]
 Root: HKCU; Subkey: "Software\StickLock"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"; Flags: uninsdeletekey
+

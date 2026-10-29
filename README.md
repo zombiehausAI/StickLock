@@ -65,3 +65,4 @@ The installer script can be run standalone from the repository or from inside an
 # Install to a custom directory or drive
 .\installer\Install-StickLock.ps1 -InstallPath "E:\Games\StickLock"
 ```
+
