@@ -20,6 +20,7 @@ public class MainForm : Form {
     private bool _allowClose = false;
     private bool _startMinimized = false;
     private bool _initialShown = false;
+    private bool _hasShownTrayTip = false;
 
     public MainForm(
         IServiceProvider serviceProvider,
@@ -34,6 +35,7 @@ public class MainForm : Form {
         _usbWatcherService = usbWatcherService;
         _browserService = browserService;
         _startMinimized = launchMinimized || _configService.Config.StartMinimizedToTray;
+        _hasShownTrayTip = _configService.Config.HasShownTrayMinimizeTip;
 
         Text = "StickLock - Star Citizen Flight Controller Sync";
         Size = new Size(1100, 780);
@@ -44,10 +46,15 @@ public class MainForm : Form {
         // Generate custom app icon
         Icon = CreateAppIcon();
 
+        // Ensure WebView2 uses a writable user data directory inside ~/.sticklock
+        var webViewDataDir = Path.Combine(_configService.BaseDirectory, "WebView2");
+        Directory.CreateDirectory(webViewDataDir);
+        Environment.SetEnvironmentVariable("WEBVIEW2_USER_DATA_FOLDER", webViewDataDir);
+
         // Setup Blazor WebView
         _blazorWebView = new BlazorWebView {
             Dock = DockStyle.Fill,
-            HostPage = @"wwwroot/index.html"
+            HostPage = @"wwwroot\index.html"
         };
         _blazorWebView.Services = _serviceProvider;
         _blazorWebView.RootComponents.Add<App>("#app");
@@ -129,11 +136,16 @@ public class MainForm : Form {
         if (e.CloseReason == CloseReason.UserClosing && !_allowClose) {
             e.Cancel = true;
             Hide();
-            _notifyIcon.ShowBalloonTip(
-                2000,
-                "StickLock",
-                "StickLock is running in the system tray. Joysticks are monitored in the background.",
-                ToolTipIcon.Info);
+            if (!_hasShownTrayTip && !_configService.Config.HasShownTrayMinimizeTip) {
+                _hasShownTrayTip = true;
+                _configService.Config.HasShownTrayMinimizeTip = true;
+                _ = _configService.SaveConfigAsync();
+                _notifyIcon.ShowBalloonTip(
+                    2000,
+                    "StickLock",
+                    "StickLock is running in the system tray. Joysticks are monitored in the background.",
+                    ToolTipIcon.Info);
+            }
             return;
         }
 

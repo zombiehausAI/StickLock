@@ -37,17 +37,16 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         }
 
         var canonical = _configService.Config.CanonicalSticks;
+        var liveDevices = _directInputService.CurrentDevices;
         if (canonical.Count == 0) {
-            var live = await _directInputService.RefreshDevicesAsync();
             var xml = await GetXmlMappingsAsync();
-            if (xml.Count >= 2 && live.Count >= 2) {
+            if (xml.Count >= 2 && liveDevices.Count >= 2) {
                 var alignment = await CheckAlignmentAsync();
                 return alignment.IsMisaligned ? SyncStatus.NeedsSync : SyncStatus.Aligned;
             }
             return SyncStatus.Unknown;
         }
 
-        var liveDevices = await _directInputService.RefreshDevicesAsync();
         foreach (var stick in canonical) {
             var found = liveDevices.Any(d => IsStickMatch(stick, d));
             if (!found) {
@@ -81,7 +80,7 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         var canonical = _configService.Config.CanonicalSticks;
         check.HasCanonicalConfigured = canonical.Count >= 2;
 
-        var liveDevices = await _directInputService.RefreshDevicesAsync();
+        var liveDevices = _directInputService.CurrentDevices;
 
         if (canonical.Count >= 2) {
             var missing = canonical.Where(c => !liveDevices.Any(d => IsStickMatch(c, d))).ToList();
@@ -340,9 +339,6 @@ public class ActionMapsXmlService : IActionMapsXmlService {
     public async Task<IReadOnlyList<string>> GetConsoleResortCommandsAsync() {
         var canonical = _configService.Config.CanonicalSticks;
         var liveDevices = _directInputService.CurrentDevices;
-        if (liveDevices.Count == 0) {
-            liveDevices = await _directInputService.RefreshDevicesAsync();
-        }
 
         var xmlMappings = await GetXmlMappingsAsync();
         var swapMap = ComputeSlotSwapMap(canonical, liveDevices, xmlMappings);
