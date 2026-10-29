@@ -10,3 +10,4 @@ public interface IActionMapsXmlService {
     Task<SyncResult> RestoreLatestBackupAsync();
     IReadOnlyList<string> GetAvailableBackups();
 }
+

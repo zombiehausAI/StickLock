@@ -9,3 +9,4 @@ public class XmlStickMapping {
     public string SlotName => $"js{Instance}";
     public string ExtractedGuidString => ExtractedGuid != Guid.Empty ? ExtractedGuid.ToString("D").ToUpperInvariant() : "N/A";
 }
+

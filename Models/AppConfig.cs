@@ -9,3 +9,4 @@ public class AppConfig {
     public List<CanonicalStick> CanonicalSticks { get; set; } = new();
     public int MaxBackupsToKeep { get; set; } = 10;
 }
+

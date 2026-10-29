@@ -11,3 +11,4 @@ public interface IActivityLogService {
     void LogError(string message, string details = "");
     void Clear();
 }
+

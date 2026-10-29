@@ -1,6 +1,8 @@
 [Bb]in/
 [Oo]bj/
+artifacts/
 *.user
 *.suo
 .vs/
 .idea/
+

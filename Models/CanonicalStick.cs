@@ -11,3 +11,4 @@ public class CanonicalStick {
     public string InstanceGuidString => InstanceGuid.ToString("D").ToUpperInvariant();
     public string ProductGuidString => ProductGuid.ToString("D").ToUpperInvariant();
 }
+

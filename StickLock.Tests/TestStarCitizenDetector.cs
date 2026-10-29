@@ -9,3 +9,4 @@ public class TestStarCitizenDetector : IStarCitizenDetector {
         return Running;
     }
 }
+

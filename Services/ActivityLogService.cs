@@ -69,3 +69,4 @@ public class ActivityLogService : IActivityLogService {
         EntryAdded?.Invoke(entry);
     }
 }
+

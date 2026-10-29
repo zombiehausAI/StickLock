@@ -42,3 +42,4 @@ public class AppConfigServiceTests {
         Assert.Empty(service.Config.CanonicalSticks);
     }
 }
+

@@ -7,3 +7,4 @@ public interface IDirectInputService {
     event Action<IReadOnlyList<DirectInputDevice>>? DevicesRefreshed;
     IReadOnlyList<DirectInputDevice> RefreshDevices();
 }
+

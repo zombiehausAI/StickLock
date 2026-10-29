@@ -17,3 +17,4 @@ public interface IAppConfigService {
     string ResolveActionMapsPath(string currentPath, ScEnvironment targetEnv);
     bool TryAutoDetectStarCitizenPath(out string detectedPath);
 }
+

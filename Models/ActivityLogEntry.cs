@@ -8,3 +8,4 @@ public class ActivityLogEntry {
 
     public string TimeFormatted => Timestamp.ToString("HH:mm:ss");
 }
+

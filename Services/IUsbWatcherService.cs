@@ -8,3 +8,4 @@ public interface IUsbWatcherService {
     void Stop();
     Task TriggerManualScanAsync();
 }
+
