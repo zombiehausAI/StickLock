@@ -197,6 +197,7 @@ if (Test-Path (Join-Path $repoRoot "version.json")) {
 Write-Host "  > Self-enclosed application published to staging: $packageAppDir" -ForegroundColor Green
 
 # -------------------------------------------------------------
+# -------------------------------------------------------------
 # STEP 4: PACKAGE
 # -------------------------------------------------------------
 Write-Host "`n[4/4] Creating distribution packages..." -ForegroundColor Cyan
@@ -208,13 +209,7 @@ Write-Host "  > Compressing ZIP archive: $zipFilename..." -ForegroundColor Gray
 Compress-Archive -Path "$packageAppDir\*" -DestinationPath $zipPath -CompressionLevel Optimal -Force
 Write-Host "  > ZIP distribution ready: $zipPath" -ForegroundColor Green
 
-# Generate SHA256 Checksum
-$zipHash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash
-$checksumFile = Join-Path $artifactsPath "checksums.sha256"
-"$zipHash  $zipFilename" | Out-File -FilePath $checksumFile -Encoding utf8
-Write-Host "  > Checksum (SHA256): $zipHash" -ForegroundColor Gray
-
-# Check for Inno Setup compiler (ISCC.exe)
+# Locate or auto-acquire Inno Setup compiler (ISCC.exe)
 $isccRegistryPath = $null
 try {
     $innoReg = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*",
@@ -237,26 +232,71 @@ $isccCandidates = @(
 )
 $isccPath = $isccCandidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 
+# If Inno Setup is not installed, attempt automatic acquisition via winget
+if (-not $isccPath) {
+    $wingetCmd = Get-Command winget.exe -ErrorAction SilentlyContinue
+    if ($wingetCmd) {
+        Write-Host "  > Inno Setup compiler (ISCC.exe) not found. Attempting automatic installation via winget..." -ForegroundColor Yellow
+        try {
+            & winget install --id JRSoftware.InnoSetup --exact --accept-source-agreements --accept-package-agreements --silent
+            $isccPath = $isccCandidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+            if ($isccPath) {
+                Write-Host "  > Successfully installed Inno Setup: $isccPath" -ForegroundColor Green
+            }
+        } catch {
+            Write-Warning "Could not automatically install Inno Setup via winget: $_"
+        }
+    }
+}
+
+$installerFilename = "StickLock-v$appVersion-Setup.exe"
+$installerPath = Join-Path $artifactsPath $installerFilename
+$installerBuilt = $false
+
 if ($isccPath) {
     Write-Host "  > Found Inno Setup compiler: $isccPath" -ForegroundColor Gray
-    Write-Host "  > Building Windows Setup Installer (EXE)..." -ForegroundColor Gray
+    Write-Host "  > Building Windows Setup Installer ($installerFilename)..." -ForegroundColor Gray
     $issScript = Join-Path $repoRoot "installer\StickLock.iss"
     if (Test-Path $issScript) {
-        & $isccPath "/DMyAppVersion=$appVersion" "/DMySourceDir=$packageAppDir" $issScript
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "  > Inno Setup installer compiled successfully!" -ForegroundColor Green
+        & $isccPath "/DMyAppVersion=$appVersion" "/DMySourceDir=$packageAppDir" "/O$artifactsPath" "/FStickLock-v$appVersion-Setup" $issScript
+        if ($LASTEXITCODE -eq 0 -and (Test-Path $installerPath)) {
+            Write-Host "  > Windows Setup Installer ready: $installerPath" -ForegroundColor Green
+            $installerBuilt = $true
         } else {
             Write-Warning "Inno Setup compilation returned non-zero code ($LASTEXITCODE)."
         }
+    } else {
+        Write-Warning "Inno Setup script not found at $issScript."
     }
 } else {
-    Write-Host "  > Inno Setup compiler (ISCC.exe) not found on system. Standalone ZIP package generated." -ForegroundColor Gray
+    Write-Warning "Inno Setup compiler (ISCC.exe) not found. To build the Windows Setup Installer EXE, install Inno Setup 6 or run 'winget install JRSoftware.InnoSetup'."
 }
+
+# Generate SHA256 Checksum Manifest
+$checksumFile = Join-Path $artifactsPath "checksums.sha256"
+$checksumLines = @()
+
+if (Test-Path $zipPath) {
+    $zHash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash
+    $checksumLines += "$zHash  $zipFilename"
+    Write-Host "  > Checksum (ZIP SHA256):       $zHash" -ForegroundColor Gray
+}
+
+if ($installerBuilt -and (Test-Path $installerPath)) {
+    $eHash = (Get-FileHash -Path $installerPath -Algorithm SHA256).Hash
+    $checksumLines += "$eHash  $installerFilename"
+    Write-Host "  > Checksum (Installer SHA256): $eHash" -ForegroundColor Gray
+}
+
+$checksumLines | Out-File -FilePath $checksumFile -Encoding utf8
 
 Write-Host "`n===========================================================" -ForegroundColor Green
 Write-Host "             Packaging Pipeline Succeeded!                 " -ForegroundColor Green
 Write-Host "  Output Directory: $artifactsPath                         " -ForegroundColor Green
 Write-Host "  ZIP Package:      $zipFilename                           " -ForegroundColor Green
+if ($installerBuilt) {
+Write-Host "  Setup Installer:  $installerFilename                     " -ForegroundColor Green
+}
 Write-Host "===========================================================" -ForegroundColor Green
 
 # -------------------------------------------------------------
@@ -264,15 +304,27 @@ Write-Host "===========================================================" -Foregr
 # -------------------------------------------------------------
 if ($Install) {
     Write-Host "`n[*] Starting immediate local installation for testing..." -ForegroundColor Magenta
-    $installerScript = Join-Path $repoRoot "installer\Install-StickLock.ps1"
-    if (Test-Path $installerScript) {
-        & $installerScript -SourceDir $packageAppDir -InstallPath $InstallPath
+    if ($installerBuilt -and (Test-Path $installerPath)) {
+        Write-Host "  > Launching compiled Windows Setup Installer: $installerPath" -ForegroundColor Cyan
+        $setupArgs = @()
+        if ($InstallPath) {
+            $setupArgs += "/DIR=`"$InstallPath`""
+        }
+        Start-Process -FilePath $installerPath -ArgumentList $setupArgs -Wait
     } else {
-        Write-Error "Installer script not found at $installerScript."
-        exit 1
+        $installerScript = Join-Path $repoRoot "installer\Install-StickLock.ps1"
+        if (Test-Path $installerScript) {
+            & $installerScript -SourceDir $packageAppDir -InstallPath $InstallPath
+        } else {
+            Write-Error "Installer script not found at $installerScript."
+            exit 1
+        }
     }
 } else {
     Write-Host "`nTo install and test this build now, run:" -ForegroundColor Cyan
+    if ($installerBuilt) {
+        Write-Host "  $installerPath" -ForegroundColor White
+    }
     Write-Host "  .\Build-And-Package.ps1 -Install" -ForegroundColor White
     Write-Host "or extract and execute:" -ForegroundColor Cyan
     Write-Host "  $zipPath" -ForegroundColor White

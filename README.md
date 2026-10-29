@@ -69,7 +69,7 @@ Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.
 StickLock includes an automated pipeline script modelled after modern release orchestrators:
 
 ```powershell
-# Full release cycle: Clean -> Unit Tests -> Self-Contained Publish -> ZIP & Checksum (and Inno Setup EXE if ISCC is installed)
+# Full release cycle: Clean -> Unit Tests -> Self-Contained Publish -> ZIP, Windows Setup Installer (EXE), & SHA256 Checksums
 .\Build-And-Package.ps1
 
 # Build, package, and immediately install locally for testing
@@ -85,7 +85,7 @@ StickLock includes an automated pipeline script modelled after modern release or
 ### Build Artifacts Output
 Artifacts are generated in the `artifacts/` folder:
 - `StickLock-v<version>-win-x64.zip` — Standalone portable archive.
-- `StickLock-v<version>-Setup.exe` — Inno Setup Windows installer (when Inno Setup 6 `ISCC.exe` is present).
+- `StickLock-v<version>-Setup.exe` — Windows Setup installer executable (auto-acquires Inno Setup compiler if missing).
 - `checksums.sha256` — SHA256 integrity manifest.
 
 ---
