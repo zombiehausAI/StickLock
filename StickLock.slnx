@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="StickLock.csproj" />
+  <Project Path="StickLock.Tests/StickLock.Tests.csproj" />
+</Solution>

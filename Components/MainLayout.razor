@@ -1,0 +1,136 @@
+@inherits LayoutComponentBase
+@inject IActionMapsXmlService XmlService
+@inject IAppConfigService ConfigService
+@inject IDirectInputService DirectInputService
+@inject IUsbWatcherService UsbWatcher
+@inject ISnackbar Snackbar
+
+<MudThemeProvider Theme="_theme" IsDarkMode="true" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="3" Dense="false" Class="px-4" Style="border-bottom: 1px solid rgba(0, 229, 255, 0.2); background: #0B0F19;">
+        <MudIcon Icon="@Icons.Material.Filled.SportsEsports" Color="Color.Primary" Size="Size.Large" Class="mr-3" />
+        <div>
+            <MudText Typo="Typo.h6" Class="mfd-title glow-cyan" Style="color: #00E5FF; line-height: 1.1;">STICKLOCK</MudText>
+            <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8; letter-spacing: 1px;">STAR CITIZEN FLIGHT CONTROLLER SYNC</MudText>
+        </div>
+
+        <MudSpacer />
+
+        <!-- Status Chip -->
+        <MudChip T="string" Color="@GetStatusColor()" Variant="Variant.Filled" Size="Size.Medium" Class="mr-3 font-weight-bold" Icon="@GetStatusIcon()">
+            @GetStatusText()
+        </MudChip>
+
+        <!-- Prominent Sync Now Button -->
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Sync"
+                   Disabled="@_isSyncing"
+                   OnClick="OnSyncClickedAsync"
+                   Class="mfd-title"
+                   Style="font-weight: 700; letter-spacing: 1px; color: #0B0F19; background-color: #00E5FF;">
+            @if (_isSyncing) {
+                <MudProgressCircular Class="ms-n1 mr-2" Size="Size.Small" Indeterminate="true" />
+                <span>SYNCING...</span>
+            } else {
+                <span>SYNC NOW</span>
+            }
+        </MudButton>
+    </MudAppBar>
+
+    <MudMainContent Class="pa-4" Style="background-color: #0B0F19; min-height: calc(100vh - 64px); overflow-y: auto;">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private readonly MudTheme _theme = StickLockTheme.CreateTheme();
+    private SyncStatus _status = SyncStatus.Unknown;
+    private bool _isSyncing = false;
+
+    protected override async Task OnInitializedAsync() {
+        ConfigService.ConfigChanged += OnStateChanged;
+        DirectInputService.DevicesRefreshed += _ => OnStateChanged();
+        UsbWatcher.UsbDevicesChanged += _ => OnStateChanged();
+
+        await RefreshStatusAsync();
+    }
+
+    private void OnStateChanged() {
+        _ = InvokeAsync(async () => {
+            await RefreshStatusAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task RefreshStatusAsync() {
+        try {
+            _status = await XmlService.CheckSyncStatusAsync();
+        } catch {
+            _status = SyncStatus.Error;
+        }
+    }
+
+    private async Task OnSyncClickedAsync() {
+        if (_isSyncing) {
+            return;
+        }
+
+        _isSyncing = true;
+        StateHasChanged();
+
+        try {
+            var result = await XmlService.SyncAsync();
+            if (result.Success) {
+                if (result.ChangesMade) {
+                    Snackbar.Add(result.Message, Severity.Success);
+                } else {
+                    Snackbar.Add(result.Message, Severity.Info);
+                }
+            } else {
+                Snackbar.Add(result.Message, Severity.Warning);
+            }
+            await RefreshStatusAsync();
+        } catch (Exception ex) {
+            Snackbar.Add($"Sync failed: {ex.Message}", Severity.Error);
+        } finally {
+            _isSyncing = false;
+            StateHasChanged();
+        }
+    }
+
+    private Color GetStatusColor() => _status switch {
+        SyncStatus.Aligned => Color.Success,
+        SyncStatus.NeedsSync => Color.Warning,
+        SyncStatus.SticksDisconnected => Color.Error,
+        SyncStatus.StarCitizenActive => Color.Info,
+        SyncStatus.FileNotFound => Color.Error,
+        _ => Color.Dark
+    };
+
+    private string GetStatusIcon() => _status switch {
+        SyncStatus.Aligned => Icons.Material.Filled.CheckCircle,
+        SyncStatus.NeedsSync => Icons.Material.Filled.WarningAmber,
+        SyncStatus.SticksDisconnected => Icons.Material.Filled.UsbOff,
+        SyncStatus.StarCitizenActive => Icons.Material.Filled.SportsEsports,
+        SyncStatus.FileNotFound => Icons.Material.Filled.FolderOff,
+        _ => Icons.Material.Filled.HelpOutline
+    };
+
+    private string GetStatusText() => _status switch {
+        SyncStatus.Aligned => "ALIGNED",
+        SyncStatus.NeedsSync => "ORDER FLIPPED - NEEDS SYNC",
+        SyncStatus.SticksDisconnected => "STICKS DISCONNECTED",
+        SyncStatus.StarCitizenActive => "STAR CITIZEN ACTIVE",
+        SyncStatus.FileNotFound => "XML NOT FOUND",
+        _ => "SETUP REQUIRED"
+    };
+
+    public void Dispose() {
+        ConfigService.ConfigChanged -= OnStateChanged;
+    }
+}

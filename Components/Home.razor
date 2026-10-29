@@ -1,0 +1,475 @@
+@page "/"
+@inject IAppConfigService ConfigService
+@inject IDirectInputService DirectInputService
+@inject IActionMapsXmlService XmlService
+@inject IStarCitizenDetector GameDetector
+@inject IActivityLogService LogService
+@inject IFileDialogService FileDialog
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+
+<MudGrid Spacing="3">
+    <!-- Top Row: Path & Settings Card -->
+    <MudItem xs="12">
+        <MudCard Class="mfd-card">
+            <div class="mfd-card-header d-flex align-center justify-space-between">
+                <div class="d-flex align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.FolderSpecial" Color="Color.Primary" Class="mr-2" />
+                    <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #00E5FF;">STAR CITIZEN PROFILE CONFIGURATION</MudText>
+                </div>
+                <div class="d-flex align-center gap-2">
+                    <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary">
+                        <MudButton Variant="@(ConfigService.Config.SelectedEnvironment == ScEnvironment.LIVE ? Variant.Filled : Variant.Outlined)"
+                                   OnClick="@(() => OnEnvironmentSelected(ScEnvironment.LIVE))">LIVE</MudButton>
+                        <MudButton Variant="@(ConfigService.Config.SelectedEnvironment == ScEnvironment.PTU ? Variant.Filled : Variant.Outlined)"
+                                   OnClick="@(() => OnEnvironmentSelected(ScEnvironment.PTU))">PTU</MudButton>
+                        <MudButton Variant="@(ConfigService.Config.SelectedEnvironment == ScEnvironment.EPTU ? Variant.Filled : Variant.Outlined)"
+                                   OnClick="@(() => OnEnvironmentSelected(ScEnvironment.EPTU))">EPTU</MudButton>
+                        <MudButton Variant="@(ConfigService.Config.SelectedEnvironment == ScEnvironment.TechPreview ? Variant.Filled : Variant.Outlined)"
+                                   OnClick="@(() => OnEnvironmentSelected(ScEnvironment.TechPreview))">TECH</MudButton>
+                    </MudButtonGroup>
+                </div>
+            </div>
+            <MudCardContent Class="pt-3">
+                <MudGrid Spacing="2" Class="align-center">
+                    <MudItem xs="12" md="8">
+                        <MudTextField @bind-Value="ConfigService.Config.StarCitizenPath"
+                                      Label="Path to actionmaps.xml"
+                                      Variant="Variant.Outlined"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Description"
+                                      AdornmentColor="Color.Primary"
+                                      Placeholder="e.g. C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\USER\Client\0\Profiles\default\actionmaps.xml"
+                                      OnBlur="OnPathChanged"
+                                      Margin="Margin.Dense"
+                                      Class="mfd-code" />
+                    </MudItem>
+                    <MudItem xs="12" md="4" Class="d-flex gap-2">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.FileOpen"
+                                   OnClick="BrowseXmlFileAsync"
+                                   FullWidth="true"
+                                   Class="mfd-title">
+                            Browse File
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Secondary"
+                                   StartIcon="@Icons.Material.Filled.FolderOpen"
+                                   OnClick="BrowseGameFolderAsync"
+                                   FullWidth="true"
+                                   Class="mfd-title">
+                            Detect Folder
+                        </MudButton>
+                    </MudItem>
+
+                    <!-- Toggle Switches -->
+                    <MudItem xs="12" md="4">
+                        <MudSwitch Value="ConfigService.Config.AutoSyncOnUsbChange"
+                                   ValueChanged="@((bool val) => OnAutoSyncChanged(val))"
+                                   Color="Color.Primary"
+                                   Label="Auto-Sync on USB Change" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudSwitch Value="ConfigService.Config.StartMinimizedToTray"
+                                   ValueChanged="@((bool val) => OnStartMinimizedChanged(val))"
+                                   Color="Color.Primary"
+                                   Label="Start Minimized to Tray" />
+                    </MudItem>
+                    <MudItem xs="12" md="4">
+                        <MudSwitch Value="ConfigService.Config.RunOnWindowsStartup"
+                                   ValueChanged="@((bool val) => OnRunStartupChanged(val))"
+                                   Color="Color.Primary"
+                                   Label="Launch on Windows Startup" />
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <!-- Middle Row: Left = Live DirectInput Enumeration, Right = Canonical & XML Mapping -->
+    <MudItem xs="12" lg="6">
+        <MudCard Class="mfd-card h-100">
+            <div class="mfd-card-header d-flex align-center justify-space-between">
+                <div class="d-flex align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.Sensors" Color="Color.Primary" Class="mr-2" />
+                    <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #00E5FF;">LIVE DIRECTINPUT ENUMERATION</MudText>
+                </div>
+                <MudTooltip Text="Refresh Devices">
+                    <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Primary" Size="Size.Small" OnClick="RefreshDevices" />
+                </MudTooltip>
+            </div>
+            <MudCardContent Class="pa-2">
+                @if (_liveDevices.Count == 0) {
+                    <div class="pa-6 text-center">
+                        <MudIcon Icon="@Icons.Material.Filled.UsbOff" Size="Size.Large" Color="Color.Default" Class="mb-2" />
+                        <MudText Typo="Typo.body1" Style="color: #94A3B8;">No Game Controllers Detected</MudText>
+                        <MudText Typo="Typo.caption" Style="color: #64748B;">Connect your joysticks or throttle via USB to lock bindings.</MudText>
+                    </div>
+                } else {
+                    <MudTable Items="_liveDevices" Dense="true" Hover="true" Elevation="0" Class="transparent">
+                        <HeaderContent>
+                            <MudTh Style="color: #00E5FF; font-weight: 700;">SLOT</MudTh>
+                            <MudTh Style="color: #00E5FF; font-weight: 700;">DEVICE NAME</MudTh>
+                            <MudTh Style="color: #00E5FF; font-weight: 700;">INSTANCE GUID</MudTh>
+                            <MudTh Style="color: #00E5FF; font-weight: 700; text-align: right;">LOCK AS</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>
+                                <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled" Class="font-weight-bold">
+                                    @context.SlotName
+                                </MudChip>
+                            </MudTd>
+                            <MudTd>
+                                <MudText Typo="Typo.body2" Class="font-weight-bold" Style="color: #F8FAFC;">@context.ProductName</MudText>
+                            </MudTd>
+                            <MudTd>
+                                <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8;">
+                                    @(context.InstanceGuidString.Length > 8 ? context.InstanceGuidString.Substring(0, 8) + "..." : context.InstanceGuidString)
+                                </MudText>
+                            </MudTd>
+                            <MudTd Style="text-align: right;">
+                                <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary">
+                                    <MudButton Size="Size.Small"
+                                               Variant="@(IsStickAssignedToSlot(context, 1) ? Variant.Filled : Variant.Outlined)"
+                                               OnClick="@(() => AssignDeviceAsync(context, 1, "Right Stick (Primary)"))">
+                                        JS1
+                                    </MudButton>
+                                    <MudButton Size="Size.Small"
+                                               Variant="@(IsStickAssignedToSlot(context, 2) ? Variant.Filled : Variant.Outlined)"
+                                               OnClick="@(() => AssignDeviceAsync(context, 2, "Left Stick (Throttle)"))">
+                                        JS2
+                                    </MudButton>
+                                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true">
+                                        <MudMenuItem OnClick="@(() => AssignDeviceAsync(context, 3, "Pedals / Rudder"))">Assign as JS3 (Pedals)</MudMenuItem>
+                                        <MudMenuItem OnClick="@(() => AssignDeviceAsync(context, 4, "Button Box / Aux"))">Assign as JS4 (Aux)</MudMenuItem>
+                                    </MudMenu>
+                                </MudButtonGroup>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <!-- Canonical Profile & XML Status Card -->
+    <MudItem xs="12" lg="6">
+        <MudCard Class="mfd-card h-100">
+            <div class="mfd-card-header d-flex align-center justify-space-between">
+                <div class="d-flex align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.Lock" Color="Color.Primary" Class="mr-2" />
+                    <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #00E5FF;">LOCKED CANONICAL ASSIGNMENT VS XML</MudText>
+                </div>
+                <MudTooltip Text="Copy in-game resort command">
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Secondary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.ContentCopy"
+                               OnClick="CopyConsoleCommandAsync">
+                        Copy Resort Cmd
+                    </MudButton>
+                </MudTooltip>
+            </div>
+            <MudCardContent Class="pa-2">
+                @if (ConfigService.Config.CanonicalSticks.Count == 0) {
+                    <div class="pa-6 text-center">
+                        <MudIcon Icon="@Icons.Material.Filled.LockOpen" Size="Size.Large" Color="Color.Default" Class="mb-2" />
+                        <MudText Typo="Typo.body1" Style="color: #94A3B8;">No Canonical Sticks Locked</MudText>
+                        <MudText Typo="Typo.caption" Style="color: #64748B;">Use the "Lock As" buttons on the left to designate your Primary (js1) and Secondary (js2) sticks.</MudText>
+                    </div>
+                } else {
+                    <MudTable Items="ConfigService.Config.CanonicalSticks" Dense="true" Hover="true" Elevation="0" Class="transparent">
+                        <HeaderContent>
+                            <MudTh Style="color: #00E5FF; font-weight: 700;">ROLE</MudTh>
+                            <MudTh Style="color: #00E5FF; font-weight: 700;">LOCKED STICK</MudTh>
+                            <MudTh Style="color: #00E5FF; font-weight: 700;">CURRENT WINDOWS</MudTh>
+                            <MudTh Style="color: #00E5FF; font-weight: 700;">XML INSTANCE</MudTh>
+                            <MudTh Style="color: #00E5FF; font-weight: 700; text-align: right;">ACTION</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>
+                                <MudChip T="string" Color="Color.Secondary" Size="Size.Small" Variant="Variant.Outlined" Class="font-weight-bold">
+                                    @context.SlotName: @context.FriendlyRoleName
+                                </MudChip>
+                            </MudTd>
+                            <MudTd>
+                                <MudText Typo="Typo.body2" Class="font-weight-bold" Style="color: #F8FAFC;">@context.ProductName</MudText>
+                                <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #64748B;">@(context.InstanceGuidString.Length > 8 ? context.InstanceGuidString.Substring(0, 8) + "..." : context.InstanceGuidString)</MudText>
+                            </MudTd>
+                            <MudTd>
+                                @{
+                                    var liveSlot = GetLiveSlotForStick(context);
+                                }
+                                @if (liveSlot > 0) {
+                                    <MudChip T="string" Color="@(liveSlot == context.RoleSlot ? Color.Success : Color.Warning)" Size="Size.Small" Variant="Variant.Filled">
+                                        js@(liveSlot)
+                                    </MudChip>
+                                } else {
+                                    <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Outlined">
+                                        OFFLINE
+                                    </MudChip>
+                                }
+                            </MudTd>
+                            <MudTd>
+                                @{
+                                    var xmlInst = GetXmlInstanceForStick(context);
+                                }
+                                @if (xmlInst > 0) {
+                                    <MudChip T="string" Color="@(xmlInst == context.RoleSlot ? Color.Success : Color.Warning)" Size="Size.Small" Variant="Variant.Outlined">
+                                        js@(xmlInst)
+                                    </MudChip>
+                                } else {
+                                    <MudText Typo="Typo.caption" Style="color: #64748B;">Not in XML</MudText>
+                                }
+                            </MudTd>
+                            <MudTd Style="text-align: right;">
+                                <MudTooltip Text="Unlock stick">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => RemoveCanonicalStickAsync(context.RoleSlot))" />
+                                </MudTooltip>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <!-- Bottom Row: Activity & Backup Log Paper -->
+    <MudItem xs="12">
+        <MudPaper Class="mfd-card pa-3">
+            <div class="d-flex align-center justify-space-between mb-2">
+                <div class="d-flex align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.Terminal" Color="Color.Primary" Class="mr-2" />
+                    <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #00E5FF;">STICKLOCK ACTIVITY & BACKUP LOG</MudText>
+                </div>
+                <div class="d-flex gap-2">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Warning"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.History"
+                               OnClick="RestoreBackupAsync"
+                               Class="mfd-title"
+                               Style="font-weight: 700; color: #0B0F19;">
+                        Restore Latest Backup
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Default"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.ClearAll"
+                               OnClick="ClearLog">
+                        Clear Log
+                    </MudButton>
+                </div>
+            </div>
+
+            <!-- Log Entries List -->
+            <div style="height: 180px; overflow-y: auto; background: rgba(11, 15, 25, 0.9); border: 1px solid #1E293B; border-radius: 4px; padding: 8px;">
+                @if (LogService.Entries.Count == 0) {
+                    <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #64748B;">StickLock log ready. Awaiting USB activity or manual sync.</MudText>
+                } else {
+                    @foreach (var entry in LogService.Entries) {
+                        <div class="d-flex align-start mb-1" style="font-size: 0.8rem;">
+                            <span class="mfd-code mr-2" style="color: #64748B;">[@entry.TimeFormatted]</span>
+                            <MudChip T="string" Color="@GetLogLevelColor(entry.Level)" Size="Size.Small" Variant="Variant.Filled" Class="mr-2 py-0 px-1" Style="font-size: 0.65rem; height: 18px;">
+                                @entry.Level.ToUpperInvariant()
+                            </MudChip>
+                            <span style="color: #E2E8F0; flex-grow: 1;">@entry.Message</span>
+                            @if (!string.IsNullOrWhiteSpace(entry.Details)) {
+                                <span class="mfd-code ml-2" style="color: #94A3B8;">@entry.Details</span>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private IReadOnlyList<DirectInputDevice> _liveDevices = Array.Empty<DirectInputDevice>();
+    private IReadOnlyList<XmlStickMapping> _xmlMappings = Array.Empty<XmlStickMapping>();
+
+    protected override async Task OnInitializedAsync() {
+        DirectInputService.DevicesRefreshed += OnDevicesChanged;
+        ConfigService.ConfigChanged += OnConfigChanged;
+        LogService.EntryAdded += _ => InvokeAsync(StateHasChanged);
+
+        _liveDevices = DirectInputService.CurrentDevices;
+        await ReloadXmlMappingsAsync();
+    }
+
+    private void OnDevicesChanged(IReadOnlyList<DirectInputDevice> devices) {
+        _ = InvokeAsync(() => {
+            _liveDevices = devices;
+            StateHasChanged();
+        });
+    }
+
+    private void OnConfigChanged() {
+        _ = InvokeAsync(async () => {
+            await ReloadXmlMappingsAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task ReloadXmlMappingsAsync() {
+        try {
+            _xmlMappings = await XmlService.GetXmlMappingsAsync();
+        } catch {
+            _xmlMappings = Array.Empty<XmlStickMapping>();
+        }
+    }
+
+    private void RefreshDevices() {
+        _liveDevices = DirectInputService.RefreshDevices();
+        LogService.LogInfo("DirectInput controllers refreshed manually.");
+        StateHasChanged();
+    }
+
+    private async Task OnEnvironmentSelected(ScEnvironment env) {
+        await ConfigService.SwitchEnvironmentAsync(env);
+        await ReloadXmlMappingsAsync();
+        Snackbar.Add($"Switched to {env} environment.", Severity.Info);
+    }
+
+    private async Task OnPathChanged() {
+        await ConfigService.SetStarCitizenPathAsync(ConfigService.Config.StarCitizenPath);
+        await ReloadXmlMappingsAsync();
+    }
+
+    private async Task BrowseXmlFileAsync() {
+        var initialDir = !string.IsNullOrWhiteSpace(ConfigService.Config.StarCitizenPath)
+            ? Path.GetDirectoryName(ConfigService.Config.StarCitizenPath)
+            : null;
+
+        var selected = await FileDialog.PickActionMapsXmlFileAsync(initialDir);
+        if (!string.IsNullOrWhiteSpace(selected)) {
+            await ConfigService.SetStarCitizenPathAsync(selected);
+            await ReloadXmlMappingsAsync();
+            Snackbar.Add("Selected actionmaps.xml path updated.", Severity.Success);
+        }
+    }
+
+    private async Task BrowseGameFolderAsync() {
+        var selected = await FileDialog.PickStarCitizenFolderAsync();
+        if (!string.IsNullOrWhiteSpace(selected)) {
+            // Check if folder is directly actionmaps or contains LIVE/USER...
+            var candidate1 = Path.Combine(selected, "USER", "Client", "0", "Profiles", "default", "actionmaps.xml");
+            var candidate2 = Path.Combine(selected, "LIVE", "USER", "Client", "0", "Profiles", "default", "actionmaps.xml");
+
+            string finalPath;
+            if (File.Exists(candidate1)) {
+                finalPath = candidate1;
+            } else if (File.Exists(candidate2)) {
+                finalPath = candidate2;
+            } else {
+                finalPath = Path.Combine(selected, "actionmaps.xml");
+            }
+
+            await ConfigService.SetStarCitizenPathAsync(finalPath);
+            await ReloadXmlMappingsAsync();
+            Snackbar.Add($"Configured path to {Path.GetFileName(finalPath)}", Severity.Success);
+        }
+    }
+
+    private async Task OnAutoSyncChanged(bool val) {
+        await ConfigService.SetAutoSyncAsync(val);
+        Snackbar.Add($"Auto-Sync on USB change is now {(val ? "ENABLED" : "DISABLED")}.", Severity.Info);
+    }
+
+    private async Task OnStartMinimizedChanged(bool val) {
+        await ConfigService.SetStartMinimizedAsync(val);
+        Snackbar.Add($"Start minimized to tray is now {(val ? "ENABLED" : "DISABLED")}.", Severity.Info);
+    }
+
+    private async Task OnRunStartupChanged(bool val) {
+        await ConfigService.SetRunOnStartupAsync(val);
+        Snackbar.Add($"Launch on Windows startup is now {(val ? "ENABLED" : "DISABLED")}.", Severity.Info);
+    }
+
+    private async Task AssignDeviceAsync(DirectInputDevice device, int slot, string roleName) {
+        await ConfigService.SetCanonicalStickAsync(slot, device, roleName);
+        LogService.LogSuccess($"Assigned {device.ProductName} as locked js{slot} ({roleName}).");
+        Snackbar.Add($"Locked {device.ProductName} as js{slot}.", Severity.Success);
+        await ReloadXmlMappingsAsync();
+    }
+
+    private async Task RemoveCanonicalStickAsync(int slot) {
+        await ConfigService.RemoveCanonicalStickAsync(slot);
+        LogService.LogInfo($"Unlocked canonical stick js{slot}.");
+        Snackbar.Add($"Unlocked stick js{slot}.", Severity.Info);
+        await ReloadXmlMappingsAsync();
+    }
+
+    private bool IsStickAssignedToSlot(DirectInputDevice device, int slot) {
+        return ConfigService.Config.CanonicalSticks.Any(s => s.RoleSlot == slot && s.InstanceGuid == device.InstanceGuid);
+    }
+
+    private int GetLiveSlotForStick(CanonicalStick stick) {
+        var dev = _liveDevices.FirstOrDefault(d => d.InstanceGuid == stick.InstanceGuid || (stick.InstanceGuid == Guid.Empty && d.ProductGuid == stick.ProductGuid));
+        return dev?.SlotIndex ?? 0;
+    }
+
+    private int GetXmlInstanceForStick(CanonicalStick stick) {
+        var mapping = _xmlMappings.FirstOrDefault(x =>
+            (stick.InstanceGuid != Guid.Empty && x.ExtractedGuid == stick.InstanceGuid) ||
+            (stick.ProductGuid != Guid.Empty && x.ExtractedGuid == stick.ProductGuid));
+
+        if (mapping != null) {
+            return mapping.Instance;
+        }
+
+        // Fallback by instance number
+        var fallback = _xmlMappings.FirstOrDefault(x => x.Instance == stick.RoleSlot);
+        return fallback?.Instance ?? 0;
+    }
+
+    private async Task CopyConsoleCommandAsync() {
+        var cmd = await XmlService.GetConsoleResortCommandAsync();
+        try {
+            // Copy via WinForms clipboard or JS
+            var thread = new Thread(() => Clipboard.SetText(cmd));
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+        } catch {
+            try {
+                await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", cmd);
+            } catch {
+                // Ignore
+            }
+        }
+        Snackbar.Add($"Copied '{cmd}' to clipboard!", Severity.Success);
+    }
+
+    private async Task RestoreBackupAsync() {
+        var result = await XmlService.RestoreLatestBackupAsync();
+        if (result.Success) {
+            Snackbar.Add(result.Message, Severity.Success);
+            await ReloadXmlMappingsAsync();
+        } else {
+            Snackbar.Add(result.Message, Severity.Warning);
+        }
+    }
+
+    private void ClearLog() {
+        LogService.Clear();
+        StateHasChanged();
+    }
+
+    private Color GetLogLevelColor(string level) => level switch {
+        "Success" => Color.Success,
+        "Warning" => Color.Warning,
+        "Error" => Color.Error,
+        _ => Color.Info
+    };
+
+    public void Dispose() {
+        DirectInputService.DevicesRefreshed -= OnDevicesChanged;
+        ConfigService.ConfigChanged -= OnConfigChanged;
+    }
+}
