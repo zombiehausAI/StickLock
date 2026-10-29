@@ -383,10 +383,22 @@
         }
     }
 
-    private void RefreshDevices() {
-        _liveDevices = DirectInputService.RefreshDevices();
-        LogService.LogInfo("DirectInput controllers refreshed manually.");
+    private bool _isRefreshingDevices = false;
+
+    private async Task RefreshDevicesAsync() {
+        if (_isRefreshingDevices) {
+            return;
+        }
+
+        _isRefreshingDevices = true;
         StateHasChanged();
+        try {
+            _liveDevices = await DirectInputService.RefreshDevicesAsync();
+            LogService.LogInfo("DirectInput controllers refreshed.");
+        } finally {
+            _isRefreshingDevices = false;
+            StateHasChanged();
+        }
     }
 
     private async Task OnEnvironmentSelected(ScEnvironment env) {
@@ -489,19 +501,16 @@
 
     private async Task CopyConsoleCommandAsync() {
         var cmd = await XmlService.GetConsoleResortCommandAsync();
-        try {
-            // Copy via WinForms clipboard or JS
-            var thread = new Thread(() => Clipboard.SetText(cmd));
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
-        } catch {
+        var tcs = new TaskCompletionSource();
+        var thread = new Thread(() => {
             try {
-                await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", cmd);
-            } catch {
-                // Ignore
-            }
-        }
+                Clipboard.SetText(cmd);
+            } catch { }
+            tcs.TrySetResult();
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        await tcs.Task;
         Snackbar.Add($"Copied '{cmd}' to clipboard!", Severity.Success);
     }
 
