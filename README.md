@@ -28,6 +28,12 @@ Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.
   - Allows custom folder selection on any drive via command-line or native Windows folder browser GUI.
   - User-level install (`%LOCALAPPDATA%\StickLock\app`) requiring no Administrator UAC prompts.
   - Integrates with Windows Add/Remove Programs (Installed Apps) and creates Desktop / Start Menu shortcuts.
+- **Automatic Misalignment Detection & 1-Click Fix & Backup**:
+  - Automatically parses existing Star Citizen `actionmaps.xml` to detect which joystick owns which slot (`js1`, `js2`, etc.).
+  - Compares the game's expected device slots against live Windows DirectInput enumeration.
+  - When a slot inversion or misalignment is detected, displays an unmissable Star Citizen MFD Alert Banner and triggers Windows tray balloon notifications.
+  - **1-Click "Fix & Update Mappings"**: Immediately creates a timestamped backup in `~/.sticklock/backups/`, rewrites `actionmaps.xml` in Star Citizen so controls match current Windows order, and mirrors the aligned configuration in `.sticklock`.
+  - Full rollback support via the one-click "Restore This Backup" button.
 - **Background USB Monitoring**: WMI hardware watcher (`Win32_DeviceChangeEvent`) with a 1.5-second debounce timer to absorb USB hub power-cycles.
 - **Star Citizen Process Guard**: Detects active `StarCitizen.exe` processes and safely defers auto-sync to avoid file lock conflicts, providing an in-game console command (`pp_resortdevices joystick 1 2`) for live resort.
 - **Idempotent Two-Pass Transformation**: Replaces `<options type="joystick" instance="X">` and `<rebind input="jsX_...">` attributes using unique intermediary placeholders to eliminate collision errors.

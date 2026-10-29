@@ -95,6 +95,21 @@ public class MainForm : Form {
             Visible = true
         };
         _notifyIcon.DoubleClick += (_, _) => RestoreWindow();
+        _notifyIcon.BalloonTipClicked += (_, _) => RestoreWindow();
+
+        // Listen for USB device changes and alert on misalignment if not auto-synced
+        _usbWatcherService.UsbDevicesChanged += async (_) => {
+            try {
+                var alignment = await _xmlService.CheckAlignmentAsync();
+                if (alignment.IsMisaligned && !_configService.Config.AutoSyncOnUsbChange) {
+                    _notifyIcon.ShowBalloonTip(
+                        6000,
+                        "StickLock: Joystick Order Mismatch!",
+                        "Windows DirectInput order does not match Star Citizen mappings. Click here to fix and back up.",
+                        ToolTipIcon.Warning);
+                }
+            } catch { }
+        };
 
         // Start USB Watcher
         _usbWatcherService.Start();

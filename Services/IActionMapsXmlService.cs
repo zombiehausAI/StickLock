@@ -4,7 +4,10 @@ namespace StickLock.Services;
 
 public interface IActionMapsXmlService {
     Task<SyncStatus> CheckSyncStatusAsync();
+    Task<MappingAlignmentCheck> CheckAlignmentAsync();
     Task<SyncResult> SyncAsync();
+    Task<SyncResult> FixAndSyncAsync();
+    Task<SyncResult> AutoLockAndAlignFromXmlAsync();
     Task<IReadOnlyList<XmlStickMapping>> GetXmlMappingsAsync();
     Task<string> GetConsoleResortCommandAsync();
     Task<SyncResult> RestoreLatestBackupAsync();

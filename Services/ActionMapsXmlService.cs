@@ -38,6 +38,12 @@ public class ActionMapsXmlService : IActionMapsXmlService {
 
         var canonical = _configService.Config.CanonicalSticks;
         if (canonical.Count == 0) {
+            var live = await _directInputService.RefreshDevicesAsync();
+            var xml = await GetXmlMappingsAsync();
+            if (xml.Count >= 2 && live.Count >= 2) {
+                var alignment = await CheckAlignmentAsync();
+                return alignment.IsMisaligned ? SyncStatus.NeedsSync : SyncStatus.Aligned;
+            }
             return SyncStatus.Unknown;
         }
 
@@ -56,6 +62,149 @@ public class ActionMapsXmlService : IActionMapsXmlService {
 
         var needsSync = CheckIfNeedsSync(canonical, liveDevices, xmlMappings);
         return needsSync ? SyncStatus.NeedsSync : SyncStatus.Aligned;
+    }
+
+    public async Task<MappingAlignmentCheck> CheckAlignmentAsync() {
+        var check = new MappingAlignmentCheck();
+
+        if (_starCitizenDetector.IsGameRunning()) {
+            check.Status = SyncStatus.StarCitizenActive;
+            check.StatusMessage = "Star Citizen is currently running. Auto-sync is paused.";
+            return check;
+        }
+
+        var xmlPath = _configService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
+            check.Status = SyncStatus.FileNotFound;
+            check.StatusMessage = "actionmaps.xml not found. Please verify Star Citizen path.";
+            return check;
+        }
+
+        var xmlMappings = await GetXmlMappingsAsync();
+        check.ExistingXmlDevices = xmlMappings.ToList();
+
+        var canonical = _configService.Config.CanonicalSticks;
+        check.HasCanonicalConfigured = canonical.Count >= 2;
+
+        var liveDevices = await _directInputService.RefreshDevicesAsync();
+
+        if (canonical.Count >= 2) {
+            var missing = canonical.Where(c => !liveDevices.Any(d => IsStickMatch(c, d))).ToList();
+            if (missing.Count > 0) {
+                check.Status = SyncStatus.SticksDisconnected;
+                check.StatusMessage = $"Disconnected flight stick(s): {string.Join(", ", missing.Select(m => m.FriendlyRoleName))}";
+                return check;
+            }
+
+            foreach (var stick in canonical) {
+                var live = liveDevices.FirstOrDefault(d => IsStickMatch(stick, d));
+                var xmlEntry = xmlMappings.FirstOrDefault(x =>
+                    (stick.InstanceGuid != Guid.Empty && x.ExtractedGuid == stick.InstanceGuid) ||
+                    (stick.ProductGuid != Guid.Empty && x.ExtractedGuid == stick.ProductGuid))
+                    ?? xmlMappings.FirstOrDefault(x => x.Instance == stick.RoleSlot);
+
+                var liveSlot = live?.SlotIndex ?? 0;
+                var xmlInst = xmlEntry?.Instance ?? stick.RoleSlot;
+
+                check.Mismatches.Add(new StickMismatchDetail {
+                    DeviceName = stick.FriendlyRoleName,
+                    XmlInstance = xmlInst,
+                    LiveWindowsSlot = liveSlot
+                });
+
+                if (xmlInst != liveSlot) {
+                    check.IsMisaligned = true;
+                }
+            }
+        } else if (xmlMappings.Count >= 2) {
+            foreach (var xmlEntry in xmlMappings) {
+                var live = liveDevices.FirstOrDefault(d =>
+                    (xmlEntry.ExtractedGuid != Guid.Empty && d.InstanceGuid == xmlEntry.ExtractedGuid) ||
+                    (xmlEntry.ExtractedGuid != Guid.Empty && d.ProductGuid == xmlEntry.ExtractedGuid) ||
+                    string.Equals(d.ProductName, xmlEntry.ProductName, StringComparison.OrdinalIgnoreCase));
+
+                if (live != null) {
+                    var isFlipped = xmlEntry.Instance != live.SlotIndex;
+                    check.Mismatches.Add(new StickMismatchDetail {
+                        DeviceName = live.ProductName,
+                        XmlInstance = xmlEntry.Instance,
+                        LiveWindowsSlot = live.SlotIndex
+                    });
+
+                    if (isFlipped) {
+                        check.IsMisaligned = true;
+                    }
+                }
+            }
+        }
+
+        check.CanAutoFix = check.IsMisaligned && !_starCitizenDetector.IsGameRunning();
+
+        if (check.IsMisaligned) {
+            check.Status = SyncStatus.NeedsSync;
+            check.StatusMessage = "Star Citizen joystick slot assignments do not match current Windows DirectInput enumeration order!";
+        } else if (canonical.Count >= 2 || (xmlMappings.Count >= 2 && check.Mismatches.Count >= 2)) {
+            check.Status = SyncStatus.Aligned;
+            check.StatusMessage = "All flight sticks are correctly aligned with Star Citizen mappings.";
+        } else {
+            check.Status = SyncStatus.Unknown;
+            check.StatusMessage = "Awaiting flight stick configuration or device connection.";
+        }
+
+        var backups = GetAvailableBackups();
+        if (backups.Count > 0) {
+            check.LatestBackupPath = backups[0];
+        }
+
+        return check;
+    }
+
+    public async Task<SyncResult> FixAndSyncAsync() {
+        var canonical = _configService.Config.CanonicalSticks;
+        if (canonical.Count < 2) {
+            return await AutoLockAndAlignFromXmlAsync();
+        }
+
+        return await SyncAsync();
+    }
+
+    public async Task<SyncResult> AutoLockAndAlignFromXmlAsync() {
+        var xmlMappings = await GetXmlMappingsAsync();
+        if (xmlMappings.Count == 0) {
+            return SyncResult.Fail("No joystick mappings found in Star Citizen actionmaps.xml.");
+        }
+
+        var liveDevices = await _directInputService.RefreshDevicesAsync();
+        var added = 0;
+
+        foreach (var xml in xmlMappings) {
+            var live = liveDevices.FirstOrDefault(d =>
+                (xml.ExtractedGuid != Guid.Empty && d.InstanceGuid == xml.ExtractedGuid) ||
+                (xml.ExtractedGuid != Guid.Empty && d.ProductGuid == xml.ExtractedGuid) ||
+                string.Equals(d.ProductName, xml.ProductName, StringComparison.OrdinalIgnoreCase));
+
+            var stickName = live != null ? live.ProductName : (!string.IsNullOrWhiteSpace(xml.ProductName) ? xml.ProductName : $"Joystick {xml.Instance}");
+            var friendlyRole = xml.Instance == 1 ? $"Stick 1 ({stickName})" : (xml.Instance == 2 ? $"Stick 2 ({stickName})" : $"Stick {xml.Instance} ({stickName})");
+
+            var deviceToAssign = live ?? new DirectInputDevice {
+                SlotIndex = xml.Instance,
+                ProductName = stickName,
+                InstanceGuid = xml.ExtractedGuid,
+                ProductGuid = xml.ExtractedGuid
+            };
+
+            await _configService.SetCanonicalStickAsync(xml.Instance, deviceToAssign, friendlyRole);
+            added++;
+        }
+
+        _logService.LogSuccess($"Auto-locked {added} canonical joystick assignment(s) from Star Citizen XML.");
+
+        var status = await CheckSyncStatusAsync();
+        if (status == SyncStatus.NeedsSync) {
+            return await SyncAsync();
+        }
+
+        return SyncResult.Ok($"Locked {added} joystick(s) from Star Citizen. Devices are aligned with current Windows order.", changesMade: false, status: SyncStatus.Aligned);
     }
 
     public async Task<SyncResult> SyncAsync() {

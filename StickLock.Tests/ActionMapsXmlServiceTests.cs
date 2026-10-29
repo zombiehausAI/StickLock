@@ -291,6 +291,68 @@ public class ActionMapsXmlServiceTests : IDisposable {
         Assert.False(File.Exists(pulledFileInStickLock));
     }
 
+    [Fact]
+    public async Task CheckAlignment_DetectsMisalignment_And_FixAndSync_UpdatesGameAndBacksUp() {
+        var guidStick1 = Guid.NewGuid();
+        var guidStick2 = Guid.NewGuid();
+
+        // Star Citizen actionmaps.xml has Stick1 as js1 and Stick2 as js2
+        var xmlContent = $@"<ActionMaps version=""1"">
+            <options type=""joystick"" instance=""1"" Product=""VKB Gladiator Right {{{guidStick1}}}""/>
+            <options type=""joystick"" instance=""2"" Product=""VKB Gladiator Left {{{guidStick2}}}""/>
+            <actionmap name=""spaceship_general"">
+                <action name=""v_pitch""><rebind input=""js1_pitch""/></action>
+                <action name=""v_yaw""><rebind input=""js2_yaw""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(_xmlPath, xmlContent);
+
+        var customConfigPath = Path.Combine(_tempDir, ".sticklock", "config.json");
+        var configService = new AppConfigService(customConfigPath);
+        await configService.SetStarCitizenPathAsync(_xmlPath);
+
+        // Windows currently has them reversed: Stick2 is slot 1, Stick1 is slot 2
+        var diService = new TestDirectInputService();
+        diService.SetDevices(new List<DirectInputDevice> {
+            new() { SlotIndex = 1, ProductName = "VKB Gladiator Left", InstanceGuid = guidStick2, ProductGuid = guidStick2 },
+            new() { SlotIndex = 2, ProductName = "VKB Gladiator Right", InstanceGuid = guidStick1, ProductGuid = guidStick1 }
+        });
+
+        var detector = new TestStarCitizenDetector();
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        // 1. Check Alignment without canonical sticks: should detect existing SC mappings are flipped
+        var alignment = await xmlService.CheckAlignmentAsync();
+        Assert.True(alignment.IsMisaligned);
+        Assert.Equal(SyncStatus.NeedsSync, alignment.Status);
+        Assert.True(alignment.CanAutoFix);
+        Assert.Equal(2, alignment.Mismatches.Count);
+        Assert.True(alignment.Mismatches[0].IsFlipped);
+        Assert.True(alignment.Mismatches[1].IsFlipped);
+
+        // 2. Fix and Sync: should automatically back up, swap slots, and update actionmaps.xml
+        var fixResult = await xmlService.FixAndSyncAsync();
+        Assert.True(fixResult.Success);
+        Assert.True(fixResult.ChangesMade);
+        Assert.NotNull(fixResult.BackupPath);
+        Assert.True(File.Exists(fixResult.BackupPath));
+
+        // 3. Verify backup is saved in .sticklock/backups
+        Assert.Contains(".sticklock", fixResult.BackupPath);
+        Assert.Contains("backups", fixResult.BackupPath);
+
+        // 4. Verify Star Citizen XML was updated so Stick2 (slot 1) is now js1, Stick1 (slot 2) is now js2
+        var updatedXml = await File.ReadAllTextAsync(_xmlPath);
+        Assert.Contains(@"instance=""1"" Product=""VKB Gladiator Left", updatedXml);
+        Assert.Contains(@"instance=""2"" Product=""VKB Gladiator Right", updatedXml);
+
+        // 5. Re-check alignment: should now be Aligned!
+        alignment = await xmlService.CheckAlignmentAsync();
+        Assert.False(alignment.IsMisaligned);
+        Assert.Equal(SyncStatus.Aligned, alignment.Status);
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {

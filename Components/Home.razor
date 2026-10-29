@@ -11,6 +11,117 @@
 @inject IBrowserService BrowserService
 
 <MudGrid Spacing="3">
+    <!-- Flight Controller Alignment Alert Banner -->
+    @if (_alignmentCheck.IsMisaligned || _status == SyncStatus.NeedsSync) {
+        <MudItem xs="12">
+            <MudPaper Elevation="4" Class="pa-4" Style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(245, 158, 11, 0.15) 100%); border: 1.5px solid #EF4444; border-radius: 8px; box-shadow: 0 0 20px rgba(239, 68, 68, 0.35);">
+                <div class="d-flex flex-column flex-md-row align-start align-md-center justify-space-between gap-4">
+                    <div class="d-flex align-start gap-3">
+                        <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Color="Color.Error" Size="Size.Large" Class="mt-1" />
+                        <div>
+                            <div class="d-flex align-center gap-2">
+                                <MudText Typo="Typo.h6" Class="mfd-title" Style="color: #EF4444; font-weight: 800; letter-spacing: 1px;">
+                                    FLIGHT CONTROLLER MISALIGNMENT DETECTED!
+                                </MudText>
+                                <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="font-weight-bold">
+                                    Binds Inverted
+                                </MudChip>
+                            </div>
+                            <MudText Typo="Typo.body2" Class="mt-1" Style="color: #F8FAFC;">
+                                Windows DirectInput slot enumeration does not match Star Citizen's saved <span class="mfd-code" style="color: #00E5FF;">actionmaps.xml</span> bindings. If you launch Star Citizen now, your flight sticks will be reversed in-game!
+                            </MudText>
+
+                            @if (_alignmentCheck.Mismatches.Count > 0) {
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    @foreach (var m in _alignmentCheck.Mismatches) {
+                                        <div class="pa-1 px-2 rounded d-flex align-center gap-2" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(239, 68, 68, 0.5); font-size: 0.8rem;">
+                                            <span style="color: #F1F5F9; font-weight: 600;">@m.DeviceName:</span>
+                                            <span class="mfd-code" style="color: #94A3B8;">Star Citizen has:</span>
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Warning" Class="py-0 px-1" Style="height: 20px;">
+                                                js@(m.XmlInstance)
+                                            </MudChip>
+                                            <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" Style="color: #EF4444;" />
+                                            <span class="mfd-code" style="color: #94A3B8;">Windows sees:</span>
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Error" Class="py-0 px-1" Style="height: 20px;">
+                                                js@(m.LiveWindowsSlot)
+                                            </MudChip>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column align-end gap-1" style="min-width: 260px;">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Error"
+                                   Size="Size.Large"
+                                   StartIcon="@Icons.Material.Filled.Build"
+                                   Disabled="@_isSyncing"
+                                   OnClick="FixAndSyncSticksAsync"
+                                   Class="mfd-title"
+                                   Style="font-weight: 800; letter-spacing: 1px; color: #FFFFFF; background-color: #DC2626; width: 100%; box-shadow: 0 0 15px rgba(220, 38, 38, 0.5);">
+                            @if (_isSyncing) {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                <span>FIXING &amp; BACKING UP...</span>
+                            } else {
+                                <span>FIX &amp; UPDATE MAPPINGS</span>
+                            }
+                        </MudButton>
+                        <MudText Typo="Typo.caption" Class="mfd-code text-center" Style="color: #94A3B8; font-size: 0.75rem;">
+                            Auto-backs up to <span style="color: #FFAB00;">~/.sticklock/backups/</span>
+                        </MudText>
+                    </div>
+                </div>
+            </MudPaper>
+        </MudItem>
+    } else if (_lastFixedBackupPath != null) {
+        <MudItem xs="12">
+            <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Dense="false" Class="mfd-card" Style="background-color: rgba(16, 185, 129, 0.2); border: 1px solid #10B981;">
+                <div class="d-flex flex-wrap align-center justify-space-between gap-2">
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="mr-2" />
+                        <div>
+                            <span class="font-weight-bold" style="color: #10B981;">STAR CITIZEN MAPPINGS SUCCESSFULLY FIXED &amp; UPDATED!</span>
+                            <div class="mfd-code" style="font-size: 0.8rem; color: #E2E8F0; margin-top: 2px;">
+                                Original backup safely stored in: <span style="color: #00E5FF;">@_lastFixedBackupPath</span>
+                            </div>
+                        </div>
+                    </div>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Success"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.History"
+                               OnClick="RestoreBackupAsync">
+                        Restore This Backup
+                    </MudButton>
+                </div>
+            </MudAlert>
+        </MudItem>
+    } else if (_status == SyncStatus.Unknown && _alignmentCheck.ExistingXmlDevices.Count >= 2 && ConfigService.Config.CanonicalSticks.Count == 0) {
+        <MudItem xs="12">
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="false" Class="mfd-card">
+                <div class="d-flex flex-wrap align-center justify-space-between gap-2">
+                    <div>
+                        <span class="font-weight-bold" style="color: #38BDF8;">EXISTING STAR CITIZEN JOYSTICK MAPPINGS DETECTED</span>
+                        <div class="mfd-code" style="font-size: 0.8rem; color: #CBD5E1; margin-top: 2px;">
+                            Found @(_alignmentCheck.ExistingXmlDevices.Count) flight controllers in Star Citizen actionmaps.xml:
+                            @string.Join(", ", _alignmentCheck.ExistingXmlDevices.Select(d => $"js{d.Instance} ({d.ProductName})"))
+                        </div>
+                    </div>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.AutoFixHigh"
+                               OnClick="AutoLockFromStarCitizenXmlAsync"
+                               Style="color: #0B0F19; font-weight: 700;">
+                        Lock &amp; Monitor from Star Citizen
+                    </MudButton>
+                </div>
+            </MudAlert>
+        </MudItem>
+    }
+
     <!-- Top Row: Path & Settings Card -->
     <MudItem xs="12">
         <MudCard Class="mfd-card">
@@ -491,6 +602,11 @@
     private IReadOnlyList<DirectInputDevice> _liveDevices = Array.Empty<DirectInputDevice>();
     private IReadOnlyList<XmlStickMapping> _xmlMappings = Array.Empty<XmlStickMapping>();
     private IReadOnlyList<SavedMappingProfile> _savedProfiles = Array.Empty<SavedMappingProfile>();
+    private MappingAlignmentCheck _alignmentCheck = new();
+    private string? _lastFixedBackupPath = null;
+    private SyncStatus _status = SyncStatus.Unknown;
+    private bool _isSyncing = false;
+    private bool _isRefreshingDevices = false;
 
     protected override async Task OnInitializedAsync() {
         DirectInputService.DevicesRefreshed += OnDevicesChanged;
@@ -498,23 +614,36 @@
         LogService.EntryAdded += _ => InvokeAsync(StateHasChanged);
 
         _liveDevices = DirectInputService.CurrentDevices;
+        await RefreshAlignmentCheckAsync();
         await ReloadXmlMappingsAsync();
         await ReloadSavedProfilesAsync();
     }
 
     private void OnDevicesChanged(IReadOnlyList<DirectInputDevice> devices) {
-        _ = InvokeAsync(() => {
+        _ = InvokeAsync(async () => {
             _liveDevices = devices;
+            await RefreshAlignmentCheckAsync();
             StateHasChanged();
         });
     }
 
     private void OnConfigChanged() {
         _ = InvokeAsync(async () => {
+            await RefreshAlignmentCheckAsync();
             await ReloadXmlMappingsAsync();
             await ReloadSavedProfilesAsync();
             StateHasChanged();
         });
+    }
+
+    private async Task RefreshAlignmentCheckAsync() {
+        try {
+            _alignmentCheck = await XmlService.CheckAlignmentAsync();
+            _status = _alignmentCheck.Status;
+        } catch {
+            _alignmentCheck = new MappingAlignmentCheck();
+            _status = SyncStatus.Unknown;
+        }
     }
 
     private async Task ReloadXmlMappingsAsync() {
@@ -533,7 +662,54 @@
         }
     }
 
-    private bool _isRefreshingDevices = false;
+    private async Task FixAndSyncSticksAsync() {
+        if (_isSyncing) {
+            return;
+        }
+
+        if (GameDetector.IsGameRunning()) {
+            Snackbar.Add("Star Citizen is currently running. Please close the game before updating mappings.", Severity.Warning);
+            return;
+        }
+
+        _isSyncing = true;
+        StateHasChanged();
+        try {
+            var result = await XmlService.FixAndSyncAsync();
+            if (result.Success) {
+                _lastFixedBackupPath = result.BackupPath;
+                Snackbar.Add(result.Message, Severity.Success);
+                LogService.LogSuccess($"Fixed mappings: {result.Message}", result.BackupPath != null ? $"Backup: {Path.GetFileName(result.BackupPath)}" : "");
+            } else {
+                Snackbar.Add(result.Message, Severity.Error);
+                LogService.LogError($"Failed to fix mappings: {result.Message}");
+            }
+            await RefreshAlignmentCheckAsync();
+            await ReloadXmlMappingsAsync();
+            await ReloadSavedProfilesAsync();
+        } finally {
+            _isSyncing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task AutoLockFromStarCitizenXmlAsync() {
+        _isSyncing = true;
+        StateHasChanged();
+        try {
+            var result = await XmlService.AutoLockAndAlignFromXmlAsync();
+            if (result.Success) {
+                Snackbar.Add(result.Message, Severity.Success);
+            } else {
+                Snackbar.Add(result.Message, Severity.Warning);
+            }
+            await RefreshAlignmentCheckAsync();
+            await ReloadXmlMappingsAsync();
+        } finally {
+            _isSyncing = false;
+            StateHasChanged();
+        }
+    }
 
     private async Task RefreshDevicesAsync() {
         if (_isRefreshingDevices) {
@@ -544,6 +720,7 @@
         StateHasChanged();
         try {
             _liveDevices = await DirectInputService.RefreshDevicesAsync();
+            await RefreshAlignmentCheckAsync();
             LogService.LogInfo("DirectInput controllers refreshed.");
         } finally {
             _isRefreshingDevices = false;
