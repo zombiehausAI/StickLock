@@ -34,9 +34,12 @@
                         <MudText Typo="Typo.body2" Class="mt-1" Style="color: #E2E8F0;">
                             Windows DirectInput slot enumeration does not match Star Citizen's <span class="mfd-code" style="color: #00E5FF;">actionmaps.xml</span>.
                         </MudText>
+                        <MudText Typo="Typo.caption" Style="color: #94A3B8; display: block; margin-top: 2px;">
+                            A connected device (such as a keyboard with virtual gamepad endpoints) or USB sleep/wake shifted your controller slot. Star Citizen reads the live Windows order at launch.
+                        </MudText>
 
                         @if (_alignmentCheck.Mismatches.Any(m => m.IsFlipped)) {
-                            <div class="d-flex flex-wrap gap-2 mt-2">
+                            <div class="d-flex flex-wrap align-center gap-2 mt-2">
                                 @foreach (var m in _alignmentCheck.Mismatches.Where(m => m.IsFlipped)) {
                                     <div class="pa-1 px-2 rounded d-flex align-center gap-2" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(239, 68, 68, 0.45); font-size: 0.8rem;">
                                         <span style="color: #F1F5F9; font-weight: 600;">@m.DeviceName:</span>
@@ -47,6 +50,14 @@
                                         <span class="mfd-code font-weight-bold" style="color: #EF4444;">js@(m.LiveWindowsSlot)</span>
                                     </div>
                                 }
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Info"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.HelpOutline"
+                                           OnClick="OpenSlotExplanationDialogAsync"
+                                           Style="font-size: 0.75rem; text-transform: none; color: #38BDF8;">
+                                    Why did slots change?
+                                </MudButton>
                             </div>
                         }
                     </div>
@@ -293,6 +304,12 @@
                             </MudText>
                         </div>
                         <div class="d-flex align-center gap-1">
+                            <MudTooltip Text="Learn why Windows moves joystick slots and how StickLock maintains consistency">
+                                <MudIconButton Icon="@Icons.Material.Filled.HelpOutline"
+                                               Color="Color.Info"
+                                               Size="Size.Small"
+                                               OnClick="OpenSlotExplanationDialogAsync" />
+                            </MudTooltip>
                             <MudTooltip Text="Auto-detect and lock only joysticks with active bindings in Star Citizen XML">
                                 <MudButton Variant="Variant.Text"
                                            Color="Color.Primary"
@@ -345,6 +362,21 @@
                                 <MudTd>
                                     <MudText Typo="Typo.body2" Class="font-weight-bold" Style="color: #F8FAFC;">@context.ProductName</MudText>
                                     <MudText Typo="Typo.caption" Style="color: #64748B;">@context.FriendlyRoleName</MudText>
+                                    @if (liveSlot > 0 && xmlInst > 0 && liveSlot != xmlInst) {
+                                        <div class="d-flex align-center gap-1 mt-1">
+                                            <MudIcon Icon="@Icons.Material.Filled.Shuffle" Size="Size.Small" Color="Color.Warning" Style="font-size: 0.8rem;" />
+                                            <span style="color: #F59E0B; font-size: 0.72rem; font-weight: 600;">
+                                                Windows moved stick to js@(liveSlot) • XML has js@(xmlInst) (Click Fix &amp; Sync)
+                                            </span>
+                                        </div>
+                                    } else if (isAlignedWithXml) {
+                                        <div class="d-flex align-center gap-1 mt-1">
+                                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" Style="font-size: 0.8rem;" />
+                                            <span style="color: #10B981; font-size: 0.72rem;">
+                                                Aligned • Windows and Star Citizen both use js@(liveSlot)
+                                            </span>
+                                        </div>
+                                    }
                                 </MudTd>
                                 <MudTd>
                                     @if (liveSlot > 0) {
@@ -956,6 +988,22 @@
         } else {
             Snackbar.Add(result.Message, Severity.Warning);
         }
+    }
+
+    private async Task OpenSlotExplanationDialogAsync() {
+        var resortCmd = await XmlService.GetConsoleResortCommandAsync();
+        if (string.IsNullOrWhiteSpace(resortCmd)) {
+            resortCmd = "pp_resortdevices joystick 1 3";
+        }
+        var parameters = new DialogParameters<SlotExplanationDialog> {
+            { x => x.ResortCommand, resortCmd }
+        };
+        var options = new DialogOptions {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+        await DialogService.ShowAsync<SlotExplanationDialog>("Controller Slots Guide", parameters, options);
     }
 
     private async Task OpenSaveProfileDialogAsync() {

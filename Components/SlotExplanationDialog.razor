@@ -1,0 +1,95 @@
+@inject IBrowserService BrowserService
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Color="Color.Primary" Size="Size.Medium" />
+            <MudText Typo="Typo.h6" Class="mfd-title glow-cyan" Style="color: #00E5FF;">
+                HOW STAR CITIZEN CONTROLLER SLOTS WORK
+            </MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <div class="d-flex flex-column gap-3 pt-1">
+            <!-- Summary Card -->
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true" Class="mfd-card">
+                <div class="font-weight-bold" style="color: #38BDF8;">Why Did My Flight Stick Change from js1 to js3?</div>
+                <div style="font-size: 0.85rem; color: #CBD5E1; margin-top: 4px;">
+                    Star Citizen does <strong>not</strong> bind controls to physical flight stick names; it binds them to temporary slot numbers (<code>js1</code>, <code>js2</code>, <code>js3</code>, etc.) based on the order Windows enumerates connected USB devices.
+                </div>
+            </MudAlert>
+
+            <!-- Key Causes Section -->
+            <div class="pa-3 rounded" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(0, 229, 255, 0.15);">
+                <MudText Typo="Typo.subtitle2" Class="mfd-title mb-2" Style="color: #00E5FF;">
+                    COMMON REASONS SLOTS SHIFT IN WINDOWS
+                </MudText>
+                <div class="d-flex flex-column gap-2" style="font-size: 0.82rem; color: #E2E8F0;">
+                    <div class="d-flex align-start gap-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Keyboard" Size="Size.Small" Color="Color.Warning" Class="mt-1" />
+                        <div>
+                            <strong>Virtual Gamepad Endpoints:</strong> Many modern mechanical keyboards (like Keychron HE with Hall-Effect analog switches), gaming mice, or wireless dongles expose a virtual gamepad to Windows. Windows often assigns these to <code>js1</code> or <code>js2</code>.
+                        </div>
+                    </div>
+                    <div class="d-flex align-start gap-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Usb" Size="Size.Small" Color="Color.Primary" Class="mt-1" />
+                        <div>
+                            <strong>USB Sleep / Wake Cycles:</strong> When a wireless dongle, keyboard, or USB hub briefly sleeps or wakes up, Windows DirectInput re-registers devices in whatever order they report back, displacing flight sticks to slots like <code>js3</code> or <code>js4</code>.
+                        </div>
+                    </div>
+                    <div class="d-flex align-start gap-2">
+                        <MudIcon Icon="@Icons.Material.Filled.PowerSettingsNew" Size="Size.Small" Color="Color.Secondary" Class="mt-1" />
+                        <div>
+                            <strong>Windows Restarts or Port Changes:</strong> Plugging controllers into different USB ports or rebooting can alter the hardware enumeration tree.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- How StickLock Fixes It -->
+            <div class="pa-3 rounded" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3);">
+                <MudText Typo="Typo.subtitle2" Class="mfd-title mb-1" Style="color: #10B981;">
+                    HOW STICKLOCK KEEPS YOUR SETUP CONSISTENT
+                </MudText>
+                <div style="font-size: 0.82rem; color: #CBD5E1;">
+                    StickLock remembers your flight sticks by their permanent <strong>USB Hardware GUID</strong>. Even when Windows pushes your Right Stick to <code>js3</code>:
+                    <ul class="mt-1 mb-0 pl-4" style="line-height: 1.5;">
+                        <li>Clicking <strong>FIX &amp; SYNC MAPPINGS</strong> updates your <code>actionmaps.xml</code> so pitch, roll, and weapons point to the exact slot Star Citizen is currently reading (<code>js3</code>).</li>
+                        <li>Your physical right hand continues flying right-hand controls seamlessly without manual remapping.</li>
+                        <li>With <strong>Auto-Sync on USB Change</strong> enabled in Settings, StickLock aligns them automatically in the background.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- In-game Console Tip -->
+            <div class="pa-2 px-3 rounded d-flex align-center justify-space-between" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.8rem; color: #E2E8F0;">
+                <div>
+                    <strong>Already in the cockpit?</strong> Press <code>~</code> in Star Citizen and paste the in-game command:
+                    <span class="mfd-code" style="color: #FFAB00; font-weight: bold; margin-left: 6px;">@ResortCommand</span>
+                </div>
+            </div>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="Close"
+                   Class="mfd-title"
+                   Style="color: #0B0F19; font-weight: 700;">
+            Got It
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    [Parameter]
+    public string ResortCommand { get; set; } = "pp_resortdevices joystick 1 3";
+
+    private void Close() {
+        MudDialog?.Close(DialogResult.Ok(true));
+    }
+}
+
