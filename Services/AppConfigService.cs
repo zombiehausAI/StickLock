@@ -7,35 +7,42 @@ namespace StickLock.Services;
 public class AppConfigService : IAppConfigService {
     private const string StartupRegistryKeyName = "StickLock";
     private const string RunRegistrySubKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private readonly string _baseDirectory;
     private readonly string _configFilePath;
     private readonly SemaphoreSlim _fileLock = new(1, 1);
     private AppConfig _config = new();
 
     public AppConfig Config => _config;
+    public string BaseDirectory => _baseDirectory;
     public event Action? ConfigChanged;
 
     public AppConfigService(string? customConfigFilePath = null) {
         if (!string.IsNullOrWhiteSpace(customConfigFilePath)) {
             _configFilePath = customConfigFilePath;
-            var dir = Path.GetDirectoryName(_configFilePath);
-            if (!string.IsNullOrWhiteSpace(dir)) {
-                Directory.CreateDirectory(dir);
-            }
+            _baseDirectory = Path.GetDirectoryName(_configFilePath)
+                ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".sticklock");
         } else {
-            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var appFolder = Path.Combine(localAppData, "StickLock");
-            Directory.CreateDirectory(appFolder);
-            _configFilePath = Path.Combine(appFolder, "config.json");
+            var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            _baseDirectory = Path.Combine(userHome, ".sticklock");
+            _configFilePath = Path.Combine(_baseDirectory, "config.json");
         }
+
+        Directory.CreateDirectory(_baseDirectory);
+        Directory.CreateDirectory(Path.Combine(_baseDirectory, "settings_backups"));
+        Directory.CreateDirectory(Path.Combine(_baseDirectory, "backups"));
+        Directory.CreateDirectory(Path.Combine(_baseDirectory, "exports"));
     }
 
     public async Task LoadConfigAsync() {
         if (!File.Exists(_configFilePath)) {
-            // Check BaseDirectory fallback
+            // Check legacy LocalAppData or BaseDirectory fallback for smooth migration
+            var legacyLocal = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StickLock", "config.json");
             var baseDirConfig = Path.Combine(AppContext.BaseDirectory, "config.json");
-            if (File.Exists(baseDirConfig)) {
+            var migrationSource = File.Exists(legacyLocal) ? legacyLocal : (File.Exists(baseDirConfig) ? baseDirConfig : null);
+
+            if (migrationSource != null) {
                 try {
-                    var legacyJson = await File.ReadAllTextAsync(baseDirConfig);
+                    var legacyJson = await File.ReadAllTextAsync(migrationSource);
                     _config = JsonSerializer.Deserialize<AppConfig>(legacyJson) ?? new AppConfig();
                     await SaveConfigAsync();
                     ConfigChanged?.Invoke();
@@ -203,6 +210,51 @@ public class AppConfigService : IAppConfigService {
         await SaveConfigAsync();
     }
 
+    public async Task<string> BackupCurrentSettingsAsync() {
+        var backupDir = Path.Combine(_baseDirectory, "settings_backups");
+        Directory.CreateDirectory(backupDir);
+
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        var backupFile = Path.Combine(backupDir, $"settings_backup_{timestamp}.json");
+
+        var json = JsonSerializer.Serialize(_config, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(backupFile, json);
+
+        // Prune old settings backups
+        var maxBackups = Math.Max(1, _config.MaxBackupsToKeep);
+        var existing = Directory.GetFiles(backupDir, "settings_backup_*.json")
+            .Select(f => new FileInfo(f))
+            .OrderByDescending(f => f.CreationTime)
+            .ToList();
+
+        if (existing.Count > maxBackups) {
+            foreach (var old in existing.Skip(maxBackups)) {
+                try {
+                    old.Delete();
+                } catch { }
+            }
+        }
+
+        return backupFile;
+    }
+
+    public IReadOnlyList<string> GetSettingsBackups() {
+        var backupDir = Path.Combine(_baseDirectory, "settings_backups");
+        if (!Directory.Exists(backupDir)) {
+            return Array.Empty<string>();
+        }
+
+        return Directory.GetFiles(backupDir, "settings_backup_*.json")
+            .Select(f => new FileInfo(f))
+            .OrderByDescending(f => f.CreationTime)
+            .Select(f => f.FullName)
+            .ToList();
+    }
+
+    public async Task RestoreSettingsBackupAsync(string backupFilePath) {
+        await ImportConfigAsync(backupFilePath);
+    }
+
     private void ApplyStartupRegistry(bool enable) {
         try {
             using var key = Registry.CurrentUser.OpenSubKey(RunRegistrySubKey, true);
@@ -223,4 +275,3 @@ public class AppConfigService : IAppConfigService {
         }
     }
 }
-

@@ -109,6 +109,15 @@
                                 </MudButton>
                             </div>
                             <div class="d-flex align-center gap-2">
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Backup"
+                                           OnClick="BackupCurrentSettingsAsync"
+                                           Class="mfd-title"
+                                           Style="color: #0B0F19; font-weight: 700;">
+                                    Backup Current Settings
+                                </MudButton>
                                 <MudButton Variant="Variant.Outlined"
                                            Color="Color.Default"
                                            Size="Size.Small"
@@ -598,6 +607,17 @@
             await ReloadXmlMappingsAsync();
         } catch (Exception ex) {
             Snackbar.Add($"Failed to import settings: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task BackupCurrentSettingsAsync() {
+        try {
+            var backupPath = await ConfigService.BackupCurrentSettingsAsync();
+            var fileName = Path.GetFileName(backupPath);
+            LogService.LogSuccess($"Settings backed up to .sticklock\\settings_backups\\{fileName}");
+            Snackbar.Add($"Settings successfully backed up: {fileName}", Severity.Success);
+        } catch (Exception ex) {
+            Snackbar.Add($"Failed to backup settings: {ex.Message}", Severity.Error);
         }
     }
 

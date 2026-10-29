@@ -4,6 +4,7 @@ namespace StickLock.Services;
 
 public interface IAppConfigService {
     AppConfig Config { get; }
+    string BaseDirectory { get; }
     event Action? ConfigChanged;
     Task LoadConfigAsync();
     Task SaveConfigAsync();
@@ -18,4 +19,7 @@ public interface IAppConfigService {
     bool TryAutoDetectStarCitizenPath(out string detectedPath);
     Task ExportConfigAsync(string destinationPath);
     Task ImportConfigAsync(string sourcePath);
+    Task<string> BackupCurrentSettingsAsync();
+    IReadOnlyList<string> GetSettingsBackups();
+    Task RestoreSettingsBackupAsync(string backupFilePath);
 }

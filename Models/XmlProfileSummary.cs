@@ -13,3 +13,4 @@ public class XmlProfileSummary {
         ? $"{JoystickOptionsCount} joystick device(s), {RebindCount} rebinds ({string.Join(", ", DeviceNames)})"
         : $"Invalid: {ErrorMessage}";
 }
+

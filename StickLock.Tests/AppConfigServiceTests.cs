@@ -75,5 +75,27 @@ public class AppConfigServiceTests {
             if (File.Exists(isolated2)) { File.Delete(isolated2); }
         }
     }
+
+    [Fact]
+    public async Task BackupCurrentSettings_CreatesTimestampedBackup() {
+        var isolatedDir = Path.Combine(Path.GetTempPath(), $"sticklock_dir_{Guid.NewGuid():N}");
+        var isolatedConfig = Path.Combine(isolatedDir, "config.json");
+        try {
+            var service = new AppConfigService(isolatedConfig);
+            await service.SetStarCitizenPathAsync(@"C:\StarCitizen\LIVE\actionmaps.xml");
+            var backupPath = await service.BackupCurrentSettingsAsync();
+
+            Assert.True(File.Exists(backupPath));
+            Assert.Contains("settings_backups", backupPath);
+
+            var backups = service.GetSettingsBackups();
+            Assert.NotEmpty(backups);
+            Assert.Contains(backupPath, backups);
+        } finally {
+            if (Directory.Exists(isolatedDir)) {
+                Directory.Delete(isolatedDir, true);
+            }
+        }
+    }
 }
 

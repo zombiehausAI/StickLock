@@ -204,25 +204,27 @@ public class ActionMapsXmlService : IActionMapsXmlService {
     }
 
     public IReadOnlyList<string> GetAvailableBackups() {
+        var backupDir = Path.Combine(_configService.BaseDirectory, "backups");
+        var results = new List<FileInfo>();
+
+        if (Directory.Exists(backupDir)) {
+            results.AddRange(Directory.GetFiles(backupDir, "actionmaps_backup_*.xml").Select(f => new FileInfo(f)));
+        }
+
         var xmlPath = _configService.Config.StarCitizenPath;
-        if (string.IsNullOrWhiteSpace(xmlPath)) {
-            return Array.Empty<string>();
+        if (!string.IsNullOrWhiteSpace(xmlPath)) {
+            var dir = Path.GetDirectoryName(xmlPath);
+            if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir)) {
+                var legacyDir = Path.Combine(dir, "StickLock_Backups");
+                if (Directory.Exists(legacyDir)) {
+                    results.AddRange(Directory.GetFiles(legacyDir, "actionmaps_backup_*.xml").Select(f => new FileInfo(f)));
+                }
+            }
         }
 
-        var dir = Path.GetDirectoryName(xmlPath);
-        if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir)) {
-            return Array.Empty<string>();
-        }
-
-        var backupDir = Path.Combine(dir, "StickLock_Backups");
-        if (!Directory.Exists(backupDir)) {
-            return Array.Empty<string>();
-        }
-
-        return Directory.GetFiles(backupDir, "actionmaps_backup_*.xml")
-            .Select(f => new FileInfo(f))
-            .OrderByDescending(f => f.CreationTime)
+        return results.OrderByDescending(f => f.CreationTime)
             .Select(f => f.FullName)
+            .Distinct()
             .ToList();
     }
 
@@ -342,8 +344,7 @@ public class ActionMapsXmlService : IActionMapsXmlService {
     }
 
     private string CreateBackup(string xmlPath) {
-        var dir = Path.GetDirectoryName(xmlPath)!;
-        var backupDir = Path.Combine(dir, "StickLock_Backups");
+        var backupDir = Path.Combine(_configService.BaseDirectory, "backups");
         Directory.CreateDirectory(backupDir);
 
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -361,9 +362,7 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             foreach (var oldFile in existing.Skip(maxBackups)) {
                 try {
                     oldFile.Delete();
-                } catch {
-                    // Suppress deletion errors
-                }
+                } catch { }
             }
         }
 
