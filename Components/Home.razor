@@ -303,9 +303,9 @@
                                     Auto-Detect Sticks
                                 </MudButton>
                             </MudTooltip>
-                            <MudTooltip Text="@($"Copy in-game console resort command: '{_dynamicResortCommand}'")">
+                            <MudTooltip Text="@(string.IsNullOrWhiteSpace(_dynamicResortCommand) ? "Sticks are currently aligned (no in-game resort needed)" : $"Copy in-game console resort command: '{_dynamicResortCommand}'")">
                                 <MudButton Variant="Variant.Text"
-                                           Color="Color.Secondary"
+                                           Color="@(string.IsNullOrWhiteSpace(_dynamicResortCommand) ? Color.Default : Color.Secondary)"
                                            Size="Size.Small"
                                            StartIcon="@Icons.Material.Filled.ContentCopy"
                                            OnClick="CopyConsoleCommandAsync"
@@ -930,6 +930,11 @@
 
     private async Task CopyConsoleCommandAsync() {
         var cmd = await XmlService.GetConsoleResortCommandAsync();
+        if (string.IsNullOrWhiteSpace(cmd)) {
+            Snackbar.Add("Controllers are currently aligned! No in-game resort command is needed.", Severity.Info);
+            return;
+        }
+
         var tcs = new TaskCompletionSource();
         var thread = new Thread(() => {
             try {

@@ -513,24 +513,26 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         var swapMap = ComputeSlotSwapMap(canonical, liveDevices, xmlMappings);
 
         var commands = new List<string>();
-        if (swapMap.Count == 0) {
-            if (xmlMappings.Count >= 2) {
-                return new List<string> { $"pp_resortdevices joystick {xmlMappings[0].Instance} {xmlMappings[1].Instance}" };
-            }
-            return new List<string> { "pp_resortdevices joystick 1 2" };
-        }
-
         var handledPairs = new HashSet<string>();
+
         foreach (var (fromInst, toInst) in swapMap) {
+            if (fromInst == toInst) {
+                continue;
+            }
+
             var min = Math.Min(fromInst, toInst);
             var max = Math.Max(fromInst, toInst);
+            if (min == max) {
+                continue;
+            }
+
             var key = $"{min}_{max}";
             if (handledPairs.Add(key)) {
                 commands.Add($"pp_resortdevices joystick {min} {max}");
             }
         }
 
-        return commands.Count > 0 ? commands : new List<string> { "pp_resortdevices joystick 1 2" };
+        return commands;
     }
 
     public async Task<string> GetConsoleResortCommandAsync() {
