@@ -353,6 +353,46 @@ public class ActionMapsXmlServiceTests : IDisposable {
         Assert.Equal(SyncStatus.Aligned, alignment.Status);
     }
 
+    [Theory]
+    [InlineData(0, 4)]
+    [InlineData(1, 4)]
+    [InlineData(2, 3)]
+    public async Task GetConsoleResortCommand_ComputesDynamicSlots_ForArbitraryIndices(int slotA, int slotB) {
+        var guidA = Guid.NewGuid();
+        var guidB = Guid.NewGuid();
+
+        // XML has Device A on slotA, Device B on slotB
+        var xmlContent = $@"<ActionMaps version=""1"">
+            <options type=""joystick"" instance=""{slotA}"" Product=""Controller Alpha {{{guidA}}}""/>
+            <options type=""joystick"" instance=""{slotB}"" Product=""Controller Beta {{{guidB}}}""/>
+            <actionmap name=""spaceship_general"">
+                <action name=""v_pitch""><rebind input=""js{slotA}_pitch""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(_xmlPath, xmlContent);
+
+        var customConfigPath = Path.Combine(_tempDir, ".sticklock", "config.json");
+        var configService = new AppConfigService(customConfigPath);
+        await configService.SetStarCitizenPathAsync(_xmlPath);
+
+        // Windows DirectInput has them flipped: Device A is slotB, Device B is slotA
+        var diService = new TestDirectInputService();
+        diService.SetDevices(new List<DirectInputDevice> {
+            new() { SlotIndex = slotB, ProductName = "Controller Alpha", InstanceGuid = guidA, ProductGuid = guidA },
+            new() { SlotIndex = slotA, ProductName = "Controller Beta", InstanceGuid = guidB, ProductGuid = guidB }
+        });
+
+        var detector = new TestStarCitizenDetector();
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        var command = await xmlService.GetConsoleResortCommandAsync();
+        var min = Math.Min(slotA, slotB);
+        var max = Math.Max(slotA, slotB);
+
+        Assert.Equal($"pp_resortdevices joystick {min} {max}", command);
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {

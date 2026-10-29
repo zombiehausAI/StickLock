@@ -332,7 +332,7 @@
                     <MudIcon Icon="@Icons.Material.Filled.Lock" Color="Color.Primary" Class="mr-2" />
                     <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #00E5FF;">LOCKED CANONICAL ASSIGNMENT VS XML</MudText>
                 </div>
-                <MudTooltip Text="Copy in-game resort command">
+                <MudTooltip Text="@($"Copy console command: '{_dynamicResortCommand}'")">
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Secondary"
                                Size="Size.Small"
@@ -605,6 +605,7 @@
     private MappingAlignmentCheck _alignmentCheck = new();
     private string? _lastFixedBackupPath = null;
     private SyncStatus _status = SyncStatus.Unknown;
+    private string _dynamicResortCommand = "pp_resortdevices joystick 1 2";
     private bool _isSyncing = false;
     private bool _isRefreshingDevices = false;
 
@@ -640,9 +641,11 @@
         try {
             _alignmentCheck = await XmlService.CheckAlignmentAsync();
             _status = _alignmentCheck.Status;
+            _dynamicResortCommand = await XmlService.GetConsoleResortCommandAsync();
         } catch {
             _alignmentCheck = new MappingAlignmentCheck();
             _status = SyncStatus.Unknown;
+            _dynamicResortCommand = "pp_resortdevices joystick 1 2";
         }
     }
 

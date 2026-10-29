@@ -793,49 +793,60 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         IReadOnlyList<DirectInputDevice> liveDevices,
         IReadOnlyList<XmlStickMapping> xmlMappings) {
         var swapMap = new Dictionary<int, int>();
-        if (canonical.Count < 2) {
-            return swapMap;
-        }
 
-        // Determine which live slot each canonical stick currently occupies in Windows
-        var stickLiveSlots = new Dictionary<CanonicalStick, int>();
-        foreach (var stick in canonical) {
-            var live = liveDevices.FirstOrDefault(d => IsStickMatch(stick, d));
-            if (live == null) {
-                return swapMap; // Stick missing, cannot reliably compute swap
+        if (canonical.Count >= 2) {
+            // Determine which live slot each canonical stick currently occupies in Windows
+            var stickLiveSlots = new Dictionary<CanonicalStick, int>();
+            foreach (var stick in canonical) {
+                var live = liveDevices.FirstOrDefault(d => IsStickMatch(stick, d));
+                if (live == null) {
+                    return swapMap; // Stick missing, cannot reliably compute swap
+                }
+                stickLiveSlots[stick] = live.SlotIndex;
             }
-            stickLiveSlots[stick] = live.SlotIndex;
-        }
 
-        // Determine which XML instance currently belongs to each canonical stick
-        var stickXmlInstances = new Dictionary<CanonicalStick, int>();
-        foreach (var stick in canonical) {
-            var xmlEntry = xmlMappings.FirstOrDefault(x =>
-                (stick.InstanceGuid != Guid.Empty && x.ExtractedGuid == stick.InstanceGuid) ||
-                (stick.ProductGuid != Guid.Empty && x.ExtractedGuid == stick.ProductGuid));
+            // Determine which XML instance currently belongs to each canonical stick
+            var stickXmlInstances = new Dictionary<CanonicalStick, int>();
+            foreach (var stick in canonical) {
+                var xmlEntry = xmlMappings.FirstOrDefault(x =>
+                    (stick.InstanceGuid != Guid.Empty && x.ExtractedGuid == stick.InstanceGuid) ||
+                    (stick.ProductGuid != Guid.Empty && x.ExtractedGuid == stick.ProductGuid));
 
-            if (xmlEntry != null) {
-                stickXmlInstances[stick] = xmlEntry.Instance;
-            } else {
-                // Fallback: match by RoleSlot if instance exists
-                var fallbackEntry = xmlMappings.FirstOrDefault(x => x.Instance == stick.RoleSlot);
-                if (fallbackEntry != null) {
-                    stickXmlInstances[stick] = fallbackEntry.Instance;
+                if (xmlEntry != null) {
+                    stickXmlInstances[stick] = xmlEntry.Instance;
+                } else {
+                    // Fallback: match by RoleSlot if instance exists
+                    var fallbackEntry = xmlMappings.FirstOrDefault(x => x.Instance == stick.RoleSlot);
+                    if (fallbackEntry != null) {
+                        stickXmlInstances[stick] = fallbackEntry.Instance;
+                    }
                 }
             }
-        }
 
-        // Compare: for each canonical stick, does its XML instance match its current live Windows slot?
-        foreach (var stick in canonical) {
-            if (!stickLiveSlots.TryGetValue(stick, out var liveSlot)) {
-                continue;
-            }
-            if (!stickXmlInstances.TryGetValue(stick, out var xmlInstance)) {
-                continue;
-            }
+            // Compare: for each canonical stick, does its XML instance match its current live Windows slot?
+            foreach (var stick in canonical) {
+                if (!stickLiveSlots.TryGetValue(stick, out var liveSlot)) {
+                    continue;
+                }
+                if (!stickXmlInstances.TryGetValue(stick, out var xmlInstance)) {
+                    continue;
+                }
 
-            if (xmlInstance != liveSlot) {
-                swapMap[xmlInstance] = liveSlot;
+                if (xmlInstance != liveSlot) {
+                    swapMap[xmlInstance] = liveSlot;
+                }
+            }
+        } else if (xmlMappings.Count >= 2) {
+            // Match XML mappings directly against live devices
+            foreach (var xmlEntry in xmlMappings) {
+                var live = liveDevices.FirstOrDefault(d =>
+                    (xmlEntry.ExtractedGuid != Guid.Empty && d.InstanceGuid == xmlEntry.ExtractedGuid) ||
+                    (xmlEntry.ExtractedGuid != Guid.Empty && d.ProductGuid == xmlEntry.ExtractedGuid) ||
+                    string.Equals(d.ProductName, xmlEntry.ProductName, StringComparison.OrdinalIgnoreCase));
+
+                if (live != null && xmlEntry.Instance != live.SlotIndex) {
+                    swapMap[xmlEntry.Instance] = live.SlotIndex;
+                }
             }
         }
 

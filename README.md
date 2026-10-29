@@ -35,7 +35,7 @@ Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.
   - **1-Click "Fix & Update Mappings"**: Immediately creates a timestamped backup in `~/.sticklock/backups/`, rewrites `actionmaps.xml` in Star Citizen so controls match current Windows order, and mirrors the aligned configuration in `.sticklock`.
   - Full rollback support via the one-click "Restore This Backup" button.
 - **Background USB Monitoring**: WMI hardware watcher (`Win32_DeviceChangeEvent`) with a 1.5-second debounce timer to absorb USB hub power-cycles.
-- **Star Citizen Process Guard**: Detects active `StarCitizen.exe` processes and safely defers auto-sync to avoid file lock conflicts, providing an in-game console command (`pp_resortdevices joystick 1 2`) for live resort.
+- **Star Citizen Process Guard & Dynamic Console Resort**: Detects active `StarCitizen.exe` processes and safely defers file writes to avoid game lock conflicts. Dynamically calculates and formats the exact in-game console resort command(s) for your specific hardware slots (e.g. `pp_resortdevices joystick 1 4`, `pp_resortdevices joystick 0 4`, `pp_resortdevices joystick 2 3`, etc.) with 1-click clipboard copy for live in-game resorting without game restart.
 - **Idempotent Two-Pass Transformation**: Replaces `<options type="joystick" instance="X">` and `<rebind input="jsX_...">` attributes using unique intermediary placeholders to eliminate collision errors.
 - **Automated Backup & Pruning**: Creates timestamped backups in `StickLock_Backups` with customizable pruning limits and one-click restoration.
 - **Centralized `.sticklock` User Directory & Immune Mappings Library**:
