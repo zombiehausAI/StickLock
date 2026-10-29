@@ -127,25 +127,19 @@
     <!-- Compact Star Citizen Root & Multi-Install Bar -->
     <MudPaper Class="mfd-card pa-3">
         <div class="d-flex flex-column gap-3">
-            <!-- Row 1: Star Citizen Folder & Browse Actions -->
+            <!-- Row 1: Star Citizen Folder Input & Browse Actions -->
             <div class="d-flex flex-wrap align-center justify-space-between gap-2">
-                <div class="d-flex align-center gap-2 flex-grow-1" style="min-width: 280px;">
-                    <MudIcon Icon="@Icons.Material.Filled.FolderSpecial" Color="Color.Primary" Size="Size.Medium" />
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-center gap-2">
-                            <span class="mfd-title" style="color: #00E5FF; font-size: 0.8rem;">STAR CITIZEN FOLDER</span>
-                            @if (_detectedInstalls.Any(i => i.HasActionMapsXml)) {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined" Class="py-0 px-2" Style="height: 18px; font-size: 0.68rem;">
-                                    @(_detectedInstalls.Count(i => i.HasActionMapsXml)) XML Detected
-                                </MudChip>
-                            }
-                        </div>
-                        <div class="mfd-code" style="color: #CBD5E1; font-size: 0.8rem; word-break: break-all;">
-                            @(!string.IsNullOrWhiteSpace(ConfigService.Config.StarCitizenRootPath)
-                                ? ConfigService.Config.StarCitizenRootPath
-                                : (!string.IsNullOrWhiteSpace(ConfigService.Config.StarCitizenPath) ? ConfigService.Config.StarCitizenPath : "No Star Citizen folder configured"))
-                        </div>
-                    </div>
+                <div class="flex-grow-1" style="min-width: 300px;">
+                    <MudTextField Value="@GetDisplayedScFolder()"
+                                  ValueChanged="@((string val) => OnScRootFolderInputChangedAsync(val))"
+                                  Label="Star Citizen Installation Folder (Root containing LIVE, PTU, EPTU, TECH-PREVIEW)"
+                                  Placeholder="e.g. C:\Program Files\Roberts Space Industries\StarCitizen"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.FolderSpecial"
+                                  AdornmentColor="Color.Primary"
+                                  Class="mfd-code" />
                 </div>
 
                 <div class="d-flex align-center gap-2">
@@ -787,6 +781,26 @@
         await ReloadXmlMappingsAsync();
         await RefreshAlignmentCheckAsync();
         Snackbar.Add($"Switched active view to {env}.", Severity.Info);
+    }
+
+    private string GetDisplayedScFolder() {
+        return !string.IsNullOrWhiteSpace(ConfigService.Config.StarCitizenRootPath)
+            ? ConfigService.Config.StarCitizenRootPath
+            : ConfigService.Config.StarCitizenPath;
+    }
+
+    private async Task OnScRootFolderInputChangedAsync(string val) {
+        if (string.IsNullOrWhiteSpace(val)) {
+            return;
+        }
+        if (val.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)) {
+            await ConfigService.SetStarCitizenPathAsync(val);
+        } else {
+            await ConfigService.SetStarCitizenRootFolderAsync(val);
+        }
+        _detectedInstalls = ConfigService.GetDetectedInstalls();
+        await ReloadXmlMappingsAsync();
+        await RefreshAlignmentCheckAsync();
     }
 
     private async Task BrowseXmlFileAsync() {
