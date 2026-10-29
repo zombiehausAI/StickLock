@@ -17,6 +17,8 @@ public class AppConfig {
     public int? WindowHeight { get; set; }
     public bool WindowMaximized { get; set; } = false;
     public List<CanonicalStick> CanonicalSticks { get; set; } = new();
+    public FlightAxisMode FlightAxisMode { get; set; } = FlightAxisMode.SpaceSim;
+    public bool AutoEnsureFlightAxes { get; set; } = true;
     public int MaxBackupsToKeep { get; set; } = 10;
 }
 

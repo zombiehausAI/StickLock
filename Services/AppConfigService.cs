@@ -155,6 +155,16 @@ public class AppConfigService : IAppConfigService {
         await SaveConfigAsync();
     }
 
+    public async Task SetFlightAxisModeAsync(FlightAxisMode mode) {
+        _config.FlightAxisMode = mode;
+        await SaveConfigAsync();
+    }
+
+    public async Task SetAutoEnsureFlightAxesAsync(bool enable) {
+        _config.AutoEnsureFlightAxes = enable;
+        await SaveConfigAsync();
+    }
+
     public async Task SetStarCitizenPathAsync(string path) {
         _config.StarCitizenPath = path.Trim();
         var inferredRoot = ExtractStarCitizenRoot(_config.StarCitizenPath);

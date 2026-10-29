@@ -1150,6 +1150,58 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                 return val;
             });
         }
+
+        if (_configService.Config.AutoEnsureFlightAxes && _configService.Config.FlightAxisMode != FlightAxisMode.PreserveOnly) {
+            EnsureFlightAxes(doc, swapMap);
+        }
+    }
+
+    private void EnsureFlightAxes(XDocument doc, Dictionary<int, int> swapMap) {
+        var movementMap = doc.Descendants("actionmap")
+            .FirstOrDefault(e => string.Equals((string?)e.Attribute("name"), "spaceship_movement", StringComparison.OrdinalIgnoreCase));
+        if (movementMap == null) {
+            return;
+        }
+
+        var rightStick = _configService.Config.CanonicalSticks
+            .FirstOrDefault(s => s.RoleSlot == 1 || s.FriendlyRoleName.Contains("Right", StringComparison.OrdinalIgnoreCase))
+            ?? _configService.Config.CanonicalSticks.FirstOrDefault();
+
+        var rightSlot = 1;
+        if (rightStick != null) {
+            if (swapMap.TryGetValue(rightStick.RoleSlot, out var mappedSlot)) {
+                rightSlot = mappedSlot;
+            } else {
+                var live = _directInputService.CurrentDevices.FirstOrDefault(d => IsStickMatch(rightStick, d));
+                rightSlot = live?.SlotIndex ?? rightStick.RoleSlot;
+            }
+        }
+
+        var isSpaceSim = _configService.Config.FlightAxisMode == FlightAxisMode.SpaceSim;
+
+        EnsureActionRebind(movementMap, "v_pitch", $"js{rightSlot}_y");
+        EnsureActionRebind(movementMap, isSpaceSim ? "v_yaw" : "v_roll", $"js{rightSlot}_x");
+        EnsureActionRebind(movementMap, isSpaceSim ? "v_roll" : "v_yaw", $"js{rightSlot}_rotz");
+    }
+
+    private static void EnsureActionRebind(XElement actionMap, string actionName, string defaultInput) {
+        var action = actionMap.Elements("action")
+            .FirstOrDefault(a => string.Equals((string?)a.Attribute("name"), actionName, StringComparison.OrdinalIgnoreCase));
+        if (action == null) {
+            action = new XElement("action", new XAttribute("name", actionName));
+            actionMap.Add(action);
+        }
+
+        var rebind = action.Element("rebind");
+        if (rebind == null) {
+            rebind = new XElement("rebind", new XAttribute("input", defaultInput));
+            action.Add(rebind);
+        } else {
+            var currentInput = (string?)rebind.Attribute("input") ?? "";
+            if (string.IsNullOrWhiteSpace(currentInput) || currentInput.EndsWith("_ ") || currentInput.StartsWith("js1_")) {
+                rebind.SetAttributeValue("input", defaultInput);
+            }
+        }
     }
 
     private void TransformRebindAttributes(XElement element, Func<string, string> transformer) {

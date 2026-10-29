@@ -14,6 +14,8 @@ public interface IAppConfigService {
     Task SetStartMinimizedAsync(bool enable);
     Task SetAllowSyncWhileGameRunningAsync(bool enable);
     Task SetAutoDeployToMappingsFolderAsync(bool enable);
+    Task SetFlightAxisModeAsync(FlightAxisMode mode);
+    Task SetAutoEnsureFlightAxesAsync(bool enable);
     Task SetSyncAllDetectedInstallsAsync(bool enable);
     Task SetStarCitizenPathAsync(string path);
     Task SetStarCitizenRootFolderAsync(string folderPath);

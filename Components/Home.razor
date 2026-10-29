@@ -583,6 +583,29 @@
 
                         <MudDivider Class="my-2" Style="border-color: rgba(0, 229, 255, 0.1);" />
 
+                        <div class="d-flex flex-column gap-1">
+                            <div class="d-flex align-center justify-space-between">
+                                <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #38BDF8;">Right Stick Primary Axes</MudText>
+                                <MudTooltip Text="When Star Citizen defaults omit pitch/yaw/roll from XML, StickLock auto-ensures your flight stick stays functional">
+                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Default" />
+                                </MudTooltip>
+                            </div>
+                            <MudSelect T="FlightAxisMode"
+                                       Value="ConfigService.Config.FlightAxisMode"
+                                       ValueChanged="@((FlightAxisMode val) => OnFlightAxisModeChangedAsync(val))"
+                                       Margin="Margin.Dense"
+                                       Variant="Variant.Outlined"
+                                       Dense="true"
+                                       Class="mfd-code"
+                                       Style="font-size: 0.8rem;">
+                                <MudSelectItem Value="FlightAxisMode.SpaceSim">Space Sim (Pitch=Y, Yaw=X, Roll=Twist)</MudSelectItem>
+                                <MudSelectItem Value="FlightAxisMode.Atmospheric">Atmospheric (Pitch=Y, Roll=X, Yaw=Twist)</MudSelectItem>
+                                <MudSelectItem Value="FlightAxisMode.PreserveOnly">Preserve XML Only (No Auto-Fill)</MudSelectItem>
+                            </MudSelect>
+                        </div>
+
+                        <MudDivider Class="my-2" Style="border-color: rgba(0, 229, 255, 0.1);" />
+
                         <div class="d-flex flex-wrap gap-2">
                             <MudButton Variant="Variant.Filled"
                                        Color="Color.Primary"
@@ -915,6 +938,16 @@
     private async Task OnAutoDeployToMappingsFolderChanged(bool val) {
         await ConfigService.SetAutoDeployToMappingsFolderAsync(val);
         Snackbar.Add($"Auto-deploy to in-game Controls\\Mappings is now {(val ? "ENABLED" : "DISABLED")}.", Severity.Info);
+    }
+
+    private async Task OnFlightAxisModeChangedAsync(FlightAxisMode mode) {
+        await ConfigService.SetFlightAxisModeAsync(mode);
+        var label = mode switch {
+            FlightAxisMode.SpaceSim => "Space Sim (Pitch=Y, Yaw=X, Roll=Twist)",
+            FlightAxisMode.Atmospheric => "Atmospheric (Pitch=Y, Roll=X, Yaw=Twist)",
+            _ => "Preserve XML Only"
+        };
+        Snackbar.Add($"Right Stick flight axes set to: {label}", Severity.Info);
     }
 
     private async Task AssignDeviceAsync(DirectInputDevice device, int slot, string roleName) {
