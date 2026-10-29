@@ -94,7 +94,8 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                 var live = liveDevices.FirstOrDefault(d => IsStickMatch(stick, d));
                 var xmlEntry = xmlMappings.FirstOrDefault(x =>
                     (stick.InstanceGuid != Guid.Empty && x.ExtractedGuid == stick.InstanceGuid) ||
-                    (stick.ProductGuid != Guid.Empty && x.ExtractedGuid == stick.ProductGuid))
+                    (stick.ProductGuid != Guid.Empty && x.ExtractedGuid == stick.ProductGuid) ||
+                    (!string.IsNullOrWhiteSpace(stick.ProductName) && string.Equals(x.ProductName, stick.ProductName, StringComparison.OrdinalIgnoreCase)))
                     ?? xmlMappings.FirstOrDefault(x => x.Instance == stick.RoleSlot);
 
                 var liveSlot = live?.SlotIndex ?? 0;
@@ -168,22 +169,37 @@ public class ActionMapsXmlService : IActionMapsXmlService {
     }
 
     public async Task<SyncResult> AutoLockAndAlignFromXmlAsync(bool force = false) {
+        var xmlPath = _configService.Config.StarCitizenPath;
         var xmlMappings = await GetXmlMappingsAsync();
         if (xmlMappings.Count == 0) {
             return SyncResult.Fail("No joystick mappings found in Star Citizen actionmaps.xml.");
         }
 
+        var boundInstances = await GetBoundJoystickInstancesAsync(xmlPath);
+        var candidates = xmlMappings
+            .Where(x => !string.IsNullOrWhiteSpace(x.ProductName))
+            .ToList();
+
+        var withRebinds = candidates.Where(x => boundInstances.Contains(x.Instance)).ToList();
+        if (withRebinds.Count >= 2) {
+            candidates = withRebinds;
+        }
+
+        while (_configService.Config.CanonicalSticks.Count > 0) {
+            await _configService.RemoveCanonicalStickAsync(_configService.Config.CanonicalSticks[0].RoleSlot);
+        }
+
         var liveDevices = await _directInputService.RefreshDevicesAsync();
         var added = 0;
 
-        foreach (var xml in xmlMappings) {
+        foreach (var xml in candidates) {
             var live = liveDevices.FirstOrDefault(d =>
                 (xml.ExtractedGuid != Guid.Empty && d.InstanceGuid == xml.ExtractedGuid) ||
                 (xml.ExtractedGuid != Guid.Empty && d.ProductGuid == xml.ExtractedGuid) ||
                 string.Equals(d.ProductName, xml.ProductName, StringComparison.OrdinalIgnoreCase));
 
-            var stickName = live != null ? live.ProductName : (!string.IsNullOrWhiteSpace(xml.ProductName) ? xml.ProductName : $"Joystick {xml.Instance}");
-            var friendlyRole = xml.Instance == 1 ? $"Stick 1 ({stickName})" : (xml.Instance == 2 ? $"Stick 2 ({stickName})" : $"Stick {xml.Instance} ({stickName})");
+            var stickName = live != null ? live.ProductName : xml.ProductName;
+            var friendlyRole = $"Stick {xml.Instance} ({stickName})";
 
             var deviceToAssign = live ?? new DirectInputDevice {
                 SlotIndex = xml.Instance,
@@ -204,6 +220,32 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         }
 
         return SyncResult.Ok($"Locked {added} joystick(s) from Star Citizen. Devices are aligned with current Windows order.", changesMade: false, status: SyncStatus.Aligned);
+    }
+
+    private static async Task<HashSet<int>> GetBoundJoystickInstancesAsync(string? xmlPath) {
+        var result = new HashSet<int>();
+        if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
+            return result;
+        }
+
+        try {
+            await using var stream = File.OpenRead(xmlPath);
+            var doc = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
+            var jsRegex = new Regex(@"\bjs(\d+)_", RegexOptions.Compiled);
+            foreach (var rebind in doc.Descendants("rebind")) {
+                var input = (string?)rebind.Attribute("input");
+                if (string.IsNullOrWhiteSpace(input)) {
+                    continue;
+                }
+                foreach (Match m in jsRegex.Matches(input)) {
+                    if (int.TryParse(m.Groups[1].Value, out var inst)) {
+                        result.Add(inst);
+                    }
+                }
+            }
+        } catch { }
+
+        return result;
     }
 
     public async Task<SyncResult> SyncAsync(bool force = false) {
@@ -395,6 +437,7 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             await using var stream = File.OpenRead(xmlPath);
             var doc = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
             var results = new List<XmlStickMapping>();
+            var seenInstances = new HashSet<int>();
 
             var optionNodes = doc.Descendants("options")
                 .Where(e => string.Equals((string?)e.Attribute("type"), "joystick", StringComparison.OrdinalIgnoreCase));
@@ -406,6 +449,14 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                 }
 
                 var productAttr = (string?)opt.Attribute("Product") ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(productAttr)) {
+                    continue;
+                }
+
+                if (!seenInstances.Add(instance)) {
+                    continue;
+                }
+
                 var guid = Guid.Empty;
                 var guidMatch = GuidRegex.Match(productAttr);
                 if (guidMatch.Success) {
@@ -634,14 +685,24 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                 await using var stream = File.OpenRead(filePath);
                 var doc = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
                 var options = doc.Descendants("options")
-                    .Where(e => string.Equals((string?)e.Attribute("type"), "joystick", StringComparison.OrdinalIgnoreCase))
+                    .Where(e => string.Equals((string?)e.Attribute("type"), "joystick", StringComparison.OrdinalIgnoreCase) &&
+                                !string.IsNullOrWhiteSpace((string?)e.Attribute("Product")))
                     .ToList();
 
-                summary.JoystickOptionsCount = options.Count;
+                var seenInstances = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var opt in options) {
-                    var product = (string?)opt.Attribute("Product") ?? $"Joystick {(string?)opt.Attribute("instance")}";
+                    var inst = (string?)opt.Attribute("instance") ?? string.Empty;
+                    if (!seenInstances.Add(inst)) {
+                        continue;
+                    }
+                    var product = (string?)opt.Attribute("Product") ?? $"Joystick {inst}";
+                    var guidMatch = GuidRegex.Match(product);
+                    if (guidMatch.Success) {
+                        product = product.Replace(guidMatch.Value, "").Trim();
+                    }
                     summary.DeviceNames.Add(product.Trim());
                 }
+                summary.JoystickOptionsCount = summary.DeviceNames.Count;
 
                 summary.RebindCount = doc.Descendants("rebind").Count();
                 summary.IsValid = true;
@@ -948,7 +1009,7 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         IReadOnlyList<XmlStickMapping> xmlMappings) {
         var swapMap = new Dictionary<int, int>();
 
-        if (canonical.Count >= 2) {
+        if (canonical.Count >= 1) {
             // Determine which live slot each canonical stick currently occupies in Windows
             var stickLiveSlots = new Dictionary<CanonicalStick, int>();
             foreach (var stick in canonical) {
@@ -964,7 +1025,8 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             foreach (var stick in canonical) {
                 var xmlEntry = xmlMappings.FirstOrDefault(x =>
                     (stick.InstanceGuid != Guid.Empty && x.ExtractedGuid == stick.InstanceGuid) ||
-                    (stick.ProductGuid != Guid.Empty && x.ExtractedGuid == stick.ProductGuid));
+                    (stick.ProductGuid != Guid.Empty && x.ExtractedGuid == stick.ProductGuid) ||
+                    (!string.IsNullOrWhiteSpace(stick.ProductName) && string.Equals(x.ProductName, stick.ProductName, StringComparison.OrdinalIgnoreCase)));
 
                 if (xmlEntry != null) {
                     stickXmlInstances[stick] = xmlEntry.Instance;
@@ -988,6 +1050,34 @@ public class ActionMapsXmlService : IActionMapsXmlService {
 
                 if (xmlInstance != liveSlot) {
                     swapMap[xmlInstance] = liveSlot;
+                }
+            }
+
+            // If at least one locked stick moved slots, also align any remaining XML devices that were displaced
+            if (swapMap.Count > 0) {
+                foreach (var xmlEntry in xmlMappings) {
+                    if (swapMap.ContainsKey(xmlEntry.Instance)) {
+                        continue;
+                    }
+                    var live = liveDevices.FirstOrDefault(d =>
+                        (xmlEntry.ExtractedGuid != Guid.Empty && d.InstanceGuid == xmlEntry.ExtractedGuid) ||
+                        (xmlEntry.ExtractedGuid != Guid.Empty && d.ProductGuid == xmlEntry.ExtractedGuid) ||
+                        string.Equals(d.ProductName, xmlEntry.ProductName, StringComparison.OrdinalIgnoreCase));
+
+                    if (live != null && xmlEntry.Instance != live.SlotIndex && !swapMap.ContainsValue(live.SlotIndex)) {
+                        swapMap[xmlEntry.Instance] = live.SlotIndex;
+                    }
+                }
+
+                // Ensure any target slot that exists in xmlMappings but isn't yet a key in swapMap swaps into a vacated source slot
+                var vacatedSlots = swapMap.Keys.Except(swapMap.Values).ToList();
+                var displacedTargets = swapMap.Values
+                    .Where(target => !swapMap.ContainsKey(target) && xmlMappings.Any(x => x.Instance == target))
+                    .Distinct()
+                    .ToList();
+
+                for (var i = 0; i < Math.Min(displacedTargets.Count, vacatedSlots.Count); i++) {
+                    swapMap[displacedTargets[i]] = vacatedSlots[i];
                 }
             }
         } else if (xmlMappings.Count >= 2) {

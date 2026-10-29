@@ -82,6 +82,14 @@ public class AppConfigService : IAppConfigService {
         }
 
         var changed = false;
+        var purgedBogusSticks = _config.CanonicalSticks.RemoveAll(s =>
+            s.InstanceGuid == Guid.Empty &&
+            s.ProductGuid == Guid.Empty &&
+            (string.IsNullOrWhiteSpace(s.ProductName) || s.ProductName.StartsWith("Joystick ", StringComparison.OrdinalIgnoreCase)));
+        if (purgedBogusSticks > 0) {
+            changed = true;
+        }
+
         if (string.IsNullOrWhiteSpace(_config.StarCitizenPath) && TryAutoDetectStarCitizenPath(out var autoPath)) {
             _config.StarCitizenPath = autoPath;
             changed = true;
@@ -283,7 +291,10 @@ public class AppConfigService : IAppConfigService {
     }
 
     public async Task SetCanonicalStickAsync(int slot, DirectInputDevice device, string friendlyName) {
-        _config.CanonicalSticks.RemoveAll(s => s.RoleSlot == slot);
+        _config.CanonicalSticks.RemoveAll(s =>
+            s.RoleSlot == slot ||
+            (device.InstanceGuid != Guid.Empty && s.InstanceGuid == device.InstanceGuid) ||
+            (device.ProductGuid != Guid.Empty && s.ProductGuid == device.ProductGuid));
         _config.CanonicalSticks.Add(new CanonicalStick {
             RoleSlot = slot,
             FriendlyRoleName = friendlyName,

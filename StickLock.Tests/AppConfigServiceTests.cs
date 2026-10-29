@@ -6,19 +6,27 @@ namespace StickLock.Tests;
 public class AppConfigServiceTests {
     [Fact]
     public void ResolveActionMapsPath_SwitchesLiveToPtuAndBack() {
-        var service = new AppConfigService();
-        var livePath = @"C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\USER\Client\0\Profiles\default\actionmaps.xml";
+        var isolatedConfig = Path.Combine(Path.GetTempPath(), $"cfg_resolve_{Guid.NewGuid():N}", "config.json");
+        try {
+            var service = new AppConfigService(isolatedConfig);
+            var livePath = @"C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\USER\Client\0\Profiles\default\actionmaps.xml";
 
-        var ptuPath = service.ResolveActionMapsPath(livePath, ScEnvironment.PTU);
-        Assert.Contains(@"\PTU\", ptuPath);
-        Assert.DoesNotContain(@"\LIVE\", ptuPath);
+            var ptuPath = service.ResolveActionMapsPath(livePath, ScEnvironment.PTU);
+            Assert.Contains(@"\PTU\", ptuPath);
+            Assert.DoesNotContain(@"\LIVE\", ptuPath);
 
-        var eptuPath = service.ResolveActionMapsPath(ptuPath, ScEnvironment.EPTU);
-        Assert.Contains(@"\EPTU\", eptuPath);
-        Assert.DoesNotContain(@"\PTU\", eptuPath);
+            var eptuPath = service.ResolveActionMapsPath(ptuPath, ScEnvironment.EPTU);
+            Assert.Contains(@"\EPTU\", eptuPath);
+            Assert.DoesNotContain(@"\PTU\", eptuPath);
 
-        var backToLive = service.ResolveActionMapsPath(eptuPath, ScEnvironment.LIVE);
-        Assert.Contains(@"\LIVE\", backToLive);
+            var backToLive = service.ResolveActionMapsPath(eptuPath, ScEnvironment.LIVE);
+            Assert.Contains(@"\LIVE\", backToLive);
+        } finally {
+            var dir = Path.GetDirectoryName(isolatedConfig);
+            if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir)) {
+                Directory.Delete(dir, true);
+            }
+        }
     }
 
     [Fact]

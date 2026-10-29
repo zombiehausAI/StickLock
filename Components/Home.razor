@@ -35,9 +35,9 @@
                             Windows DirectInput slot enumeration does not match Star Citizen's <span class="mfd-code" style="color: #00E5FF;">actionmaps.xml</span>.
                         </MudText>
 
-                        @if (_alignmentCheck.Mismatches.Count > 0) {
+                        @if (_alignmentCheck.Mismatches.Any(m => m.IsFlipped)) {
                             <div class="d-flex flex-wrap gap-2 mt-2">
-                                @foreach (var m in _alignmentCheck.Mismatches) {
+                                @foreach (var m in _alignmentCheck.Mismatches.Where(m => m.IsFlipped)) {
                                     <div class="pa-1 px-2 rounded d-flex align-center gap-2" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(239, 68, 68, 0.45); font-size: 0.8rem;">
                                         <span style="color: #F1F5F9; font-weight: 600;">@m.DeviceName:</span>
                                         <span class="mfd-code" style="color: #94A3B8;">XML:</span>
@@ -268,20 +268,14 @@
                                 </MudTd>
                                 <MudTd Style="text-align: right;">
                                     <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary">
-                                        <MudButton Size="Size.Small"
-                                                   Variant="@(IsStickAssignedToSlot(context, 1) ? Variant.Filled : Variant.Outlined)"
-                                                   OnClick="@(() => AssignDeviceAsync(context, 1, "Right Stick (Primary)"))">
-                                            JS1
-                                        </MudButton>
-                                        <MudButton Size="Size.Small"
-                                                   Variant="@(IsStickAssignedToSlot(context, 2) ? Variant.Filled : Variant.Outlined)"
-                                                   OnClick="@(() => AssignDeviceAsync(context, 2, "Left Stick (Throttle)"))">
-                                            JS2
-                                        </MudButton>
-                                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true">
-                                            <MudMenuItem OnClick="@(() => AssignDeviceAsync(context, 3, "Pedals / Rudder"))">Lock as JS3 (Pedals)</MudMenuItem>
-                                            <MudMenuItem OnClick="@(() => AssignDeviceAsync(context, 4, "Button Box / Aux"))">Lock as JS4 (Aux)</MudMenuItem>
-                                        </MudMenu>
+                                        @for (var slotNum = 1; slotNum <= 4; slotNum++) {
+                                            var targetSlot = slotNum;
+                                            <MudButton Size="Size.Small"
+                                                       Variant="@(IsStickAssignedToSlot(context, targetSlot) ? Variant.Filled : Variant.Outlined)"
+                                                       OnClick="@(() => AssignDeviceAsync(context, targetSlot, $"Stick {targetSlot} ({context.ProductName})"))">
+                                                JS@(targetSlot)
+                                            </MudButton>
+                                        }
                                     </MudButtonGroup>
                                 </MudTd>
                             </RowTemplate>
@@ -298,23 +292,35 @@
                                 LOCKED SLOTS (@ConfigService.Config.SelectedEnvironment)
                             </MudText>
                         </div>
-                        <MudTooltip Text="@($"Copy in-game console resort command: '{_dynamicResortCommand}'")">
-                            <MudButton Variant="Variant.Text"
-                                       Color="Color.Secondary"
-                                       Size="Size.Small"
-                                       StartIcon="@Icons.Material.Filled.ContentCopy"
-                                       OnClick="CopyConsoleCommandAsync"
-                                       Class="mfd-title">
-                                Copy Resort Cmd
-                            </MudButton>
-                        </MudTooltip>
+                        <div class="d-flex align-center gap-1">
+                            <MudTooltip Text="Auto-detect and lock only joysticks with active bindings in Star Citizen XML">
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.AutoFixHigh"
+                                           OnClick="AutoLockFromStarCitizenXmlAsync"
+                                           Class="mfd-title">
+                                    Auto-Detect Sticks
+                                </MudButton>
+                            </MudTooltip>
+                            <MudTooltip Text="@($"Copy in-game console resort command: '{_dynamicResortCommand}'")">
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Secondary"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.ContentCopy"
+                                           OnClick="CopyConsoleCommandAsync"
+                                           Class="mfd-title">
+                                    Copy Resort Cmd
+                                </MudButton>
+                            </MudTooltip>
+                        </div>
                     </div>
 
                     @if (ConfigService.Config.CanonicalSticks.Count == 0) {
                         <div class="pa-6 text-center rounded" style="background: rgba(15, 23, 42, 0.5); border: 1px dashed rgba(148, 163, 184, 0.2);">
                             <MudIcon Icon="@Icons.Material.Filled.LockOpen" Size="Size.Large" Color="Color.Default" Class="mb-2" />
                             <MudText Typo="Typo.body2" Style="color: #94A3B8;">No Canonical Slots Locked</MudText>
-                            <MudText Typo="Typo.caption" Style="color: #64748B;">Click JS1 / JS2 on the left to lock your primary and secondary flight sticks.</MudText>
+                            <MudText Typo="Typo.caption" Style="color: #64748B;">Click JS1..JS4 on the left or "Auto-Detect Sticks" above to lock your flight controllers.</MudText>
                         </div>
                     } else {
                         <MudTable Items="ConfigService.Config.CanonicalSticks" Dense="true" Hover="true" Elevation="0" Class="transparent">
@@ -326,6 +332,11 @@
                                 <MudTh Style="color: #00E5FF; font-weight: 700; text-align: right;"></MudTh>
                             </HeaderContent>
                             <RowTemplate>
+                                @{
+                                    var liveSlot = GetLiveSlotForStick(context);
+                                    var xmlInst = GetXmlInstanceForStick(context);
+                                    var isAlignedWithXml = liveSlot > 0 && xmlInst > 0 && liveSlot == xmlInst;
+                                }
                                 <MudTd>
                                     <MudChip T="string" Color="Color.Secondary" Size="Size.Small" Variant="Variant.Outlined" Class="font-weight-bold">
                                         @context.SlotName
@@ -336,11 +347,8 @@
                                     <MudText Typo="Typo.caption" Style="color: #64748B;">@context.FriendlyRoleName</MudText>
                                 </MudTd>
                                 <MudTd>
-                                    @{
-                                        var liveSlot = GetLiveSlotForStick(context);
-                                    }
                                     @if (liveSlot > 0) {
-                                        <MudChip T="string" Color="@(liveSlot == context.RoleSlot ? Color.Success : Color.Warning)" Size="Size.Small" Variant="Variant.Filled">
+                                        <MudChip T="string" Color="@(isAlignedWithXml ? Color.Success : Color.Warning)" Size="Size.Small" Variant="Variant.Filled">
                                             js@(liveSlot)
                                         </MudChip>
                                     } else {
@@ -350,11 +358,8 @@
                                     }
                                 </MudTd>
                                 <MudTd>
-                                    @{
-                                        var xmlInst = GetXmlInstanceForStick(context);
-                                    }
                                     @if (xmlInst > 0) {
-                                        <MudChip T="string" Color="@(xmlInst == context.RoleSlot ? Color.Success : Color.Warning)" Size="Size.Small" Variant="Variant.Outlined">
+                                        <MudChip T="string" Color="@(isAlignedWithXml ? Color.Success : Color.Error)" Size="Size.Small" Variant="Variant.Outlined">
                                             js@(xmlInst)
                                         </MudChip>
                                     } else {
@@ -895,18 +900,25 @@
     }
 
     private bool IsStickAssignedToSlot(DirectInputDevice device, int slot) {
-        return ConfigService.Config.CanonicalSticks.Any(s => s.RoleSlot == slot && s.InstanceGuid == device.InstanceGuid);
+        return ConfigService.Config.CanonicalSticks.Any(s =>
+            s.RoleSlot == slot &&
+            ((device.InstanceGuid != Guid.Empty && s.InstanceGuid == device.InstanceGuid) ||
+             (device.ProductGuid != Guid.Empty && s.ProductGuid == device.ProductGuid)));
     }
 
     private int GetLiveSlotForStick(CanonicalStick stick) {
-        var dev = _liveDevices.FirstOrDefault(d => d.InstanceGuid == stick.InstanceGuid || (stick.InstanceGuid == Guid.Empty && d.ProductGuid == stick.ProductGuid));
+        var dev = _liveDevices.FirstOrDefault(d =>
+            (stick.InstanceGuid != Guid.Empty && d.InstanceGuid == stick.InstanceGuid) ||
+            (stick.ProductGuid != Guid.Empty && d.ProductGuid == stick.ProductGuid) ||
+            (!string.IsNullOrWhiteSpace(stick.ProductName) && string.Equals(d.ProductName, stick.ProductName, StringComparison.OrdinalIgnoreCase)));
         return dev?.SlotIndex ?? 0;
     }
 
     private int GetXmlInstanceForStick(CanonicalStick stick) {
         var mapping = _xmlMappings.FirstOrDefault(x =>
             (stick.InstanceGuid != Guid.Empty && x.ExtractedGuid == stick.InstanceGuid) ||
-            (stick.ProductGuid != Guid.Empty && x.ExtractedGuid == stick.ProductGuid));
+            (stick.ProductGuid != Guid.Empty && x.ExtractedGuid == stick.ProductGuid) ||
+            (!string.IsNullOrWhiteSpace(stick.ProductName) && string.Equals(x.ProductName, stick.ProductName, StringComparison.OrdinalIgnoreCase)));
 
         if (mapping != null) {
             return mapping.Instance;

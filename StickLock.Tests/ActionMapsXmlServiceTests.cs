@@ -32,7 +32,7 @@ public class ActionMapsXmlServiceTests : IDisposable {
         </ActionMaps>";
         await File.WriteAllTextAsync(_xmlPath, xmlContent);
 
-        var configService = new AppConfigService();
+        var configService = new AppConfigService(Path.Combine(_tempDir, ".sticklock", "config.json"));
         await configService.SetStarCitizenPathAsync(_xmlPath);
 
         var diService = new TestDirectInputService();
@@ -69,7 +69,7 @@ public class ActionMapsXmlServiceTests : IDisposable {
         </ActionMaps>";
         await File.WriteAllTextAsync(_xmlPath, originalXml);
 
-        var configService = new AppConfigService();
+        var configService = new AppConfigService(Path.Combine(_tempDir, ".sticklock", "config.json"));
         await configService.SetStarCitizenPathAsync(_xmlPath);
         // Canonical configuration: Stick 1 = slot 1 (guidStick1), Stick 2 = slot 2 (guidStick2)
         await configService.SetCanonicalStickAsync(1, new DirectInputDevice {
@@ -148,7 +148,7 @@ public class ActionMapsXmlServiceTests : IDisposable {
         var xmlContent = @"<ActionMaps version=""1""></ActionMaps>";
         await File.WriteAllTextAsync(_xmlPath, xmlContent);
 
-        var configService = new AppConfigService();
+        var configService = new AppConfigService(Path.Combine(_tempDir, ".sticklock", "config.json"));
         await configService.SetStarCitizenPathAsync(_xmlPath);
 
         var diService = new TestDirectInputService();
@@ -234,7 +234,7 @@ public class ActionMapsXmlServiceTests : IDisposable {
         </ActionMaps>";
         await File.WriteAllTextAsync(_xmlPath, originalXml);
 
-        var configService = new AppConfigService();
+        var configService = new AppConfigService(Path.Combine(_tempDir, ".sticklock", "config.json"));
         await configService.SetStarCitizenPathAsync(_xmlPath);
 
         var diService = new TestDirectInputService();
@@ -518,6 +518,69 @@ public class ActionMapsXmlServiceTests : IDisposable {
         Assert.True(File.Exists(techXml));
         var techContent = await File.ReadAllTextAsync(techXml);
         Assert.Contains(@"instance=""1"" Product=""VKB Left", techContent);
+    }
+
+    [Fact]
+    public async Task AutoLockAndSync_IgnoresEmptyOptions_And_SwapsJs1AndJs3_WhenSticksAreJs1AndJs4() {
+        var guidRight = Guid.Parse("0224231d-0000-0000-0000-504944564944");
+        var guidLink = Guid.Parse("d0303434-0000-0000-0000-504944564944");
+        var guidK8 = Guid.Parse("0e803434-0000-0000-0000-504944564944");
+        var guidLeft = Guid.Parse("3201231d-0000-0000-0000-504944564944");
+
+        var xmlContent = $@"<ActionMaps version=""1"">
+            <options type=""joystick"" instance=""1"" Product="" VKBsim Gladiator EVO R SEM FSM.GA {{{guidRight}}}""/>
+            <options type=""joystick"" instance=""2"" Product=""Keychron Link  {{{guidLink}}}""/>
+            <options type=""joystick"" instance=""3"" Product=""Keychron K8 HE {{{guidK8}}}""/>
+            <options type=""joystick"" instance=""4"" Product="" VKBsim Gladiator EVO OT L  {{{guidLeft}}}""/>
+            <options type=""joystick"" instance=""5""/>
+            <options type=""joystick"" instance=""6""/>
+            <options type=""joystick"" instance=""7""/>
+            <options type=""joystick"" instance=""8""/>
+            <actionmap name=""spaceship_movement"">
+                <action name=""v_pitch""><rebind input=""js1_y""/></action>
+                <action name=""v_strafe_longitudinal""><rebind input=""js4_y""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(_xmlPath, xmlContent);
+
+        var customConfigPath = Path.Combine(_tempDir, ".sticklock", "config.json");
+        var configService = new AppConfigService(customConfigPath);
+        await configService.SetStarCitizenPathAsync(_xmlPath);
+
+        // Windows DirectInput has K8 HE at js1, Link at js2, VKB Right at js3, VKB Left at js4
+        var diService = new TestDirectInputService();
+        diService.SetDevices(new List<DirectInputDevice> {
+            new() { SlotIndex = 1, ProductName = "Keychron K8 HE", InstanceGuid = guidK8, ProductGuid = guidK8 },
+            new() { SlotIndex = 2, ProductName = "Keychron Link", InstanceGuid = guidLink, ProductGuid = guidLink },
+            new() { SlotIndex = 3, ProductName = "VKBsim Gladiator EVO R SEM FSM.GA", InstanceGuid = guidRight, ProductGuid = guidRight },
+            new() { SlotIndex = 4, ProductName = "VKBsim Gladiator EVO OT L", InstanceGuid = guidLeft, ProductGuid = guidLeft }
+        });
+
+        var detector = new TestStarCitizenDetector();
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        // 1. Parse mappings should ignore empty instance 5..8
+        var mappings = await xmlService.GetXmlMappingsAsync();
+        Assert.Equal(4, mappings.Count);
+
+        // 2. AutoLockAndAlignFromXmlAsync should lock ONLY js1 (VKB Right) and js4 (VKB Left) that have rebinds, and sync js1 <-> js3
+        var result = await xmlService.AutoLockAndAlignFromXmlAsync();
+        Assert.True(result.Success);
+        Assert.Equal(2, configService.Config.CanonicalSticks.Count);
+        Assert.Contains(configService.Config.CanonicalSticks, s => s.RoleSlot == 1 && s.ProductName.Contains("EVO R"));
+        Assert.Contains(configService.Config.CanonicalSticks, s => s.RoleSlot == 4 && s.ProductName.Contains("EVO OT L"));
+
+        // 3. Verify XML was updated: VKB Right is now instance 3 (js3_y), Keychron K8 HE is instance 1, VKB Left stays instance 4 (js4_y)
+        var doc = XDocument.Load(_xmlPath);
+        var pitchRebind = doc.Descendants("action").First(a => (string?)a.Attribute("name") == "v_pitch").Element("rebind");
+        var strafeRebind = doc.Descendants("action").First(a => (string?)a.Attribute("name") == "v_strafe_longitudinal").Element("rebind");
+        Assert.Equal("js3_y", (string?)pitchRebind?.Attribute("input"));
+        Assert.Equal("js4_y", (string?)strafeRebind?.Attribute("input"));
+
+        var alignmentAfter = await xmlService.CheckAlignmentAsync();
+        Assert.False(alignmentAfter.IsMisaligned);
+        Assert.Equal(SyncStatus.Aligned, alignmentAfter.Status);
     }
 
     public void Dispose() {
