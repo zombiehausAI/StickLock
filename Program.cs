@@ -25,6 +25,7 @@ static class Program {
             configService,
             serviceProvider.GetRequiredService<IActionMapsXmlService>(),
             serviceProvider.GetRequiredService<IUsbWatcherService>(),
+            serviceProvider.GetRequiredService<IBrowserService>(),
             launchMinimized);
 
         Application.Run(mainForm);
@@ -42,5 +43,6 @@ static class Program {
         services.AddSingleton<IActionMapsXmlService, ActionMapsXmlService>();
         services.AddSingleton<IUsbWatcherService, UsbWatcherService>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
+        services.AddSingleton<IBrowserService, BrowserService>();
     }
 }

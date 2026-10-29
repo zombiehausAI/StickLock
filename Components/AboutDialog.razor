@@ -1,0 +1,86 @@
+@inject IBrowserService BrowserService
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center justify-space-between">
+            <div class="d-flex align-center">
+                <MudIcon Icon="@Icons.Material.Filled.SportsEsports" Color="Color.Primary" Class="mr-2" />
+                <MudText Typo="Typo.h6" Class="mfd-title glow-cyan" Style="color: #00E5FF;">STICKLOCK AVIONICS</MudText>
+            </div>
+            <MudChip T="string" Color="Color.Secondary" Size="Size.Small" Variant="Variant.Outlined" Class="font-weight-bold">
+                v1.0.0
+            </MudChip>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <div class="d-flex flex-column gap-3 pt-2">
+            <MudText Typo="Typo.body2" Style="color: #94A3B8;">
+                High-performance Windows utility for automated Star Citizen DirectInput flight controller slot synchronization and actionmaps alignment.
+            </MudText>
+
+            <!-- Solo Developer Disclaimer -->
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true" Class="mfd-card">
+                <div class="font-weight-bold" Style="color: #38BDF8;">Solo Developer Side Project</div>
+                <div style="font-size: 0.85rem; color: #CBD5E1; margin-top: 4px;">
+                    StickLock is an independent side project created and maintained by a single developer. Due to full-time work and outside commitments, I'm unable to dedicate full-time hours to it—updates, bug fixes, and maintenance happen as personal time permits. Your patience and understanding are greatly appreciated!
+                </div>
+            </MudAlert>
+
+            <!-- Proof of Concept Disclaimer -->
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Dense="true" Class="mfd-card">
+                <div class="font-weight-bold" Style="color: #FFAB00;">Proof of Concept & Community Testing</div>
+                <div style="font-size: 0.85rem; color: #CBD5E1; margin-top: 4px;">
+                    This application, scripts, and utilities represent a specialized utility created to overcome Windows DirectInput enumeration flips in Star Citizen. Hardware configurations, joystick firmware, USB hubs, and Windows driver versions can differ significantly—what works seamlessly in one test environment may require adjustments on yours. Community feedback, issue reports, and real-world testing are warmly welcomed!
+                </div>
+            </MudAlert>
+
+            <!-- AI-Assisted Development Disclaimer -->
+            <MudAlert Severity="Severity.Normal" Variant="Variant.Outlined" Dense="true" Class="mfd-card" Style="border-color: rgba(148, 163, 184, 0.3) !important;">
+                <div class="font-weight-bold" Style="color: #E2E8F0;">AI-Assisted Development</div>
+                <div style="font-size: 0.85rem; color: #CBD5E1; margin-top: 4px;">
+                    This application, its scripts, and documentation were created with AI assistance. In the spirit of complete transparency: if you prefer not to use AI-assisted code, please feel free to pass on this project.
+                </div>
+            </MudAlert>
+
+            <!-- Ko-fi Support Banner -->
+            <MudPaper Class="pa-3 d-flex align-center justify-space-between" Style="background: rgba(255, 94, 91, 0.08); border: 1px solid rgba(255, 94, 91, 0.3); border-radius: 6px;">
+                <div class="d-flex align-center gap-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Coffee" Style="color: #FF5E5B;" Size="Size.Large" />
+                    <div>
+                        <div class="font-weight-bold" style="color: #FF5E5B; font-size: 0.95rem;">Support on Ko-fi</div>
+                        <div style="font-size: 0.8rem; color: #94A3B8;">
+                            If StickLock saved your keybinds and flight setup, consider buying me a coffee!
+                        </div>
+                    </div>
+                </div>
+                <MudButton Variant="Variant.Filled"
+                           StartIcon="@Icons.Material.Filled.Favorite"
+                           OnClick="OpenKofi"
+                           Class="mfd-title"
+                           Style="background-color: #FF5E5B; color: white; font-weight: 700;">
+                    Ko-fi.com/zombiehaus
+                </MudButton>
+            </MudPaper>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Default"
+                   OnClick="Close">
+            Close
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    private void OpenKofi() {
+        BrowserService.OpenUrl("https://ko-fi.com/zombiehaus");
+    }
+
+    private void Close() {
+        MudDialog?.Close(DialogResult.Ok(true));
+    }
+}

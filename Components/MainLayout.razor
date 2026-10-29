@@ -4,6 +4,8 @@
 @inject IDirectInputService DirectInputService
 @inject IUsbWatcherService UsbWatcher
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IBrowserService BrowserService
 
 <MudThemeProvider Theme="_theme" IsDarkMode="true" />
 <MudPopoverProvider />
@@ -19,6 +21,27 @@
         </div>
 
         <MudSpacer />
+
+        <!-- Ko-fi Support Button -->
+        <MudTooltip Text="Support Developer on Ko-fi">
+            <MudButton Variant="Variant.Outlined"
+                       Size="Size.Small"
+                       StartIcon="@Icons.Material.Filled.Coffee"
+                       OnClick="OpenKofi"
+                       Class="mr-3 mfd-title"
+                       Style="color: #FF5E5B; border-color: rgba(255, 94, 91, 0.5); font-weight: 700; background: rgba(255, 94, 91, 0.05);">
+                Support
+            </MudButton>
+        </MudTooltip>
+
+        <!-- About & Disclaimers Button -->
+        <MudTooltip Text="About & Project Disclaimers">
+            <MudIconButton Icon="@Icons.Material.Filled.HelpOutline"
+                           Color="Color.Primary"
+                           Size="Size.Medium"
+                           OnClick="OpenAboutDialogAsync"
+                           Class="mr-3" />
+        </MudTooltip>
 
         <!-- Status Chip -->
         <MudChip T="string" Color="@GetStatusColor()" Variant="Variant.Filled" Size="Size.Medium" Class="mr-3 font-weight-bold" Icon="@GetStatusIcon()">
@@ -129,6 +152,19 @@
         SyncStatus.FileNotFound => "XML NOT FOUND",
         _ => "SETUP REQUIRED"
     };
+
+    private void OpenKofi() {
+        BrowserService.OpenUrl("https://ko-fi.com/zombiehaus");
+    }
+
+    private async Task OpenAboutDialogAsync() {
+        var options = new DialogOptions {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+        await DialogService.ShowAsync<AboutDialog>("About StickLock & Project Disclaimers", options);
+    }
 
     public void Dispose() {
         ConfigService.ConfigChanged -= OnStateChanged;

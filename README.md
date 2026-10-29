@@ -1,10 +1,21 @@
 # StickLock
 
+[![Windows](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-blue?logo=windows)](https://microsoft.com)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-purple?logo=dotnet)](https://dotnet.microsoft.com)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/zombiehaus)
+
 **Star Citizen Flight Controller Slot Synchronizer & Anti-Inversion Daemon**
 
 StickLock is a zero-XAML, high-performance Windows desktop utility built with **.NET 10**, **WinForms Blazor Hybrid** (`Microsoft.AspNetCore.Components.WebView.WindowsForms`), and **MudBlazor**.
 
 Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.) to map physical flight sticks. When joysticks are unplugged, USB hubs reset, or Windows reboots, DirectInput frequently flips their enumeration order. StickLock runs quietly in the Windows System Tray, monitors USB hardware changes in real time, compares current DirectInput device indices against user-locked canonical slots, and automatically updates Star Citizen's `actionmaps.xml` before game launch.
+
+> [!NOTE]
+> **Project Context & Disclaimer**:
+> - **Solo Developer Side Project**: StickLock is an independent side project created and maintained by a single developer. Due to full-time work and outside commitments, I'm unable to dedicate full-time hours to it—updates, bug fixes, and maintenance happen as personal time permits. Your patience and understanding are greatly appreciated!
+> - **Proof of Concept**: This application, setup scripts, utilities, and technical documentation represent an early **proof of concept** created to overcome Windows DirectInput enumeration order quirks and Star Citizen device mapping hurdles. While these setups have been tested and verified across local Windows environments (such as Windows 10 and 11) and dual-stick / HOSAS / HOTAS hardware configurations, hardware setups, Windows driver versions, and USB topologies can differ significantly—what works seamlessly in one test environment may require adjustments or further testing on yours. Community feedback, issue reports, and real-world testing are warmly welcomed!
+> - **AI-Assisted Development**: This application and documentation were created with AI assistance. In the spirit of complete transparency: if you prefer not to use AI-assisted code, please feel free to pass on this project.
 
 ---
 
@@ -76,4 +87,21 @@ The installer script can be run standalone from the repository or from inside an
 # Install to a custom directory or drive
 .\installer\Install-StickLock.ps1 -InstallPath "E:\Games\StickLock"
 ```
+
+---
+
+## Development Transparency
+
+This project and its accompanying utilities were developed with AI assistance (*Assisted by AI*). We believe in open transparency: if you prefer not to use or engage with AI-assisted software, please be aware before installing, evaluating, or running this application.
+
+## Support & Contributions
+
+If you find StickLock helpful for your Star Citizen setup or flight sim configuration, consider supporting ongoing development:
+
+[![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/zombiehaus)
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
 

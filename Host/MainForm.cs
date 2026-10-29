@@ -10,6 +10,7 @@ public class MainForm : Form {
     private readonly IAppConfigService _configService;
     private readonly IActionMapsXmlService _xmlService;
     private readonly IUsbWatcherService _usbWatcherService;
+    private readonly IBrowserService _browserService;
 
     private readonly BlazorWebView _blazorWebView;
     private readonly NotifyIcon _notifyIcon;
@@ -25,11 +26,13 @@ public class MainForm : Form {
         IAppConfigService configService,
         IActionMapsXmlService xmlService,
         IUsbWatcherService usbWatcherService,
+        IBrowserService browserService,
         bool launchMinimized = false) {
         _serviceProvider = serviceProvider;
         _configService = configService;
         _xmlService = xmlService;
         _usbWatcherService = usbWatcherService;
+        _browserService = browserService;
         _startMinimized = launchMinimized || _configService.Config.StartMinimizedToTray;
 
         Text = "StickLock - Star Citizen Flight Controller Sync";
@@ -68,12 +71,15 @@ public class MainForm : Form {
             Checked = _configService.Config.AutoSyncOnUsbChange
         };
 
+        var kofiItem = new ToolStripMenuItem("Support on Ko-fi", null, (_, _) => _browserService.OpenUrl("https://ko-fi.com/zombiehaus"));
         var exitItem = new ToolStripMenuItem("Exit", null, (_, _) => ExitApplication());
 
         _trayMenu.Items.Add(openItem);
         _trayMenu.Items.Add(new ToolStripSeparator());
         _trayMenu.Items.Add(syncNowItem);
         _trayMenu.Items.Add(_autoSyncMenuItem);
+        _trayMenu.Items.Add(new ToolStripSeparator());
+        _trayMenu.Items.Add(kofiItem);
         _trayMenu.Items.Add(new ToolStripSeparator());
         _trayMenu.Items.Add(exitItem);
 
