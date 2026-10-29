@@ -8,6 +8,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>StickLock</RootNamespace>
     <ApplicationIcon>wwwroot\icon.ico</ApplicationIcon>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
     <NoWarn>$(NoWarn);MSB3277</NoWarn>
   </PropertyGroup>
 
