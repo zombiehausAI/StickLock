@@ -184,6 +184,9 @@ if ($LASTEXITCODE -ne 0) {
 
 # Copy Installer Support Files & Documentation into package
 Copy-Item (Join-Path $repoRoot "installer\Install-StickLock.ps1") -Destination $packageAppDir -Force
+if (Test-Path (Join-Path $repoRoot "LICENSE")) {
+    Copy-Item (Join-Path $repoRoot "LICENSE") -Destination $packageAppDir -Force
+}
 if (Test-Path (Join-Path $repoRoot "README.md")) {
     Copy-Item (Join-Path $repoRoot "README.md") -Destination $packageAppDir -Force
 }
@@ -274,3 +277,4 @@ if ($Install) {
     Write-Host "or extract and execute:" -ForegroundColor Cyan
     Write-Host "  $zipPath" -ForegroundColor White
 }
+
