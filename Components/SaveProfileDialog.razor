@@ -1,0 +1,99 @@
+@inject IActionMapsXmlService XmlService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center">
+            <MudIcon Icon="@Icons.Material.Filled.BookmarkAdd" Color="Color.Primary" Class="mr-2" />
+            <MudText Typo="Typo.h6" Class="mfd-title glow-cyan" Style="color: #00E5FF;">SAVE ACTIVE MAPPINGS AS PROFILE</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <div class="d-flex flex-column gap-3 pt-2">
+            <MudText Typo="Typo.body2" Style="color: #94A3B8;">
+                Save your current active <span class="mfd-code" style="color: #00E5FF;">actionmaps.xml</span> bindings to your persistent
+                <span class="mfd-code" style="color: #FFAB00;">.sticklock/mappings</span> library so they are never lost when Star Citizen is re-installed or the USER folder is deleted.
+            </MudText>
+
+            <MudTextField @bind-Value="_profileName"
+                          Label="Profile Name"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Description"
+                          AdornmentColor="Color.Primary"
+                          Placeholder="e.g. Dual_VKB_HOSAS_Combat_v1"
+                          Immediate="true"
+                          AutoFocus="true"
+                          Class="mfd-code" />
+
+            <MudSwitch @bind-Value="_copyToStarCitizen"
+                       Color="Color.Secondary"
+                       Label="Also deploy / copy into Star Citizen Controls\Mappings folder" />
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="Cancel">
+            Cancel
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Disabled="@(string.IsNullOrWhiteSpace(_profileName) || _isSaving)"
+                   OnClick="SaveAsync"
+                   Style="color: #0B0F19; font-weight: 700;">
+            @if (_isSaving) {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>SAVING...</span>
+            } else {
+                <span>SAVE PROFILE</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    private string _profileName = $"layout_profile_{DateTime.Now:yyyyMMdd_HHmm}";
+    private bool _copyToStarCitizen = true;
+    private bool _isSaving = false;
+
+    private async Task SaveAsync() {
+        if (string.IsNullOrWhiteSpace(_profileName) || _isSaving) {
+            return;
+        }
+
+        _isSaving = true;
+        try {
+            var result = await XmlService.SaveActiveAsProfileAsync(_profileName);
+            if (!result.Success) {
+                Snackbar.Add(result.Message, Severity.Error);
+                return;
+            }
+
+            var cleanName = _profileName.Trim();
+            if (!cleanName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)) {
+                cleanName += ".xml";
+            }
+
+            if (_copyToStarCitizen) {
+                var copyResult = await XmlService.CopyProfileToStarCitizenAsync(cleanName);
+                if (copyResult.Success) {
+                    Snackbar.Add($"Saved and deployed '{cleanName}' to Star Citizen!", Severity.Success);
+                } else {
+                    Snackbar.Add($"Saved to .sticklock, but failed to copy to game: {copyResult.Message}", Severity.Warning);
+                }
+            } else {
+                Snackbar.Add(result.Message, Severity.Success);
+            }
+
+            MudDialog?.Close(DialogResult.Ok(cleanName));
+        } finally {
+            _isSaving = false;
+        }
+    }
+
+    private void Cancel() {
+        MudDialog?.Cancel();
+    }
+}

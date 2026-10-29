@@ -32,14 +32,21 @@ Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.
 - **Star Citizen Process Guard**: Detects active `StarCitizen.exe` processes and safely defers auto-sync to avoid file lock conflicts, providing an in-game console command (`pp_resortdevices joystick 1 2`) for live resort.
 - **Idempotent Two-Pass Transformation**: Replaces `<options type="joystick" instance="X">` and `<rebind input="jsX_...">` attributes using unique intermediary placeholders to eliminate collision errors.
 - **Automated Backup & Pruning**: Creates timestamped backups in `StickLock_Backups` with customizable pruning limits and one-click restoration.
-- **Centralized `.sticklock` User Directory**:
-  - All configurations, profile backups, and settings snapshots are cleanly stored in `~/.sticklock` (`%USERPROFILE%\.sticklock\`).
+- **Centralized `.sticklock` User Directory & Immune Mappings Library**:
+  - All configurations, profile backups, and persistent mappings are stored in `~/.sticklock` (`%USERPROFILE%\.sticklock\`), completely outside the Star Citizen install folder so they are immune to game reinstalls and USER folder wipes.
+  - `~/.sticklock/mappings/`: Primary repository for all saved flight controller mapping profiles.
   - `~/.sticklock/config.json`: Active StickLock settings and canonical joystick assignments.
   - `~/.sticklock/settings_backups/`: Timestamped snapshots created via the one-click **"Backup Current Settings"** button.
   - `~/.sticklock/backups/`: ActionMaps XML backups created prior to sync operations or profile imports.
   - `~/.sticklock/exports/`: Default repository for exported custom control profiles.
+- **Two-Way Star Citizen USER Sync**:
+  - **Save Active as Profile**: Snapshot current `actionmaps.xml` directly into `~/.sticklock/mappings/<name>.xml`.
+  - **Deploy / Sync to Star Citizen**: Automatically copies profiles from `~/.sticklock/mappings/` to Star Citizen's `USER\Client\0\Controls\Mappings\` folder so you can select and modify them in-game under Control Profiles.
+  - **Pull from Star Citizen**: Imports custom XML mappings from Star Citizen's `USER\Client\0\Controls\Mappings\` folder into `~/.sticklock/mappings/` so any in-game edits are safely preserved.
+  - **Apply to Active XML**: Applies any saved profile directly to the active `actionmaps.xml` and immediately aligns DirectInput stick slots.
+  - **Open Mappings Folder**: Instant one-click Explorer button to browse your `.sticklock/mappings` folder.
 - **Export & Import Profiles**:
-  - Export active control profiles as user-named XML files directly to Star Citizen's `Controls\Mappings` or any custom folder.
+  - Export active control profiles as user-named XML files directly to any custom folder.
   - Import any Star Citizen mapping XML, inspect device and bind counts, and apply it directly to the active `actionmaps.xml` with automated backup and instant physical DirectInput slot alignment.
   - One-click **"Backup Current Settings"** to snapshot canonical stick assignments, paths, and preferences at any time.
   - Export and import StickLock configuration JSON to easily migrate settings across machines.

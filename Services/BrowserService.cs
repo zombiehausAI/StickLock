@@ -10,4 +10,16 @@ public class BrowserService : IBrowserService {
             });
         } catch { }
     }
+
+    public void OpenFolder(string folderPath) {
+        try {
+            if (Directory.Exists(folderPath)) {
+                Process.Start(new ProcessStartInfo {
+                    FileName = folderPath,
+                    UseShellExecute = true
+                });
+            }
+        } catch { }
+    }
 }
+

@@ -216,6 +216,81 @@ public class ActionMapsXmlServiceTests : IDisposable {
         Assert.NotEmpty(backups);
     }
 
+    [Fact]
+    public async Task SaveActiveAsProfile_And_CopySyncToStarCitizen_WorksCleanly() {
+        // Construct realistic Star Citizen directory hierarchy
+        var scRoot = Path.Combine(_tempDir, "LIVE");
+        var clientZero = Path.Combine(scRoot, "USER", "Client", "0");
+        var profileDefault = Path.Combine(clientZero, "Profiles", "default");
+        Directory.CreateDirectory(profileDefault);
+
+        var scXmlPath = Path.Combine(profileDefault, "actionmaps.xml");
+        var xmlContent = @"<ActionMaps version=""1"">
+            <options type=""joystick"" instance=""1"" Product=""VKB Gladiator EVO R""/>
+            <actionmap name=""spaceship_general"">
+                <action name=""v_attack1_group1""><rebind input=""js1_button1""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(scXmlPath, xmlContent);
+
+        // Dedicated custom config path to isolate test's .sticklock folder
+        var customConfigPath = Path.Combine(_tempDir, ".sticklock", "config.json");
+        var configService = new AppConfigService(customConfigPath);
+        await configService.SetStarCitizenPathAsync(scXmlPath);
+
+        var diService = new TestDirectInputService();
+        var detector = new TestStarCitizenDetector();
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        // 1. Verify Star Citizen Mappings directory is correctly resolved
+        var expectedScMappingsDir = Path.Combine(clientZero, "Controls", "Mappings");
+        var resolvedScMappingsDir = xmlService.GetStarCitizenMappingsDirectory();
+        Assert.Equal(expectedScMappingsDir, resolvedScMappingsDir);
+
+        // 2. Save active mapping as profile in .sticklock library
+        var saveResult = await xmlService.SaveActiveAsProfileAsync("Dual_VKB_Combat_v1");
+        Assert.True(saveResult.Success);
+
+        var savedFile = Path.Combine(configService.MappingsDirectory, "Dual_VKB_Combat_v1.xml");
+        Assert.True(File.Exists(savedFile));
+
+        var savedProfiles = await xmlService.GetSavedMappingsAsync();
+        Assert.Single(savedProfiles);
+        Assert.Equal("Dual_VKB_Combat_v1.xml", savedProfiles[0].FileName);
+        Assert.Equal(1, savedProfiles[0].JoystickOptionsCount);
+        Assert.False(savedProfiles[0].ExistsInStarCitizen);
+
+        // 3. Deploy / Copy to Star Citizen Controls\Mappings folder
+        var copyResult = await xmlService.CopyProfileToStarCitizenAsync("Dual_VKB_Combat_v1.xml");
+        Assert.True(copyResult.Success);
+
+        var scCopiedFile = Path.Combine(expectedScMappingsDir, "Dual_VKB_Combat_v1.xml");
+        Assert.True(File.Exists(scCopiedFile));
+
+        // Re-check saved profiles: now ExistsInStarCitizen should be true!
+        savedProfiles = await xmlService.GetSavedMappingsAsync();
+        Assert.True(savedProfiles[0].ExistsInStarCitizen);
+
+        // 4. Simulate user adding/editing an in-game profile in Star Citizen, then pull into .sticklock
+        var inGameProfile = Path.Combine(expectedScMappingsDir, "InGame_Custom_HOTAS.xml");
+        await File.WriteAllTextAsync(inGameProfile, xmlContent);
+
+        var pullResult = await xmlService.PullProfilesFromStarCitizenAsync();
+        Assert.True(pullResult.Success);
+
+        var pulledFileInStickLock = Path.Combine(configService.MappingsDirectory, "InGame_Custom_HOTAS.xml");
+        Assert.True(File.Exists(pulledFileInStickLock));
+
+        var allProfiles = await xmlService.GetSavedMappingsAsync();
+        Assert.Equal(2, allProfiles.Count);
+
+        // 5. Delete profile from .sticklock library
+        var deleteResult = await xmlService.DeleteSavedProfileAsync("InGame_Custom_HOTAS.xml");
+        Assert.True(deleteResult);
+        Assert.False(File.Exists(pulledFileInStickLock));
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {

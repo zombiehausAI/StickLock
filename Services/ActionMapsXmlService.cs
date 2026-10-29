@@ -102,6 +102,14 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                 var doc = XDocument.Load(xmlPath);
                 ApplyTransform(doc, swapMap);
                 doc.Save(xmlPath);
+
+                // Mirror current active profile in .sticklock/mappings/active_actionmaps.xml
+                try {
+                    Directory.CreateDirectory(_configService.MappingsDirectory);
+                    var persistentActivePath = Path.Combine(_configService.MappingsDirectory, "active_actionmaps.xml");
+                    doc.Save(persistentActivePath);
+                } catch { }
+
                 return bPath;
             });
 
@@ -342,6 +350,236 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             summary.IsValid = false;
             summary.ErrorMessage = ex.Message;
             return summary;
+        }
+    }
+
+    public string? GetStarCitizenMappingsDirectory() {
+        var xmlPath = _configService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(xmlPath)) {
+            return null;
+        }
+
+        try {
+            var defaultDir = Path.GetDirectoryName(xmlPath);
+            if (string.IsNullOrWhiteSpace(defaultDir)) {
+                return null;
+            }
+
+            var profilesDir = Path.GetDirectoryName(defaultDir);
+            if (string.IsNullOrWhiteSpace(profilesDir)) {
+                return null;
+            }
+
+            var clientZeroDir = Path.GetDirectoryName(profilesDir);
+            if (string.IsNullOrWhiteSpace(clientZeroDir)) {
+                return null;
+            }
+
+            return Path.Combine(clientZeroDir, "Controls", "Mappings");
+        } catch {
+            return null;
+        }
+    }
+
+    public IReadOnlyList<string> GetStarCitizenCustomMappings() {
+        var scMappingsDir = GetStarCitizenMappingsDirectory();
+        if (string.IsNullOrWhiteSpace(scMappingsDir) || !Directory.Exists(scMappingsDir)) {
+            return Array.Empty<string>();
+        }
+
+        try {
+            return Directory.GetFiles(scMappingsDir, "*.xml");
+        } catch {
+            return Array.Empty<string>();
+        }
+    }
+
+    public async Task<IReadOnlyList<SavedMappingProfile>> GetSavedMappingsAsync() {
+        var mappingsDir = _configService.MappingsDirectory;
+        if (!Directory.Exists(mappingsDir)) {
+            return Array.Empty<SavedMappingProfile>();
+        }
+
+        return await Task.Run(async () => {
+            var files = Directory.GetFiles(mappingsDir, "*.xml")
+                .Select(f => new FileInfo(f))
+                .OrderByDescending(f => f.LastWriteTime)
+                .ToList();
+
+            var scMappingsDir = GetStarCitizenMappingsDirectory();
+            var scFiles = (!string.IsNullOrWhiteSpace(scMappingsDir) && Directory.Exists(scMappingsDir))
+                ? Directory.GetFiles(scMappingsDir, "*.xml").Select(Path.GetFileName).ToHashSet(StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string?>();
+
+            var results = new List<SavedMappingProfile>();
+            foreach (var fi in files) {
+                var profile = new SavedMappingProfile {
+                    FileName = fi.Name,
+                    FilePath = fi.FullName,
+                    LastModified = fi.LastWriteTime,
+                    FileSizeBytes = fi.Length,
+                    ExistsInStarCitizen = scFiles.Contains(fi.Name)
+                };
+
+                try {
+                    var summary = await InspectXmlProfileAsync(fi.FullName);
+                    if (summary.IsValid) {
+                        profile.JoystickOptionsCount = summary.JoystickOptionsCount;
+                        profile.RebindCount = summary.RebindCount;
+                        profile.DeviceNames = summary.DeviceNames;
+                    }
+                } catch { }
+
+                results.Add(profile);
+            }
+
+            return (IReadOnlyList<SavedMappingProfile>)results;
+        });
+    }
+
+    public async Task<SyncResult> SaveActiveAsProfileAsync(string profileName) {
+        if (string.IsNullOrWhiteSpace(profileName)) {
+            return SyncResult.Fail("Profile name cannot be empty.");
+        }
+
+        var xmlPath = _configService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
+            return SyncResult.Fail("Active actionmaps.xml not found. Nothing to save.", SyncStatus.FileNotFound);
+        }
+
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var cleanName = new string(profileName.Where(c => !invalidChars.Contains(c)).ToArray()).Trim();
+        if (string.IsNullOrWhiteSpace(cleanName)) {
+            return SyncResult.Fail("Profile name contains invalid characters.");
+        }
+
+        if (!cleanName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)) {
+            cleanName += ".xml";
+        }
+
+        var destinationPath = Path.Combine(_configService.MappingsDirectory, cleanName);
+
+        try {
+            await Task.Run(() => {
+                Directory.CreateDirectory(_configService.MappingsDirectory);
+                File.Copy(xmlPath, destinationPath, overwrite: true);
+            });
+
+            _logService.LogSuccess($"Saved active profile as '{cleanName}' in .sticklock library.", destinationPath);
+            return SyncResult.Ok($"Successfully saved '{cleanName}' to your .sticklock mappings library!");
+        } catch (Exception ex) {
+            _logService.LogError($"Failed to save profile: {ex.Message}", ex.ToString());
+            return SyncResult.Fail($"Failed to save profile: {ex.Message}");
+        }
+    }
+
+    public async Task<SyncResult> CopyProfileToStarCitizenAsync(string profileFileName) {
+        var sourcePath = Path.Combine(_configService.MappingsDirectory, profileFileName);
+        if (!File.Exists(sourcePath)) {
+            return SyncResult.Fail($"Profile not found in .sticklock library: {profileFileName}");
+        }
+
+        var scMappingsDir = GetStarCitizenMappingsDirectory();
+        if (string.IsNullOrWhiteSpace(scMappingsDir)) {
+            return SyncResult.Fail("Star Citizen directory could not be resolved. Please verify your game path.");
+        }
+
+        try {
+            await Task.Run(() => {
+                Directory.CreateDirectory(scMappingsDir);
+                var destPath = Path.Combine(scMappingsDir, profileFileName);
+                File.Copy(sourcePath, destPath, overwrite: true);
+            });
+
+            _logService.LogSuccess($"Copied '{profileFileName}' to Star Citizen Controls\\Mappings.", scMappingsDir);
+            return SyncResult.Ok($"Copied '{profileFileName}' to Star Citizen Controls\\Mappings folder. You can now load it in-game!");
+        } catch (Exception ex) {
+            _logService.LogError($"Failed to copy profile to Star Citizen: {ex.Message}", ex.ToString());
+            return SyncResult.Fail($"Failed to copy profile to Star Citizen: {ex.Message}");
+        }
+    }
+
+    public async Task<SyncResult> CopyAllProfilesToStarCitizenAsync() {
+        var scMappingsDir = GetStarCitizenMappingsDirectory();
+        if (string.IsNullOrWhiteSpace(scMappingsDir)) {
+            return SyncResult.Fail("Star Citizen directory could not be resolved. Please verify your game path.");
+        }
+
+        try {
+            var files = Directory.GetFiles(_configService.MappingsDirectory, "*.xml");
+            if (files.Length == 0) {
+                return SyncResult.Fail("No saved profiles found in .sticklock library to copy.");
+            }
+
+            await Task.Run(() => {
+                Directory.CreateDirectory(scMappingsDir);
+                foreach (var file in files) {
+                    var fileName = Path.GetFileName(file);
+                    File.Copy(file, Path.Combine(scMappingsDir, fileName), overwrite: true);
+                }
+            });
+
+            _logService.LogSuccess($"Copied {files.Length} profile(s) to Star Citizen Controls\\Mappings.", scMappingsDir);
+            return SyncResult.Ok($"Successfully copied {files.Length} profile(s) to Star Citizen USER folder!");
+        } catch (Exception ex) {
+            _logService.LogError($"Failed to copy profiles to Star Citizen: {ex.Message}", ex.ToString());
+            return SyncResult.Fail($"Failed to copy profiles: {ex.Message}");
+        }
+    }
+
+    public async Task<SyncResult> PullProfilesFromStarCitizenAsync() {
+        var scMappingsDir = GetStarCitizenMappingsDirectory();
+        if (string.IsNullOrWhiteSpace(scMappingsDir) || !Directory.Exists(scMappingsDir)) {
+            return SyncResult.Fail("Star Citizen Controls\\Mappings directory not found or empty.");
+        }
+
+        try {
+            var files = Directory.GetFiles(scMappingsDir, "*.xml");
+            if (files.Length == 0) {
+                return SyncResult.Fail("No XML profiles found in Star Citizen Controls\\Mappings folder.");
+            }
+
+            var copied = 0;
+            await Task.Run(() => {
+                Directory.CreateDirectory(_configService.MappingsDirectory);
+                foreach (var file in files) {
+                    var fileName = Path.GetFileName(file);
+                    var destPath = Path.Combine(_configService.MappingsDirectory, fileName);
+                    File.Copy(file, destPath, overwrite: true);
+                    copied++;
+                }
+            });
+
+            _logService.LogSuccess($"Imported {copied} profile(s) from Star Citizen to .sticklock library.", _configService.MappingsDirectory);
+            return SyncResult.Ok($"Successfully backed up {copied} profile(s) from Star Citizen into your .sticklock library!");
+        } catch (Exception ex) {
+            _logService.LogError($"Failed to pull profiles from Star Citizen: {ex.Message}", ex.ToString());
+            return SyncResult.Fail($"Failed to pull profiles: {ex.Message}");
+        }
+    }
+
+    public async Task<SyncResult> ApplySavedProfileToActiveAsync(string profileFileName) {
+        var sourcePath = Path.Combine(_configService.MappingsDirectory, profileFileName);
+        if (!File.Exists(sourcePath)) {
+            return SyncResult.Fail($"Profile '{profileFileName}' not found in .sticklock library.");
+        }
+
+        return await ImportAndApplyXmlAsync(sourcePath);
+    }
+
+    public async Task<bool> DeleteSavedProfileAsync(string profileFileName) {
+        var path = Path.Combine(_configService.MappingsDirectory, profileFileName);
+        if (!File.Exists(path)) {
+            return false;
+        }
+
+        try {
+            await Task.Run(() => File.Delete(path));
+            _logService.LogInfo($"Deleted profile '{profileFileName}' from .sticklock library.");
+            return true;
+        } catch (Exception ex) {
+            _logService.LogError($"Failed to delete profile '{profileFileName}': {ex.Message}");
+            return false;
         }
     }
 

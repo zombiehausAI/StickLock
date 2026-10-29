@@ -9,11 +9,13 @@ public class AppConfigService : IAppConfigService {
     private const string RunRegistrySubKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private readonly string _baseDirectory;
     private readonly string _configFilePath;
+    private readonly string _mappingsDirectory;
     private readonly SemaphoreSlim _fileLock = new(1, 1);
     private AppConfig _config = new();
 
     public AppConfig Config => _config;
     public string BaseDirectory => _baseDirectory;
+    public string MappingsDirectory => _mappingsDirectory;
     public event Action? ConfigChanged;
 
     public AppConfigService(string? customConfigFilePath = null) {
@@ -27,7 +29,9 @@ public class AppConfigService : IAppConfigService {
             _configFilePath = Path.Combine(_baseDirectory, "config.json");
         }
 
+        _mappingsDirectory = Path.Combine(_baseDirectory, "mappings");
         Directory.CreateDirectory(_baseDirectory);
+        Directory.CreateDirectory(_mappingsDirectory);
         Directory.CreateDirectory(Path.Combine(_baseDirectory, "settings_backups"));
         Directory.CreateDirectory(Path.Combine(_baseDirectory, "backups"));
         Directory.CreateDirectory(Path.Combine(_baseDirectory, "exports"));

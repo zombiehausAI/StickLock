@@ -8,6 +8,7 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject IJSRuntime JSRuntime
+@inject IBrowserService BrowserService
 
 <MudGrid Spacing="3">
     <!-- Top Row: Path & Settings Card -->
@@ -297,6 +298,144 @@
         </MudCard>
     </MudItem>
 
+    <!-- Saved Mappings Library & Star Citizen Sync Card -->
+    <MudItem xs="12">
+        <MudCard Class="mfd-card">
+            <div class="mfd-card-header d-flex flex-wrap align-center justify-space-between gap-2">
+                <div class="d-flex align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.FolderSpecial" Color="Color.Primary" Class="mr-2" />
+                    <div>
+                        <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #00E5FF;">SAVED MAPPINGS LIBRARY & STAR CITIZEN USER SYNC</MudText>
+                        <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8;">
+                            Persistent in <span style="color: #FFAB00;">~/.sticklock/mappings/</span> — immune to Star Citizen re-installs &amp; USER folder wipes
+                        </MudText>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap align-center gap-2">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.BookmarkAdd"
+                               OnClick="OpenSaveProfileDialogAsync"
+                               Class="mfd-title"
+                               Style="color: #0B0F19; font-weight: 700;">
+                        Save Active as Profile
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Secondary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.CloudUpload"
+                               OnClick="CopyAllToStarCitizenAsync"
+                               Class="mfd-title">
+                        Sync All to Star Citizen
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Default"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.CloudDownload"
+                               OnClick="PullFromStarCitizenAsync"
+                               Class="mfd-title">
+                        Pull from Star Citizen
+                    </MudButton>
+                    <MudTooltip Text="Open ~/.sticklock/mappings in Explorer">
+                        <MudIconButton Icon="@Icons.Material.Filled.FolderOpen"
+                                       Color="Color.Default"
+                                       Size="Size.Small"
+                                       OnClick="OpenMappingsFolder" />
+                    </MudTooltip>
+                </div>
+            </div>
+            <MudCardContent Class="pa-2">
+                @if (_savedProfiles.Count == 0) {
+                    <div class="pa-6 text-center">
+                        <MudIcon Icon="@Icons.Material.Filled.FolderZip" Size="Size.Large" Color="Color.Default" Class="mb-2" />
+                        <MudText Typo="Typo.body1" Style="color: #94A3B8;">No Saved Profiles in .sticklock Library</MudText>
+                        <MudText Typo="Typo.caption" Style="color: #64748B;">
+                            Click "Save Active as Profile" to save your current bindings safely outside Star Citizen's install folder, or "Pull from Star Citizen" to import profiles from game folder.
+                        </MudText>
+                    </div>
+                } else {
+                    <MudTable Items="_savedProfiles" Dense="true" Hover="true" Elevation="0" Class="transparent">
+                        <HeaderContent>
+                            <MudTh Style="color: #00E5FF; font-weight: 700;">PROFILE FILE</MudTh>
+                            <MudTh Style="color: #00E5FF; font-weight: 700;">DEVICES IN XML</MudTh>
+                            <MudTh Style="color: #00E5FF; font-weight: 700;">BINDS</MudTh>
+                            <MudTh Style="color: #00E5FF; font-weight: 700;">SC USER STATUS</MudTh>
+                            <MudTh Style="color: #00E5FF; font-weight: 700; text-align: right;">ACTIONS</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>
+                                <div class="d-flex flex-column">
+                                    <span class="font-weight-bold" style="color: #F8FAFC;">@context.FileName</span>
+                                    <span class="mfd-code" style="font-size: 0.75rem; color: #64748B;">@context.LastModified.ToString("yyyy-MM-dd HH:mm:ss") • @(context.FileSizeBytes / 1024) KB</span>
+                                </div>
+                            </MudTd>
+                            <MudTd>
+                                <div class="d-flex flex-wrap gap-1">
+                                    @if (context.DeviceNames.Count > 0) {
+                                        @foreach (var dev in context.DeviceNames) {
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" Class="py-0 px-1" Style="font-size: 0.7rem; height: 20px;">
+                                                @dev
+                                            </MudChip>
+                                        }
+                                    } else {
+                                        <span class="mfd-code" style="color: #64748B;">@context.JoystickOptionsCount device(s)</span>
+                                    }
+                                </div>
+                            </MudTd>
+                            <MudTd>
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Dark" Class="font-weight-bold">
+                                    @context.RebindCount binds
+                                </MudChip>
+                            </MudTd>
+                            <MudTd>
+                                @if (context.ExistsInStarCitizen) {
+                                    <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.CheckCircle">
+                                        In SC USER Mappings
+                                    </MudChip>
+                                } else {
+                                    <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.CloudOff">
+                                        Not in SC USER
+                                    </MudChip>
+                                }
+                            </MudTd>
+                            <MudTd Style="text-align: right;">
+                                <div class="d-flex align-center justify-end gap-1">
+                                    <MudTooltip Text="Apply directly to active game actionmaps.xml and align stick slots">
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Primary"
+                                                   Size="Size.Small"
+                                                   StartIcon="@Icons.Material.Filled.PlayArrow"
+                                                   OnClick="@(() => ApplyProfileAsync(context.FileName))"
+                                                   Style="color: #0B0F19; font-weight: 700; font-size: 0.75rem;">
+                                            Apply
+                                        </MudButton>
+                                    </MudTooltip>
+                                    <MudTooltip Text="Copy this profile to Star Citizen Controls\Mappings folder so you can load it in-game">
+                                        <MudButton Variant="Variant.Outlined"
+                                                   Color="Color.Secondary"
+                                                   Size="Size.Small"
+                                                   StartIcon="@Icons.Material.Filled.FileUpload"
+                                                   OnClick="@(() => CopyProfileToStarCitizenAsync(context.FileName))"
+                                                   Style="font-size: 0.75rem;">
+                                            Deploy to SC
+                                        </MudButton>
+                                    </MudTooltip>
+                                    <MudTooltip Text="Delete from .sticklock library">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                       Color="Color.Error"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => DeleteProfileAsync(context.FileName))" />
+                                    </MudTooltip>
+                                </div>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
     <!-- Bottom Row: Activity & Backup Log Paper -->
     <MudItem xs="12">
         <MudPaper Class="mfd-card pa-3">
@@ -351,6 +490,7 @@
 @code {
     private IReadOnlyList<DirectInputDevice> _liveDevices = Array.Empty<DirectInputDevice>();
     private IReadOnlyList<XmlStickMapping> _xmlMappings = Array.Empty<XmlStickMapping>();
+    private IReadOnlyList<SavedMappingProfile> _savedProfiles = Array.Empty<SavedMappingProfile>();
 
     protected override async Task OnInitializedAsync() {
         DirectInputService.DevicesRefreshed += OnDevicesChanged;
@@ -359,6 +499,7 @@
 
         _liveDevices = DirectInputService.CurrentDevices;
         await ReloadXmlMappingsAsync();
+        await ReloadSavedProfilesAsync();
     }
 
     private void OnDevicesChanged(IReadOnlyList<DirectInputDevice> devices) {
@@ -371,6 +512,7 @@
     private void OnConfigChanged() {
         _ = InvokeAsync(async () => {
             await ReloadXmlMappingsAsync();
+            await ReloadSavedProfilesAsync();
             StateHasChanged();
         });
     }
@@ -380,6 +522,14 @@
             _xmlMappings = await XmlService.GetXmlMappingsAsync();
         } catch {
             _xmlMappings = Array.Empty<XmlStickMapping>();
+        }
+    }
+
+    private async Task ReloadSavedProfilesAsync() {
+        try {
+            _savedProfiles = await XmlService.GetSavedMappingsAsync();
+        } catch {
+            _savedProfiles = Array.Empty<SavedMappingProfile>();
         }
     }
 
@@ -524,6 +674,100 @@
         }
     }
 
+    private async Task OpenSaveProfileDialogAsync() {
+        var options = new DialogOptions {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<SaveProfileDialog>("Save Active Mappings as Profile", options);
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled) {
+            await ReloadSavedProfilesAsync();
+            await ReloadXmlMappingsAsync();
+        }
+    }
+
+    private async Task CopyProfileToStarCitizenAsync(string fileName) {
+        var result = await XmlService.CopyProfileToStarCitizenAsync(fileName);
+        if (result.Success) {
+            Snackbar.Add(result.Message, Severity.Success);
+            await ReloadSavedProfilesAsync();
+        } else {
+            Snackbar.Add(result.Message, Severity.Error);
+        }
+    }
+
+    private async Task CopyAllToStarCitizenAsync() {
+        var result = await XmlService.CopyAllProfilesToStarCitizenAsync();
+        if (result.Success) {
+            Snackbar.Add(result.Message, Severity.Success);
+            await ReloadSavedProfilesAsync();
+        } else {
+            Snackbar.Add(result.Message, Severity.Warning);
+        }
+    }
+
+    private async Task PullFromStarCitizenAsync() {
+        var result = await XmlService.PullProfilesFromStarCitizenAsync();
+        if (result.Success) {
+            Snackbar.Add(result.Message, Severity.Success);
+            await ReloadSavedProfilesAsync();
+        } else {
+            Snackbar.Add(result.Message, Severity.Info);
+        }
+    }
+
+    private async Task ApplyProfileAsync(string fileName) {
+        if (GameDetector.IsGameRunning()) {
+            Snackbar.Add("Star Citizen is active. Please close the game before applying profiles.", Severity.Warning);
+            return;
+        }
+
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Apply Saved Profile?",
+            $"Apply '{fileName}' to your active Star Citizen actionmaps.xml?\n\nStickLock will automatically back up current settings and align physical joystick slots.",
+            yesText: "Apply & Align",
+            cancelText: "Cancel");
+
+        if (confirmed != true) {
+            return;
+        }
+
+        var result = await XmlService.ApplySavedProfileToActiveAsync(fileName);
+        if (result.Success) {
+            Snackbar.Add(result.Message, Severity.Success);
+            await ReloadXmlMappingsAsync();
+            await ReloadSavedProfilesAsync();
+        } else {
+            Snackbar.Add(result.Message, Severity.Error);
+        }
+    }
+
+    private async Task DeleteProfileAsync(string fileName) {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Profile?",
+            $"Are you sure you want to delete '{fileName}' from your .sticklock library?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (confirmed != true) {
+            return;
+        }
+
+        var deleted = await XmlService.DeleteSavedProfileAsync(fileName);
+        if (deleted) {
+            Snackbar.Add($"Deleted '{fileName}'", Severity.Info);
+            await ReloadSavedProfilesAsync();
+        } else {
+            Snackbar.Add($"Could not delete '{fileName}'", Severity.Warning);
+        }
+    }
+
+    private void OpenMappingsFolder() {
+        BrowserService.OpenFolder(ConfigService.MappingsDirectory);
+    }
+
     private async Task ExportProfileXmlAsync() {
         var activePath = ConfigService.Config.StarCitizenPath;
         if (string.IsNullOrWhiteSpace(activePath) || !File.Exists(activePath)) {
@@ -531,7 +775,7 @@
             return;
         }
 
-        var defaultDir = GetDefaultMappingsDir();
+        var defaultDir = Directory.Exists(ConfigService.MappingsDirectory) ? ConfigService.MappingsDirectory : GetDefaultMappingsDir();
         var defaultFileName = $"layout_StickLock_{DateTime.Now:yyyyMMdd_HHmmss}.xml";
 
         var savePath = await FileDialog.SaveActionMapsXmlFileAsync(defaultFileName, defaultDir);
@@ -542,6 +786,7 @@
         var result = await XmlService.ExportActiveXmlAsync(savePath);
         if (result.Success) {
             Snackbar.Add(result.Message, Severity.Success);
+            await ReloadSavedProfilesAsync();
         } else {
             Snackbar.Add(result.Message, Severity.Error);
         }
@@ -553,7 +798,7 @@
             return;
         }
 
-        var defaultDir = GetDefaultMappingsDir();
+        var defaultDir = Directory.Exists(ConfigService.MappingsDirectory) ? ConfigService.MappingsDirectory : GetDefaultMappingsDir();
         var importPath = await FileDialog.PickXmlFileToImportAsync(defaultDir);
         if (string.IsNullOrWhiteSpace(importPath)) {
             return;

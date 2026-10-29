@@ -5,6 +5,7 @@ namespace StickLock.Services;
 public interface IAppConfigService {
     AppConfig Config { get; }
     string BaseDirectory { get; }
+    string MappingsDirectory { get; }
     event Action? ConfigChanged;
     Task LoadConfigAsync();
     Task SaveConfigAsync();
