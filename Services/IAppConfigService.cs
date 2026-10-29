@@ -16,5 +16,6 @@ public interface IAppConfigService {
     Task RemoveCanonicalStickAsync(int slot);
     string ResolveActionMapsPath(string currentPath, ScEnvironment targetEnv);
     bool TryAutoDetectStarCitizenPath(out string detectedPath);
+    Task ExportConfigAsync(string destinationPath);
+    Task ImportConfigAsync(string sourcePath);
 }
-

@@ -6,6 +6,7 @@
 @inject IActivityLogService LogService
 @inject IFileDialogService FileDialog
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @inject IJSRuntime JSRuntime
 
 <MudGrid Spacing="3">
@@ -81,6 +82,51 @@
                                    ValueChanged="@((bool val) => OnRunStartupChanged(val))"
                                    Color="Color.Primary"
                                    Label="Launch on Windows Startup" />
+                    </MudItem>
+
+                    <!-- Export & Import Controls Row -->
+                    <MudItem xs="12">
+                        <MudDivider Class="my-2" Style="border-color: rgba(0, 229, 255, 0.15);" />
+                        <div class="d-flex flex-wrap align-center justify-space-between gap-2 pt-1">
+                            <div class="d-flex align-center gap-2">
+                                <MudText Typo="Typo.caption" Class="mfd-title" Style="color: #94A3B8;">PROFILE & SETTINGS:</MudText>
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.FileUpload"
+                                           OnClick="ExportProfileXmlAsync"
+                                           Class="mfd-title">
+                                    Export Profile XML
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Secondary"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.FileDownload"
+                                           OnClick="ImportAndApplyProfileXmlAsync"
+                                           Class="mfd-title"
+                                           Style="color: #0B0F19; font-weight: 700;">
+                                    Import & Apply XML
+                                </MudButton>
+                            </div>
+                            <div class="d-flex align-center gap-2">
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Default"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Save"
+                                           OnClick="ExportSettingsJsonAsync"
+                                           Class="mfd-title">
+                                    Export Settings
+                                </MudButton>
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Default"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Restore"
+                                           OnClick="ImportSettingsJsonAsync"
+                                           Class="mfd-title">
+                                    Import Settings
+                                </MudButton>
+                            </div>
+                        </div>
                     </MudItem>
                 </MudGrid>
             </MudCardContent>
@@ -453,6 +499,128 @@
             await ReloadXmlMappingsAsync();
         } else {
             Snackbar.Add(result.Message, Severity.Warning);
+        }
+    }
+
+    private async Task ExportProfileXmlAsync() {
+        var activePath = ConfigService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(activePath) || !File.Exists(activePath)) {
+            Snackbar.Add("Active actionmaps.xml not found. Please verify the game path.", Severity.Warning);
+            return;
+        }
+
+        var defaultDir = GetDefaultMappingsDir();
+        var defaultFileName = $"layout_StickLock_{DateTime.Now:yyyyMMdd_HHmmss}.xml";
+
+        var savePath = await FileDialog.SaveActionMapsXmlFileAsync(defaultFileName, defaultDir);
+        if (string.IsNullOrWhiteSpace(savePath)) {
+            return;
+        }
+
+        var result = await XmlService.ExportActiveXmlAsync(savePath);
+        if (result.Success) {
+            Snackbar.Add(result.Message, Severity.Success);
+        } else {
+            Snackbar.Add(result.Message, Severity.Error);
+        }
+    }
+
+    private async Task ImportAndApplyProfileXmlAsync() {
+        if (GameDetector.IsGameRunning()) {
+            Snackbar.Add("Star Citizen is currently active. Please exit the game before importing profiles.", Severity.Warning);
+            return;
+        }
+
+        var defaultDir = GetDefaultMappingsDir();
+        var importPath = await FileDialog.PickXmlFileToImportAsync(defaultDir);
+        if (string.IsNullOrWhiteSpace(importPath)) {
+            return;
+        }
+
+        var summary = await XmlService.InspectXmlProfileAsync(importPath);
+        if (!summary.IsValid) {
+            Snackbar.Add($"Invalid profile XML: {summary.ErrorMessage}", Severity.Error);
+            return;
+        }
+
+        var dialogMessage = $"File: {summary.FileName}\n" +
+                            $"Devices: {summary.JoystickOptionsCount} ({string.Join(", ", summary.DeviceNames)})\n" +
+                            $"Rebinds: {summary.RebindCount}\n\n" +
+                            "Applying this profile will create a timestamped backup of your current active actionmaps.xml, " +
+                            "apply the imported bindings, and automatically align the joystick slot order to match your current physical controllers.\n\n" +
+                            "Proceed and apply to active game XML?";
+
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Apply Imported Control Profile?",
+            dialogMessage,
+            yesText: "Apply to Active XML",
+            cancelText: "Cancel");
+
+        if (confirmed != true) {
+            return;
+        }
+
+        var result = await XmlService.ImportAndApplyXmlAsync(importPath);
+        if (result.Success) {
+            Snackbar.Add(result.Message, Severity.Success);
+            await ReloadXmlMappingsAsync();
+        } else {
+            Snackbar.Add(result.Message, Severity.Error);
+        }
+    }
+
+    private async Task ExportSettingsJsonAsync() {
+        var defaultFileName = $"StickLock_Settings_{DateTime.Now:yyyyMMdd}.json";
+        var savePath = await FileDialog.SaveJsonConfigFileAsync(defaultFileName);
+        if (string.IsNullOrWhiteSpace(savePath)) {
+            return;
+        }
+
+        try {
+            await ConfigService.ExportConfigAsync(savePath);
+            LogService.LogSuccess($"Exported StickLock settings to {Path.GetFileName(savePath)}");
+            Snackbar.Add($"Settings exported to {Path.GetFileName(savePath)}", Severity.Success);
+        } catch (Exception ex) {
+            Snackbar.Add($"Failed to export settings: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ImportSettingsJsonAsync() {
+        var importPath = await FileDialog.PickJsonConfigFileAsync();
+        if (string.IsNullOrWhiteSpace(importPath)) {
+            return;
+        }
+
+        try {
+            await ConfigService.ImportConfigAsync(importPath);
+            LogService.LogSuccess($"Imported StickLock settings from {Path.GetFileName(importPath)}");
+            Snackbar.Add("StickLock settings imported and applied.", Severity.Success);
+            await ReloadXmlMappingsAsync();
+        } catch (Exception ex) {
+            Snackbar.Add($"Failed to import settings: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private string? GetDefaultMappingsDir() {
+        var activePath = ConfigService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(activePath)) {
+            return null;
+        }
+
+        try {
+            // E.g. <Install>\LIVE\USER\Client\0\Profiles\default\actionmaps.xml -> <Install>\LIVE\USER\Client\0\Controls\Mappings
+            var profilesDir = Path.GetDirectoryName(activePath);
+            var zeroDir = Path.GetDirectoryName(profilesDir);
+            var clientZeroDir = Path.GetDirectoryName(zeroDir);
+            if (!string.IsNullOrWhiteSpace(clientZeroDir)) {
+                var mappingsDir = Path.Combine(clientZeroDir, "Controls", "Mappings");
+                if (Directory.Exists(mappingsDir)) {
+                    return mappingsDir;
+                }
+            }
+            return profilesDir;
+        } catch {
+            return null;
         }
     }
 

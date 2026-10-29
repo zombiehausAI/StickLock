@@ -162,6 +162,60 @@ public class ActionMapsXmlServiceTests : IDisposable {
         Assert.Equal(SyncStatus.StarCitizenActive, result.Status);
     }
 
+    [Fact]
+    public async Task ExportAndImport_PreservesAndAppliesProfile() {
+        var guid1 = Guid.NewGuid();
+        var originalXml = $@"<ActionMaps version=""1"">
+            <options type=""joystick"" instance=""1"" Product=""Gladiator EVO {{{guid1}}}""/>
+            <actionmap name=""spaceship_general"">
+                <action name=""fire""><rebind input=""js1_button1""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(_xmlPath, originalXml);
+
+        var configService = new AppConfigService();
+        await configService.SetStarCitizenPathAsync(_xmlPath);
+
+        var diService = new TestDirectInputService();
+        var detector = new TestStarCitizenDetector();
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        // 1. Export
+        var exportPath = Path.Combine(_tempDir, "custom_export_layout.xml");
+        var exportResult = await xmlService.ExportActiveXmlAsync(exportPath);
+        Assert.True(exportResult.Success);
+        Assert.True(File.Exists(exportPath));
+
+        // 2. Inspect
+        var summary = await xmlService.InspectXmlProfileAsync(exportPath);
+        Assert.True(summary.IsValid);
+        Assert.Equal(1, summary.JoystickOptionsCount);
+        Assert.Equal(1, summary.RebindCount);
+
+        // 3. Import new profile over active XML
+        var newProfilePath = Path.Combine(_tempDir, "imported_profile.xml");
+        var newXml = @"<ActionMaps version=""1"">
+            <options type=""joystick"" instance=""1"" Product=""Thrustmaster Warthog""/>
+            <actionmap name=""flight"">
+                <action name=""flare""><rebind input=""js1_button2""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(newProfilePath, newXml);
+
+        var importResult = await xmlService.ImportAndApplyXmlAsync(newProfilePath);
+        Assert.True(importResult.Success);
+
+        // Verify active XML content changed to the imported one
+        var activeText = await File.ReadAllTextAsync(_xmlPath);
+        Assert.Contains("Thrustmaster Warthog", activeText);
+        Assert.Contains("flare", activeText);
+
+        // Verify backup of original was created during import
+        var backups = xmlService.GetAvailableBackups();
+        Assert.NotEmpty(backups);
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {

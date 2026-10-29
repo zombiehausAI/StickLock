@@ -23,23 +23,57 @@ public class AppConfigServiceTests {
 
     [Fact]
     public async Task CanonicalStick_AssignmentAndRemoval_WorksCorrectly() {
-        var service = new AppConfigService();
-        var stickGuid = Guid.NewGuid();
+        var isolatedConfig = Path.Combine(Path.GetTempPath(), $"cfg_test_{Guid.NewGuid():N}.json");
+        try {
+            var service = new AppConfigService(isolatedConfig);
+            var stickGuid = Guid.NewGuid();
 
-        await service.SetCanonicalStickAsync(1, new DirectInputDevice {
-            SlotIndex = 1,
-            InstanceGuid = stickGuid,
-            ProductGuid = Guid.NewGuid(),
-            ProductName = "Test Gladiator"
-        }, "Right Stick");
+            await service.SetCanonicalStickAsync(1, new DirectInputDevice {
+                SlotIndex = 1,
+                InstanceGuid = stickGuid,
+                ProductGuid = Guid.NewGuid(),
+                ProductName = "Test Gladiator"
+            }, "Right Stick");
 
-        Assert.Single(service.Config.CanonicalSticks);
-        Assert.Equal(1, service.Config.CanonicalSticks[0].RoleSlot);
-        Assert.Equal("Right Stick", service.Config.CanonicalSticks[0].FriendlyRoleName);
-        Assert.Equal(stickGuid, service.Config.CanonicalSticks[0].InstanceGuid);
+            Assert.Single(service.Config.CanonicalSticks);
+            Assert.Equal(1, service.Config.CanonicalSticks[0].RoleSlot);
+            Assert.Equal("Right Stick", service.Config.CanonicalSticks[0].FriendlyRoleName);
+            Assert.Equal(stickGuid, service.Config.CanonicalSticks[0].InstanceGuid);
 
-        await service.RemoveCanonicalStickAsync(1);
-        Assert.Empty(service.Config.CanonicalSticks);
+            await service.RemoveCanonicalStickAsync(1);
+            Assert.Empty(service.Config.CanonicalSticks);
+        } finally {
+            if (File.Exists(isolatedConfig)) {
+                File.Delete(isolatedConfig);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ExportAndImportConfig_RoundtripsSuccessfully() {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"sticklock_cfg_{Guid.NewGuid():N}.json");
+        var isolated1 = Path.Combine(Path.GetTempPath(), $"sticklock_inst1_{Guid.NewGuid():N}.json");
+        var isolated2 = Path.Combine(Path.GetTempPath(), $"sticklock_inst2_{Guid.NewGuid():N}.json");
+        try {
+            var service1 = new AppConfigService(isolated1);
+            await service1.SetStarCitizenPathAsync(@"D:\Games\StarCitizen\LIVE\actionmaps.xml");
+            await service1.SetAutoSyncAsync(false);
+            await service1.SetStartMinimizedAsync(true);
+
+            await service1.ExportConfigAsync(tempFile);
+            Assert.True(File.Exists(tempFile));
+
+            var service2 = new AppConfigService(isolated2);
+            await service2.ImportConfigAsync(tempFile);
+
+            Assert.Equal(@"D:\Games\StarCitizen\LIVE\actionmaps.xml", service2.Config.StarCitizenPath);
+            Assert.False(service2.Config.AutoSyncOnUsbChange);
+            Assert.True(service2.Config.StartMinimizedToTray);
+        } finally {
+            if (File.Exists(tempFile)) { File.Delete(tempFile); }
+            if (File.Exists(isolated1)) { File.Delete(isolated1); }
+            if (File.Exists(isolated2)) { File.Delete(isolated2); }
+        }
     }
 }
 

@@ -21,6 +21,10 @@ Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.
 - **Star Citizen Process Guard**: Detects active `StarCitizen.exe` processes and safely defers auto-sync to avoid file lock conflicts, providing an in-game console command (`pp_resortdevices joystick 1 2`) for live resort.
 - **Idempotent Two-Pass Transformation**: Replaces `<options type="joystick" instance="X">` and `<rebind input="jsX_...">` attributes using unique intermediary placeholders to eliminate collision errors.
 - **Automated Backup & Pruning**: Creates timestamped backups in `StickLock_Backups` with customizable pruning limits and one-click restoration.
+- **Export & Import Profiles**:
+  - Export active control profiles as user-named XML files directly to Star Citizen's `Controls\Mappings` or any custom folder.
+  - Import any Star Citizen mapping XML, inspect device and bind counts, and apply it directly to the active `actionmaps.xml` with automated backup and instant physical DirectInput slot alignment.
+  - Export and import StickLock configuration JSON to easily migrate settings across machines.
 - **Star Citizen MFD Dark UI**: Custom obsidian (`#0B0F19`), cyan (`#00E5FF`), and amber (`#FFAB00`) glass theme reminiscent of spaceship avionics.
 
 ---

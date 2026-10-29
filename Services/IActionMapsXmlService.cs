@@ -9,5 +9,7 @@ public interface IActionMapsXmlService {
     Task<string> GetConsoleResortCommandAsync();
     Task<SyncResult> RestoreLatestBackupAsync();
     IReadOnlyList<string> GetAvailableBackups();
+    Task<SyncResult> ExportActiveXmlAsync(string destinationPath);
+    Task<SyncResult> ImportAndApplyXmlAsync(string sourcePath);
+    Task<XmlProfileSummary> InspectXmlProfileAsync(string filePath);
 }
-

@@ -8,16 +8,25 @@ public class AppConfigService : IAppConfigService {
     private const string StartupRegistryKeyName = "StickLock";
     private const string RunRegistrySubKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private readonly string _configFilePath;
+    private readonly SemaphoreSlim _fileLock = new(1, 1);
     private AppConfig _config = new();
 
     public AppConfig Config => _config;
     public event Action? ConfigChanged;
 
-    public AppConfigService() {
-        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var appFolder = Path.Combine(localAppData, "StickLock");
-        Directory.CreateDirectory(appFolder);
-        _configFilePath = Path.Combine(appFolder, "config.json");
+    public AppConfigService(string? customConfigFilePath = null) {
+        if (!string.IsNullOrWhiteSpace(customConfigFilePath)) {
+            _configFilePath = customConfigFilePath;
+            var dir = Path.GetDirectoryName(_configFilePath);
+            if (!string.IsNullOrWhiteSpace(dir)) {
+                Directory.CreateDirectory(dir);
+            }
+        } else {
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var appFolder = Path.Combine(localAppData, "StickLock");
+            Directory.CreateDirectory(appFolder);
+            _configFilePath = Path.Combine(appFolder, "config.json");
+        }
     }
 
     public async Task LoadConfigAsync() {
@@ -64,8 +73,13 @@ public class AppConfigService : IAppConfigService {
     }
 
     public async Task SaveConfigAsync() {
-        var json = JsonSerializer.Serialize(_config, new JsonSerializerOptions { WriteIndented = true });
-        await File.WriteAllTextAsync(_configFilePath, json);
+        await _fileLock.WaitAsync();
+        try {
+            var json = JsonSerializer.Serialize(_config, new JsonSerializerOptions { WriteIndented = true });
+            await File.WriteAllTextAsync(_configFilePath, json);
+        } finally {
+            _fileLock.Release();
+        }
         ConfigChanged?.Invoke();
     }
 
@@ -166,6 +180,27 @@ public class AppConfigService : IAppConfigService {
         }
 
         return false;
+    }
+
+    public async Task ExportConfigAsync(string destinationPath) {
+        var json = JsonSerializer.Serialize(_config, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(destinationPath, json);
+    }
+
+    public async Task ImportConfigAsync(string sourcePath) {
+        if (!File.Exists(sourcePath)) {
+            throw new FileNotFoundException("Configuration file not found.", sourcePath);
+        }
+
+        var json = await File.ReadAllTextAsync(sourcePath);
+        var imported = JsonSerializer.Deserialize<AppConfig>(json);
+        if (imported == null) {
+            throw new InvalidOperationException("Failed to parse configuration file.");
+        }
+
+        _config = imported;
+        ApplyStartupRegistry(_config.RunOnWindowsStartup);
+        await SaveConfigAsync();
     }
 
     private void ApplyStartupRegistry(bool enable) {

@@ -226,6 +226,121 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             .ToList();
     }
 
+    public async Task<SyncResult> ExportActiveXmlAsync(string destinationPath) {
+        var xmlPath = _configService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
+            _logService.LogError("Export failed: Active actionmaps.xml file does not exist.");
+            return SyncResult.Fail("Active actionmaps.xml not found. Nothing to export.", SyncStatus.FileNotFound);
+        }
+
+        try {
+            var destDir = Path.GetDirectoryName(destinationPath);
+            if (!string.IsNullOrWhiteSpace(destDir)) {
+                Directory.CreateDirectory(destDir);
+            }
+
+            File.Copy(xmlPath, destinationPath, overwrite: true);
+            var fileName = Path.GetFileName(destinationPath);
+            _logService.LogSuccess($"Exported profile XML to {fileName}", destinationPath);
+            return SyncResult.Ok($"Successfully exported profile to {fileName}", changesMade: false);
+        } catch (Exception ex) {
+            _logService.LogError($"Export failed: {ex.Message}", ex.ToString());
+            return SyncResult.Fail($"Failed to export XML: {ex.Message}");
+        }
+    }
+
+    public async Task<SyncResult> ImportAndApplyXmlAsync(string sourcePath) {
+        if (!File.Exists(sourcePath)) {
+            return SyncResult.Fail($"Import file not found: {sourcePath}");
+        }
+
+        var xmlPath = _configService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(xmlPath)) {
+            return SyncResult.Fail("Active actionmaps.xml path is not configured.");
+        }
+
+        if (_starCitizenDetector.IsGameRunning()) {
+            return SyncResult.Fail("Star Citizen is currently running. Please close the game before applying a new profile XML.", SyncStatus.StarCitizenActive);
+        }
+
+        await _syncLock.WaitAsync();
+        try {
+            // Validate source XML
+            try {
+                var doc = XDocument.Load(sourcePath);
+                var root = doc.Root;
+                if (root == null) {
+                    return SyncResult.Fail("Imported XML file is empty or missing root element.");
+                }
+            } catch (Exception ex) {
+                return SyncResult.Fail($"Invalid XML file format: {ex.Message}");
+            }
+
+            var targetDir = Path.GetDirectoryName(xmlPath);
+            if (!string.IsNullOrWhiteSpace(targetDir)) {
+                Directory.CreateDirectory(targetDir);
+            }
+
+            string? backupPath = null;
+            if (File.Exists(xmlPath)) {
+                backupPath = CreateBackup(xmlPath);
+            }
+
+            File.Copy(sourcePath, xmlPath, overwrite: true);
+            var importName = Path.GetFileName(sourcePath);
+            _logService.LogSuccess($"Imported and applied '{importName}' to active game XML.", backupPath != null ? $"Backup saved: {Path.GetFileName(backupPath)}" : "");
+        } catch (Exception ex) {
+            _logService.LogError($"Import error: {ex.Message}", ex.ToString());
+            return SyncResult.Fail($"Import error: {ex.Message}");
+        } finally {
+            _syncLock.Release();
+        }
+
+        // Run sync to immediately align the newly imported profile with physical sticks
+        var syncResult = await SyncAsync();
+        if (syncResult.ChangesMade) {
+            _logService.LogSuccess("Imported profile automatically aligned with current physical joysticks.");
+            return SyncResult.Ok($"Applied '{Path.GetFileName(sourcePath)}' and aligned joystick slots to Windows order.", changesMade: true, status: SyncStatus.Aligned);
+        }
+
+        return SyncResult.Ok($"Applied '{Path.GetFileName(sourcePath)}' to active game XML.", changesMade: true, status: SyncStatus.Aligned);
+    }
+
+    public async Task<XmlProfileSummary> InspectXmlProfileAsync(string filePath) {
+        var summary = new XmlProfileSummary {
+            FilePath = filePath,
+            FileName = Path.GetFileName(filePath)
+        };
+
+        if (!File.Exists(filePath)) {
+            summary.IsValid = false;
+            summary.ErrorMessage = "File does not exist.";
+            return summary;
+        }
+
+        try {
+            await using var stream = File.OpenRead(filePath);
+            var doc = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
+            var options = doc.Descendants("options")
+                .Where(e => string.Equals((string?)e.Attribute("type"), "joystick", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            summary.JoystickOptionsCount = options.Count;
+            foreach (var opt in options) {
+                var product = (string?)opt.Attribute("Product") ?? $"Joystick {(string?)opt.Attribute("instance")}";
+                summary.DeviceNames.Add(product.Trim());
+            }
+
+            summary.RebindCount = doc.Descendants("rebind").Count();
+            summary.IsValid = true;
+            return summary;
+        } catch (Exception ex) {
+            summary.IsValid = false;
+            summary.ErrorMessage = ex.Message;
+            return summary;
+        }
+    }
+
     private string CreateBackup(string xmlPath) {
         var dir = Path.GetDirectoryName(xmlPath)!;
         var backupDir = Path.Combine(dir, "StickLock_Backups");
