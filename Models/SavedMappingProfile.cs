@@ -10,3 +10,4 @@ public class SavedMappingProfile {
     public List<string> DeviceNames { get; set; } = new();
     public bool ExistsInStarCitizen { get; set; }
 }
+
