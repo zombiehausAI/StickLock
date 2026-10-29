@@ -68,6 +68,10 @@ public class DirectInputService : IDirectInputService, IDisposable {
         }
     }
 
+    public Task<IReadOnlyList<DirectInputDevice>> RefreshDevicesAsync() {
+        return Task.Run(() => RefreshDevices());
+    }
+
     public void Dispose() {
         lock (_lock) {
             _directInput?.Dispose();

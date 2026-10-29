@@ -151,7 +151,11 @@
                     <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #00E5FF;">LIVE DIRECTINPUT ENUMERATION</MudText>
                 </div>
                 <MudTooltip Text="Refresh Devices">
-                    <MudIconButton Icon="@Icons.Material.Filled.Refresh" Color="Color.Primary" Size="Size.Small" OnClick="RefreshDevices" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   Disabled="@_isRefreshingDevices"
+                                   OnClick="RefreshDevicesAsync" />
                 </MudTooltip>
             </div>
             <MudCardContent Class="pa-2">

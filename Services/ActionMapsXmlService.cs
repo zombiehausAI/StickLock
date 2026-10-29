@@ -41,7 +41,7 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             return SyncStatus.Unknown;
         }
 
-        var liveDevices = _directInputService.RefreshDevices();
+        var liveDevices = await _directInputService.RefreshDevicesAsync();
         foreach (var stick in canonical) {
             var found = liveDevices.Any(d => IsStickMatch(stick, d));
             if (!found) {
@@ -81,7 +81,7 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                 return SyncResult.Ok("Less than 2 sticks configured. Nothing to sync.", changesMade: false, status: SyncStatus.Aligned);
             }
 
-            var liveDevices = _directInputService.RefreshDevices();
+            var liveDevices = await _directInputService.RefreshDevicesAsync();
             var missingSticks = canonical.Where(c => !liveDevices.Any(d => IsStickMatch(c, d))).ToList();
             if (missingSticks.Count > 0) {
                 var missingNames = string.Join(", ", missingSticks.Select(m => m.FriendlyRoleName));
@@ -96,13 +96,14 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                 return SyncResult.Ok("Sticks are already aligned with actionmaps.xml.", changesMade: false, status: SyncStatus.Aligned);
             }
 
-            // Create timestamped backup
-            var backupPath = CreateBackup(xmlPath);
-
-            // Perform XML two-pass transformation
-            var doc = XDocument.Load(xmlPath);
-            ApplyTransform(doc, swapMap);
-            doc.Save(xmlPath);
+            // Perform backup and XML two-pass transformation strictly on background thread
+            var backupPath = await Task.Run(() => {
+                var bPath = CreateBackup(xmlPath);
+                var doc = XDocument.Load(xmlPath);
+                ApplyTransform(doc, swapMap);
+                doc.Save(xmlPath);
+                return bPath;
+            });
 
             var swapDescriptions = swapMap.Select(kv => $"js{kv.Key} -> js{kv.Value}");
             var summary = $"Synced actionmaps.xml: {string.Join(", ", swapDescriptions)}";
@@ -191,7 +192,7 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             }
 
             var latest = backups[0];
-            File.Copy(latest, xmlPath, overwrite: true);
+            await Task.Run(() => File.Copy(latest, xmlPath, overwrite: true));
             var fileName = Path.GetFileName(latest);
             _logService.LogSuccess($"Restored backup: {fileName}");
             return SyncResult.Ok($"Successfully restored {fileName}", changesMade: true, backupPath: latest);
@@ -236,12 +237,14 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         }
 
         try {
-            var destDir = Path.GetDirectoryName(destinationPath);
-            if (!string.IsNullOrWhiteSpace(destDir)) {
-                Directory.CreateDirectory(destDir);
-            }
+            await Task.Run(() => {
+                var destDir = Path.GetDirectoryName(destinationPath);
+                if (!string.IsNullOrWhiteSpace(destDir)) {
+                    Directory.CreateDirectory(destDir);
+                }
+                File.Copy(xmlPath, destinationPath, overwrite: true);
+            });
 
-            File.Copy(xmlPath, destinationPath, overwrite: true);
             var fileName = Path.GetFileName(destinationPath);
             _logService.LogSuccess($"Exported profile XML to {fileName}", destinationPath);
             return SyncResult.Ok($"Successfully exported profile to {fileName}", changesMade: false);
@@ -266,29 +269,26 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         }
 
         await _syncLock.WaitAsync();
+        string? backupPath = null;
         try {
-            // Validate source XML
-            try {
+            await Task.Run(() => {
                 var doc = XDocument.Load(sourcePath);
-                var root = doc.Root;
-                if (root == null) {
-                    return SyncResult.Fail("Imported XML file is empty or missing root element.");
+                if (doc.Root == null) {
+                    throw new InvalidOperationException("Imported XML file is empty or missing root element.");
                 }
-            } catch (Exception ex) {
-                return SyncResult.Fail($"Invalid XML file format: {ex.Message}");
-            }
 
-            var targetDir = Path.GetDirectoryName(xmlPath);
-            if (!string.IsNullOrWhiteSpace(targetDir)) {
-                Directory.CreateDirectory(targetDir);
-            }
+                var targetDir = Path.GetDirectoryName(xmlPath);
+                if (!string.IsNullOrWhiteSpace(targetDir)) {
+                    Directory.CreateDirectory(targetDir);
+                }
 
-            string? backupPath = null;
-            if (File.Exists(xmlPath)) {
-                backupPath = CreateBackup(xmlPath);
-            }
+                if (File.Exists(xmlPath)) {
+                    backupPath = CreateBackup(xmlPath);
+                }
 
-            File.Copy(sourcePath, xmlPath, overwrite: true);
+                File.Copy(sourcePath, xmlPath, overwrite: true);
+            });
+
             var importName = Path.GetFileName(sourcePath);
             _logService.LogSuccess($"Imported and applied '{importName}' to active game XML.", backupPath != null ? $"Backup saved: {Path.GetFileName(backupPath)}" : "");
         } catch (Exception ex) {
@@ -321,21 +321,23 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         }
 
         try {
-            await using var stream = File.OpenRead(filePath);
-            var doc = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
-            var options = doc.Descendants("options")
-                .Where(e => string.Equals((string?)e.Attribute("type"), "joystick", StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            return await Task.Run(async () => {
+                await using var stream = File.OpenRead(filePath);
+                var doc = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
+                var options = doc.Descendants("options")
+                    .Where(e => string.Equals((string?)e.Attribute("type"), "joystick", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
 
-            summary.JoystickOptionsCount = options.Count;
-            foreach (var opt in options) {
-                var product = (string?)opt.Attribute("Product") ?? $"Joystick {(string?)opt.Attribute("instance")}";
-                summary.DeviceNames.Add(product.Trim());
-            }
+                summary.JoystickOptionsCount = options.Count;
+                foreach (var opt in options) {
+                    var product = (string?)opt.Attribute("Product") ?? $"Joystick {(string?)opt.Attribute("instance")}";
+                    summary.DeviceNames.Add(product.Trim());
+                }
 
-            summary.RebindCount = doc.Descendants("rebind").Count();
-            summary.IsValid = true;
-            return summary;
+                summary.RebindCount = doc.Descendants("rebind").Count();
+                summary.IsValid = true;
+                return summary;
+            });
         } catch (Exception ex) {
             summary.IsValid = false;
             summary.ErrorMessage = ex.Message;

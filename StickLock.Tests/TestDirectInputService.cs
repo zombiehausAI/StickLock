@@ -18,5 +18,10 @@ public class TestDirectInputService : IDirectInputService {
         DevicesRefreshed?.Invoke(_devices);
         return _devices;
     }
+
+    public Task<IReadOnlyList<DirectInputDevice>> RefreshDevicesAsync() {
+        DevicesRefreshed?.Invoke(_devices);
+        return Task.FromResult<IReadOnlyList<DirectInputDevice>>(_devices);
+    }
 }
 
