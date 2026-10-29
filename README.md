@@ -53,7 +53,7 @@ Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.
 - **Centralized `.sticklock` User Directory & Immune Mappings Library**:
   - All configurations, profile backups, and persistent mappings are stored in `~/.sticklock` (`%USERPROFILE%\.sticklock\`), completely outside the Star Citizen install folder so they are immune to game reinstalls and USER folder wipes.
   - `~/.sticklock/mappings/`: Primary repository for all saved flight controller mapping profiles.
-  - `~/.sticklock/config.json`: Active StickLock settings and canonical joystick assignments.
+  - `~/.sticklock/config.json`: Active StickLock settings, canonical joystick assignments, and saved window size/position.
   - `~/.sticklock/settings_backups/`: Timestamped snapshots created via the one-click **"Backup Current Settings"** button.
   - `~/.sticklock/backups/`: ActionMaps XML backups created prior to sync operations or profile imports.
   - `~/.sticklock/exports/`: Default repository for exported custom control profiles.

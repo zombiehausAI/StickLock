@@ -43,6 +43,9 @@ public class MainForm : Form {
         StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(11, 15, 25);
 
+        ApplySavedWindowBounds();
+        ResizeEnd += (_, _) => SaveWindowBounds();
+
         // Generate custom app icon
         Icon = CreateAppIcon();
 
@@ -133,6 +136,8 @@ public class MainForm : Form {
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e) {
+        SaveWindowBounds();
+
         if (e.CloseReason == CloseReason.UserClosing && !_allowClose) {
             e.Cancel = true;
             Hide();
@@ -152,11 +157,49 @@ public class MainForm : Form {
         base.OnFormClosing(e);
     }
 
+    private void ApplySavedWindowBounds() {
+        var cfg = _configService.Config;
+        if (cfg.WindowWidth.HasValue && cfg.WindowHeight.HasValue &&
+            cfg.WindowWidth.Value >= MinimumSize.Width && cfg.WindowHeight.Value >= MinimumSize.Height) {
+            Size = new Size(cfg.WindowWidth.Value, cfg.WindowHeight.Value);
+        }
+
+        if (cfg.WindowX.HasValue && cfg.WindowY.HasValue) {
+            var candidateRect = new Rectangle(cfg.WindowX.Value, cfg.WindowY.Value, Size.Width, Size.Height);
+            var isOnScreen = Screen.AllScreens.Any(s => s.WorkingArea.IntersectsWith(candidateRect));
+            if (isOnScreen) {
+                StartPosition = FormStartPosition.Manual;
+                Location = new Point(cfg.WindowX.Value, cfg.WindowY.Value);
+            }
+        }
+
+        if (cfg.WindowMaximized && !_startMinimized) {
+            WindowState = FormWindowState.Maximized;
+        }
+    }
+
+    private void SaveWindowBounds() {
+        try {
+            var cfg = _configService.Config;
+            var rect = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
+            if (rect.Width >= MinimumSize.Width && rect.Height >= MinimumSize.Height) {
+                cfg.WindowX = rect.X;
+                cfg.WindowY = rect.Y;
+                cfg.WindowWidth = rect.Width;
+                cfg.WindowHeight = rect.Height;
+            }
+            if (WindowState != FormWindowState.Minimized) {
+                cfg.WindowMaximized = WindowState == FormWindowState.Maximized;
+            }
+            _ = _configService.SaveConfigAsync();
+        } catch { }
+    }
+
     private void RestoreWindow() {
         _startMinimized = false;
         _initialShown = true;
         Show();
-        WindowState = FormWindowState.Normal;
+        WindowState = _configService.Config.WindowMaximized ? FormWindowState.Maximized : FormWindowState.Normal;
         BringToFront();
         Activate();
     }
@@ -172,6 +215,7 @@ public class MainForm : Form {
     }
 
     private void ExitApplication() {
+        SaveWindowBounds();
         _allowClose = true;
         _usbWatcherService.Stop();
         _notifyIcon.Visible = false;

@@ -11,6 +11,11 @@ public class AppConfig {
     public bool AllowSyncWhileGameRunning { get; set; } = false;
     public bool AutoDeployToMappingsFolder { get; set; } = true;
     public bool HasShownTrayMinimizeTip { get; set; } = false;
+    public int? WindowX { get; set; }
+    public int? WindowY { get; set; }
+    public int? WindowWidth { get; set; }
+    public int? WindowHeight { get; set; }
+    public bool WindowMaximized { get; set; } = false;
     public List<CanonicalStick> CanonicalSticks { get; set; } = new();
     public int MaxBackupsToKeep { get; set; } = 10;
 }
