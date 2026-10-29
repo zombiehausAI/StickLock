@@ -123,6 +123,10 @@ public class MainForm : Form {
 
         // Start USB Watcher
         _usbWatcherService.Start();
+
+        if (_configService.Config.AutoSyncOnUsbChange) {
+            _ = Task.Run(() => _usbWatcherService.TriggerManualScanAsync());
+        }
     }
 
     protected override void SetVisibleCore(bool value) {
