@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build & Package Release
@@ -62,6 +65,14 @@ jobs:
           Write-Host "Compiling installer with $iscc for version $ver..."
           & $iscc /DMyAppVersion="$ver" installer/StickLock.iss
 
+      - name: Create Portable Zip & Checksums
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.version.outputs.version }}"
+          $zip = "artifacts/StickLock-v$ver-win-x64.zip"
+          Compress-Archive -Path "artifacts/staging/StickLock/*" -DestinationPath $zip -Force
+          Get-FileHash -Path artifacts/StickLock-v* | ForEach-Object { "$($_.Hash)  $([System.IO.Path]::GetFileName($_.Path))" } | Set-Content artifacts/checksums.sha256
+
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -69,3 +80,17 @@ jobs:
           path: artifacts/StickLock-v*-Setup.exe
           if-no-files-found: error
 
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: StickLock v${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            artifacts/StickLock-v*-Setup.exe
+            artifacts/StickLock-v*-win-x64.zip
+            artifacts/checksums.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
