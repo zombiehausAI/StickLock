@@ -3,7 +3,7 @@ name: Release Build
 on:
   push:
     branches:
-      - release
+      - main
   workflow_dispatch:
 
 jobs:
@@ -40,7 +40,7 @@ jobs:
           --configuration Release
           --runtime win-x64
           --self-contained true
-          -p:GitBranch=release
+          -p:GitBranch=main
           -o artifacts/staging/StickLock
 
       - name: Install Inno Setup

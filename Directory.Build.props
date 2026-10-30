@@ -19,14 +19,14 @@
     <GitBranch Condition="'$(GitBranch)' == ''">dev</GitBranch>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(GitBranch)' == 'release'">
+  <PropertyGroup Condition="'$(GitBranch)' == 'main'">
     <Version>$(Major).$(Minor).$(Patch)</Version>
     <AssemblyVersion>$(Major).$(Minor).$(Patch).0</AssemblyVersion>
     <FileVersion>$(Major).$(Minor).$(Patch).0</FileVersion>
     <InformationalVersion>$(Major).$(Minor).$(Patch)</InformationalVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(GitBranch)' != 'release'">
+  <PropertyGroup Condition="'$(GitBranch)' != 'main'">
     <Version>$(Major).$(Minor).$(Patch)-dev.$(DevBuild)</Version>
     <AssemblyVersion>$(Major).$(Minor).$(Patch).$(DevBuild)</AssemblyVersion>
     <FileVersion>$(Major).$(Minor).$(Patch).$(DevBuild)</FileVersion>

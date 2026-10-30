@@ -7,7 +7,7 @@
 [![Windows](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-blue?logo=windows)](https://microsoft.com)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-purple?logo=dotnet)](https://dotnet.microsoft.com)
 [![Release](https://img.shields.io/badge/Release-Latest-00E5FF?logo=github)](https://github.com/zombiehausAI/StickLock/releases/latest)
-[![Build](https://img.shields.io/github/actions/workflow/status/zombiehausAI/StickLock/release.yml?branch=release&label=Release%20Build&logo=github)](https://github.com/zombiehausAI/StickLock/actions/workflows/release.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/zombiehausAI/StickLock/release.yml?branch=main&label=Release%20Build&logo=github)](https://github.com/zombiehausAI/StickLock/actions/workflows/release.yml)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/zombiehaus)
 
@@ -113,10 +113,10 @@ StickLock includes an automated pipeline script modelled after modern release or
 ### Branching & CI/CD Pipeline
 
 - **Branching Structure**:
-  - `dev`: Active development branch. Every commit on `dev` automatically increments the build number (`devBuild` in `version.json`, producing versions like `1.0.0-dev.4`).
-  - `release`: Production release branch. Releases produce clean semantic versions (e.g. `1.0.0`).
+  - `dev`: Active development branch. Every commit on `dev` automatically increments the build number (`devBuild` in `version.json`, producing versions like `1.0.0-dev.6`).
+  - `main`: Production release branch. Releases produce clean semantic versions (e.g. `1.0.0`).
 - **Auto-Increment Hook**: Managed via `.githooks/pre-commit` and `scripts/increment-dev-version.ps1` (`git config core.hooksPath .githooks`).
-- **GitHub Actions**: Configured in `.github/workflows/release.yml` to trigger exclusively on pushes to the `release` branch, running automated tests, publishing self-contained `win-x64` binaries, compiling the Inno Setup installer (`StickLock-v<version>-Setup.exe`), and uploading release artifacts.
+- **GitHub Actions**: Configured in `.github/workflows/release.yml` to trigger exclusively on pushes to the `main` branch, running automated tests, publishing self-contained `win-x64` binaries, compiling the Inno Setup installer (`StickLock-v<version>-Setup.exe`), and uploading release artifacts.
 
 ### Build Artifacts Output
 Artifacts are generated in the `artifacts/` folder:
