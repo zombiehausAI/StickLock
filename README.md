@@ -6,6 +6,8 @@
 
 [![Windows](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-blue?logo=windows)](https://microsoft.com)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-purple?logo=dotnet)](https://dotnet.microsoft.com)
+[![Release](https://img.shields.io/badge/Release-Latest-00E5FF?logo=github)](https://github.com/zombiehausAI/StickLock/releases/latest)
+[![Build](https://img.shields.io/github/actions/workflow/status/zombiehausAI/StickLock/release.yml?branch=release&label=Release%20Build&logo=github)](https://github.com/zombiehausAI/StickLock/actions/workflows/release.yml)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/zombiehaus)
 
@@ -14,6 +16,24 @@
 StickLock is a zero-XAML, high-performance Windows desktop utility built with **.NET 10**, **WinForms Blazor Hybrid** (`Microsoft.AspNetCore.Components.WebView.WindowsForms`), and **MudBlazor**.
 
 Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.) to map physical flight sticks. When joysticks are unplugged, USB hubs reset, or Windows reboots, DirectInput frequently flips their enumeration order. StickLock runs quietly in the Windows System Tray, monitors USB hardware changes in real time, compares current DirectInput device indices against user-locked canonical slots, and automatically updates Star Citizen's `actionmaps.xml` before game launch.
+
+---
+
+## 🚀 Quick Download & Installation
+
+Get the latest self-contained Windows release (no .NET installation required):
+
+| Package | Description | Download |
+| :--- | :--- | :--- |
+| **Windows Setup Installer** (`.exe`) | Recommended. Automated user-level installer with desktop shortcut, in-place updates, and uninstaller. | [**Download Latest Setup (`.exe`)**](https://github.com/zombiehausAI/StickLock/releases/latest) |
+| **Standalone Portable Archive** (`.zip`) | Portable distribution. Extract anywhere and launch `StickLock.exe` directly. | [**Download Latest ZIP**](https://github.com/zombiehausAI/StickLock/releases/latest) |
+| **All Releases & Notes** | Browse full version changelogs, tag history, and SHA256 checksums. | [**View GitHub Releases**](https://github.com/zombiehausAI/StickLock/releases) |
+| **Automated Release Builds** | CI/CD workflow pipeline and latest release artifacts. | [**GitHub Actions Release Builds**](https://github.com/zombiehausAI/StickLock/actions/workflows/release.yml) |
+
+> [!TIP]
+> **No External Dependencies**: StickLock is compiled fully self-contained (`win-x64`). You do **not** need to download or install the .NET SDK or runtime.
+
+---
 
 > [!NOTE]
 > **Project Context & Disclaimer**:
