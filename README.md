@@ -21,17 +21,17 @@ Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.
 
 ## 🚀 Quick Download & Installation
 
-Get the latest self-contained Windows release (no .NET installation required):
+Get the latest self-contained Windows release (fully self-contained, no external .NET installation required):
 
-| Package | Description | Download |
-| :--- | :--- | :--- |
-| **Windows Setup Installer** (`.exe`) | Recommended. Automated user-level installer with desktop shortcut, in-place updates, and uninstaller. | [**Download Latest Setup (`.exe`)**](https://github.com/zombiehausAI/StickLock/releases/latest) |
-| **Standalone Portable Archive** (`.zip`) | Portable distribution. Extract anywhere and launch `StickLock.exe` directly. | [**Download Latest ZIP**](https://github.com/zombiehausAI/StickLock/releases/latest) |
-| **All Releases & Notes** | Browse full version changelogs, tag history, and SHA256 checksums. | [**View GitHub Releases**](https://github.com/zombiehausAI/StickLock/releases) |
-| **Automated Release Builds** | CI/CD workflow pipeline and latest release artifacts. | [**GitHub Actions Release Builds**](https://github.com/zombiehausAI/StickLock/actions/workflows/release.yml) |
+| Package | Format | File Size | Direct Download |
+| :--- | :--- | :--- | :--- |
+| **Windows Setup Wizard** *(Recommended)* | `.exe` | ~40.4 MB | [**⬇️ Download StickLock-v1.0.0-Setup.exe**](https://github.com/zombiehausAI/StickLock/releases/download/v1.0.0/StickLock-v1.0.0-Setup.exe) |
+| **Standalone Portable Archive** | `.zip` | ~57.1 MB | [**⬇️ Download StickLock-v1.0.0-win-x64.zip**](https://github.com/zombiehausAI/StickLock/releases/download/v1.0.0/StickLock-v1.0.0-win-x64.zip) |
+| **SHA256 Manifest** | `.sha256` | < 1 KB | [**Verify Checksums**](https://github.com/zombiehausAI/StickLock/releases/download/v1.0.0/checksums.sha256) |
+| **Release Changelogs & History** | Web | — | [**View All GitHub Releases**](https://github.com/zombiehausAI/StickLock/releases) |
 
 > [!TIP]
-> **No External Dependencies**: StickLock is compiled fully self-contained (`win-x64`). You do **not** need to download or install the .NET SDK or runtime.
+> **No External Dependencies**: StickLock is compiled fully self-contained for Windows (`win-x64`). You do **not** need to download or install the .NET SDK or runtime. Simply run the installer or unzip and launch `StickLock.exe`.
 
 ---
 
