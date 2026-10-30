@@ -5,3 +5,4 @@ if command -v pwsh >/dev/null 2>&1; then
 else
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REPO_ROOT/scripts/increment-dev-version.ps1"
 fi
+

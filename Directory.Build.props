@@ -33,3 +33,4 @@
     <InformationalVersion>$(Major).$(Minor).$(Patch)-dev.$(DevBuild)</InformationalVersion>
   </PropertyGroup>
 </Project>
+

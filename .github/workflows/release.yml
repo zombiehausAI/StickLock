@@ -68,3 +68,4 @@ jobs:
           name: StickLock-v${{ steps.version.outputs.version }}-Setup
           path: artifacts/StickLock-v*-Setup.exe
           if-no-files-found: error
+

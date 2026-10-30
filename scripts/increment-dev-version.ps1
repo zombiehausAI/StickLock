@@ -23,3 +23,4 @@ if ($branch -eq "dev") {
 } else {
     Write-Host "Branch is '$branch' (not 'dev'). Skipping version auto-increment."
 }
+
