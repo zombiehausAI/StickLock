@@ -90,6 +90,14 @@ StickLock includes an automated pipeline script modelled after modern release or
 .\Build-And-Package.ps1 -SkipTests
 ```
 
+### Branching & CI/CD Pipeline
+
+- **Branching Structure**:
+  - `dev`: Active development branch. Every commit on `dev` automatically increments the build number (`devBuild` in `version.json`, producing versions like `1.0.0-dev.4`).
+  - `release`: Production release branch. Releases produce clean semantic versions (e.g. `1.0.0`).
+- **Auto-Increment Hook**: Managed via `.githooks/pre-commit` and `scripts/increment-dev-version.ps1` (`git config core.hooksPath .githooks`).
+- **GitHub Actions**: Configured in `.github/workflows/release.yml` to trigger exclusively on pushes to the `release` branch, running automated tests, publishing self-contained `win-x64` binaries, compiling the Inno Setup installer (`StickLock-v<version>-Setup.exe`), and uploading release artifacts.
+
 ### Build Artifacts Output
 Artifacts are generated in the `artifacts/` folder:
 - `StickLock-v<version>-win-x64.zip` — Standalone portable archive.
