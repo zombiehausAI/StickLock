@@ -1,0 +1,35 @@
+<Project>
+  <PropertyGroup>
+    <VersionJsonPath>$(MSBuildThisFileDirectory)version.json</VersionJsonPath>
+    <VersionJsonText Condition="Exists('$(VersionJsonPath)')">$([System.IO.File]::ReadAllText('$(VersionJsonPath)'))</VersionJsonText>
+
+    <Major Condition="'$(VersionJsonText)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(VersionJsonText), '"major"\s*:\s*(\d+)').Groups[1].Value)</Major>
+    <Minor Condition="'$(VersionJsonText)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(VersionJsonText), '"minor"\s*:\s*(\d+)').Groups[1].Value)</Minor>
+    <Patch Condition="'$(VersionJsonText)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(VersionJsonText), '"patch"\s*:\s*(\d+)').Groups[1].Value)</Patch>
+    <DevBuild Condition="'$(VersionJsonText)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(VersionJsonText), '"devBuild"\s*:\s*(\d+)').Groups[1].Value)</DevBuild>
+
+    <Major Condition="'$(Major)' == ''">1</Major>
+    <Minor Condition="'$(Minor)' == ''">0</Minor>
+    <Patch Condition="'$(Patch)' == ''">0</Patch>
+    <DevBuild Condition="'$(DevBuild)' == ''">0</DevBuild>
+
+    <!-- Branch detection from environment or git HEAD -->
+    <GitBranch Condition="'$(GitBranch)' == ''">$(GITHUB_REF_NAME)</GitBranch>
+    <GitBranch Condition="'$(GitBranch)' == '' and Exists('$(MSBuildThisFileDirectory).git/HEAD')">$([System.Text.RegularExpressions.Regex]::Replace($([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory).git/HEAD')), '^ref: refs/heads/', '').Trim())</GitBranch>
+    <GitBranch Condition="'$(GitBranch)' == ''">dev</GitBranch>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GitBranch)' == 'release'">
+    <Version>$(Major).$(Minor).$(Patch)</Version>
+    <AssemblyVersion>$(Major).$(Minor).$(Patch).0</AssemblyVersion>
+    <FileVersion>$(Major).$(Minor).$(Patch).0</FileVersion>
+    <InformationalVersion>$(Major).$(Minor).$(Patch)</InformationalVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GitBranch)' != 'release'">
+    <Version>$(Major).$(Minor).$(Patch)-dev.$(DevBuild)</Version>
+    <AssemblyVersion>$(Major).$(Minor).$(Patch).$(DevBuild)</AssemblyVersion>
+    <FileVersion>$(Major).$(Minor).$(Patch).$(DevBuild)</FileVersion>
+    <InformationalVersion>$(Major).$(Minor).$(Patch)-dev.$(DevBuild)</InformationalVersion>
+  </PropertyGroup>
+</Project>

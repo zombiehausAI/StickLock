@@ -1,0 +1,7 @@
+#!/bin/sh
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+if command -v pwsh >/dev/null 2>&1; then
+    pwsh -NoProfile -File "$REPO_ROOT/scripts/increment-dev-version.ps1"
+else
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$REPO_ROOT/scripts/increment-dev-version.ps1"
+fi
