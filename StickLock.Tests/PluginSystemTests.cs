@@ -89,6 +89,28 @@ public class PluginSystemTests : IDisposable {
         Assert.Contains("PresetName=\"Custom\"", restoredContent);
     }
 
+    [Fact]
+    public async Task GamePluginLoader_And_Manager_HandlesExternalPluginsAndReload() {
+        var configService = new AppConfigService(_configPath);
+        var diService = new TestDirectInputService();
+        var scDetector = new TestStarCitizenDetector();
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, scDetector, logService);
+
+        var scPlugin = new StarCitizenPlugin(xmlService, configService, scDetector);
+        var edPlugin = new EliteDangerousPlugin(configService, diService, logService);
+
+        var loader = new GamePluginLoader(configService, logService);
+        var manager = new GamePluginManager(new IGamePlugin[] { scPlugin, edPlugin }, configService, loader);
+
+        Assert.Equal(2, manager.AvailablePlugins.Count);
+        Assert.Equal(Path.Combine(configService.BaseDirectory, "plugins"), manager.UserPluginsDirectory);
+
+        // Test reload does not crash and maintains active selection
+        await manager.ReloadPluginsAsync();
+        Assert.Equal("starcitizen", manager.ActivePlugin.Id);
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {
@@ -97,3 +119,4 @@ public class PluginSystemTests : IDisposable {
         } catch { }
     }
 }
+

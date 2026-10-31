@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>StickLock.SDK</RootNamespace>
+    <PackageId>StickLock.SDK</PackageId>
+    <Authors>StickLock Avionics</Authors>
+    <Description>Contracts, base classes, and data models for authoring independent out-of-tree StickLock game plugins.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Models\DirectInputDevice.cs" Link="Models\DirectInputDevice.cs" />
+    <Compile Include="..\Models\CanonicalStick.cs" Link="Models\CanonicalStick.cs" />
+    <Compile Include="..\Models\MappingAlignmentCheck.cs" Link="Models\MappingAlignmentCheck.cs" />
+    <Compile Include="..\Models\StickMismatchDetail.cs" Link="Models\StickMismatchDetail.cs" />
+    <Compile Include="..\Models\XmlStickMapping.cs" Link="Models\XmlStickMapping.cs" />
+    <Compile Include="..\Models\SyncResult.cs" Link="Models\SyncResult.cs" />
+    <Compile Include="..\Models\SyncStatus.cs" Link="Models\SyncStatus.cs" />
+    <Compile Include="..\Models\FlightAxisMode.cs" Link="Models\FlightAxisMode.cs" />
+    <Compile Include="..\Plugins\IGamePlugin.cs" Link="Contracts\IGamePlugin.cs" />
+  </ItemGroup>
+</Project>

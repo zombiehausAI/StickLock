@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>StickLock.Plugins.Sample</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- When developing within this repository: -->
+    <ProjectReference Include="..\..\..\StickLock.SDK\StickLock.SDK.csproj" />
+
+    <!--
+      When developing OUT-OF-TREE as an independent 3rd party without the StickLock source,
+      replace the ProjectReference above with the StickLock.SDK NuGet package or direct assembly reference:
+
+      <PackageReference Include="StickLock.SDK" Version="1.0.0" />
+      or
+      <Reference Include="StickLock.SDK">
+        <HintPath>..\..\path\to\StickLock.SDK.dll</HintPath>
+      </Reference>
+    -->
+  </ItemGroup>
+
+</Project>

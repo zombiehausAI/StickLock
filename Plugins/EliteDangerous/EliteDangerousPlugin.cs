@@ -174,3 +174,4 @@ public class EliteDangerousPlugin : IGamePlugin {
         return dest;
     }
 }
+

@@ -18,3 +18,4 @@ public interface IGamePlugin {
     Task<IReadOnlyList<string>> GetAvailableBackupsAsync();
     Task<SyncResult> RestoreLatestBackupAsync();
 }
+

@@ -182,6 +182,13 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
+# Build & Pack StickLock.SDK for out-of-tree plugin authors
+$sdkCsproj = Join-Path $repoRoot "StickLock.SDK\StickLock.SDK.csproj"
+if (Test-Path $sdkCsproj) {
+    Write-Host "Packing StickLock.SDK package for plugin authors..." -ForegroundColor Cyan
+    & dotnet pack $sdkCsproj -c $Configuration -p:PackageVersion=$cleanNumericVersion -o $artifactsPath --nologo -v q
+}
+
 # Copy Installer Support Files & Documentation into package
 Copy-Item (Join-Path $repoRoot "installer\Install-StickLock.ps1") -Destination $packageAppDir -Force
 if (Test-Path (Join-Path $repoRoot "LICENSE")) {

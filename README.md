@@ -76,6 +76,12 @@ Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.
   - Import any Star Citizen mapping XML, inspect device and bind counts, and apply it directly to the active `actionmaps.xml` with automated backup and instant physical DirectInput slot alignment.
   - One-click **"Backup Current Settings"** to snapshot canonical stick assignments, paths, and preferences at any time.
   - Export and import StickLock configuration JSON to easily migrate settings across machines.
+- **Multi-Game Integration & Pluggable Architecture**:
+  - Pluggable architecture supporting **Star Citizen**, **Elite Dangerous**, and community space/flight simulators.
+  - **Out-of-Tree Plugin SDK (`StickLock.SDK`)**: Anyone can write, build, and publish custom game integration plugins without access to the StickLock source code.
+  - **Dynamic Assembly Loading**: Automatically discovers and loads plugins from `%USERPROFILE%\.sticklock\plugins\` in isolated, collectible assembly contexts.
+  - **In-App Plugin Management**: Switch active games on the fly, browse the plugins directory with 1 click, and hot-reload plugins without restarting the application.
+  - **Extensive Plugin Guide**: Full architectural specifications, tutorials, and game case studies are available in [docs/PLUGIN_AUTHORING_GUIDE.md](docs/PLUGIN_AUTHORING_GUIDE.md).
 - **Star Citizen MFD Dark UI**: Custom obsidian (`#0B0F19`), cyan (`#00E5FF`), and amber (`#FFAB00`) glass theme reminiscent of spaceship avionics.
 
 ---
@@ -101,10 +107,13 @@ StickLock includes an automated pipeline script modelled after modern release or
 ### Branching & CI/CD Pipeline
 
 - **Branching Structure**:
-  - `dev`: Active development branch. Every commit on `dev` automatically increments the build number (`devBuild` in `version.json`, producing versions like `1.0.0-dev.6`).
+  - `dev`: Active development branch. Every commit on `dev` or `feature/*` automatically increments the build number (`devBuild` in `version.json`, producing versions like `1.0.0-dev.6`).
+  - `feature/*`: Dedicated feature branches for large architectural changes (such as `feature/plugin-system`).
   - `main`: Production release branch. Releases produce clean semantic versions (e.g. `1.0.0`).
 - **Auto-Increment Hook**: Managed via `.githooks/pre-commit` and `scripts/increment-dev-version.ps1` (`git config core.hooksPath .githooks`).
-- **GitHub Actions**: Configured in `.github/workflows/release.yml` to trigger exclusively on pushes to the `main` branch, running automated tests, publishing self-contained `win-x64` binaries, compiling the Inno Setup installer (`StickLock-v<version>-Setup.exe`), and uploading release artifacts.
+- **GitHub Actions CI/CD**:
+  - `.github/workflows/release.yml`: Triggers on pushes to `main`, running automated tests, publishing self-contained `win-x64` binaries, compiling the Inno Setup installer (`StickLock-v<version>-Setup.exe`), and creating official GitHub Releases.
+  - `.github/workflows/dev-build.yml`: Triggers automatically on pushes to `dev` and all `feature/**` branches, executing full unit test suites, publishing binaries, and packaging installer artifacts.
 
 ### Build Artifacts Output
 Artifacts are generated in the `artifacts/` folder:

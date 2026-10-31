@@ -43,6 +43,13 @@ jobs:
           --self-contained true
           -o artifacts/staging/StickLock
 
+      - name: Build & Pack StickLock.SDK
+        run: >
+          dotnet pack StickLock.SDK/StickLock.SDK.csproj
+          --configuration Release
+          -p:PackageVersion=${{ steps.version.outputs.version }}
+          -o artifacts
+
       - name: Install Inno Setup
         shell: pwsh
         run: |
@@ -78,4 +85,6 @@ jobs:
             artifacts/StickLock-v*-Setup.exe
             artifacts/StickLock-v*-win-x64.zip
             artifacts/checksums.sha256
+            artifacts/StickLock.SDK.*.nupkg
           if-no-files-found: error
+

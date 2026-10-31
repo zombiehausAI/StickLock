@@ -1,0 +1,156 @@
+@using System.Diagnostics
+@using StickLock.Plugins
+@using StickLock.Services
+@inject IGamePluginManager PluginManager
+@inject IBrowserService BrowserService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center justify-space-between">
+            <div class="d-flex align-center">
+                <MudIcon Icon="@Icons.Material.Filled.Extension" Color="Color.Primary" Class="mr-2" />
+                <MudText Typo="Typo.h6" Class="mfd-title glow-cyan" Style="color: #00E5FF;">GAME INTEGRATIONS & PLUGINS</MudText>
+            </div>
+            <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Outlined">
+                @($"{PluginManager.AvailablePlugins.Count} Available")
+            </MudChip>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <div class="d-flex flex-column gap-3 pt-2">
+            <MudText Typo="Typo.body2" Style="color: #94A3B8;">
+                StickLock supports pluggable game integrations for flight controllers. Third-party plugins can be dropped into the user plugins directory as compiled <MudText Typo="Typo.caption" Inline="true" Style="color: #38BDF8; font-family: monospace;">.dll</MudText> assemblies.
+            </MudText>
+
+            <!-- Plugins List -->
+            @foreach (var plugin in PluginManager.AvailablePlugins) {
+                var isActive = PluginManager.ActivePlugin?.Id == plugin.Id;
+                var isNative = plugin.Id == "starcitizen" || plugin.Id == "elitedangerous";
+
+                <MudPaper Class="pa-3" Elevation="0" Style="@(isActive ? "background: rgba(0, 229, 255, 0.06); border: 1px solid #00E5FF; border-radius: 6px;" : "background: #111A24; border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 6px;")">
+                    <div class="d-flex align-center justify-space-between mb-1">
+                        <div class="d-flex align-center gap-2">
+                            <MudText Typo="Typo.subtitle1" Class="font-weight-bold" Style="@(isActive ? "color: #00E5FF;" : "color: #E2E8F0;")">
+                                @plugin.Name
+                            </MudText>
+                            @if (isNative) {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined" Style="font-size: 0.7rem; height: 20px;">
+                                    Built-in
+                                </MudChip>
+                            } else {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Outlined" Style="font-size: 0.7rem; height: 20px;">
+                                    Community
+                                </MudChip>
+                            }
+                            @if (isActive) {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled" Style="font-size: 0.7rem; height: 20px; font-weight: bold;">
+                                    ACTIVE
+                                </MudChip>
+                            }
+                        </div>
+
+                        @if (!isActive) {
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       OnClick="@(() => SetActivePluginAsync(plugin.Id))">
+                                Select
+                            </MudButton>
+                        }
+                    </div>
+
+                    <MudText Typo="Typo.body2" Style="color: #CBD5E1; font-size: 0.85rem;" Class="mb-1">
+                        @plugin.Description
+                    </MudText>
+
+                    <div class="d-flex align-center justify-space-between" style="font-size: 0.75rem; color: #64748B;">
+                        <span>Process: @(string.IsNullOrWhiteSpace(plugin.ProcessName) ? "None" : plugin.ProcessName)</span>
+                        <span>Axis Modes: @(plugin.SupportsFlightAxisMode ? "Supported" : "N/A")</span>
+                    </div>
+                </MudPaper>
+            }
+
+            <MudDivider Class="my-2" Style="border-color: rgba(148, 163, 184, 0.15);" />
+
+            <div class="d-flex align-center justify-space-between">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Info"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.FolderOpen"
+                           OnClick="OpenPluginsFolder">
+                    Open Plugins Folder
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Secondary"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="ReloadPluginsAsync">
+                    Reload Plugins
+                </MudButton>
+            </div>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   StartIcon="@Icons.Material.Filled.Book"
+                   OnClick="OpenAuthoringGuide">
+            Plugin Authoring Guide
+        </MudButton>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="Submit">
+            Close
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    private async Task SetActivePluginAsync(string pluginId) {
+        await PluginManager.SetActivePluginAsync(pluginId);
+        Snackbar.Add($"Switched active game to {PluginManager.ActivePlugin?.Name}", Severity.Success);
+        StateHasChanged();
+    }
+
+    private void OpenPluginsFolder() {
+        try {
+            var pluginsDir = PluginManager.UserPluginsDirectory;
+
+            if (!Directory.Exists(pluginsDir)) {
+                Directory.CreateDirectory(pluginsDir);
+            }
+
+            Process.Start(new ProcessStartInfo {
+                FileName = "explorer.exe",
+                Arguments = pluginsDir,
+                UseShellExecute = true
+            });
+        } catch (Exception ex) {
+            Snackbar.Add($"Failed to open plugins folder: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ReloadPluginsAsync() {
+        try {
+            await PluginManager.ReloadPluginsAsync();
+            Snackbar.Add($"Reloaded plugins ({PluginManager.AvailablePlugins.Count} total)", Severity.Success);
+            StateHasChanged();
+        } catch (Exception ex) {
+            Snackbar.Add($"Error reloading plugins: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void OpenAuthoringGuide() {
+        BrowserService.OpenUrl("https://github.com/dondon101/StickLock/blob/main/docs/PLUGIN_AUTHORING_GUIDE.md");
+    }
+
+    private void Submit() {
+        MudDialog?.Close(DialogResult.Ok(true));
+    }
+}

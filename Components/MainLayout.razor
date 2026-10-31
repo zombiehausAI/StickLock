@@ -44,6 +44,13 @@
                         </div>
                     </MudMenuItem>
                 }
+                <MudDivider Class="my-1" />
+                <MudMenuItem OnClick="OpenPluginsDialogAsync">
+                    <div class="d-flex align-center gap-2" style="color: #38BDF8;">
+                        <MudIcon Icon="@Icons.Material.Filled.Extension" Size="Size.Small" Color="Color.Info" />
+                        <span>Manage Plugins...</span>
+                    </div>
+                </MudMenuItem>
             </ChildContent>
         </MudMenu>
 
@@ -216,6 +223,15 @@
 
     private void OpenKofi() {
         BrowserService.OpenUrl("https://ko-fi.com/zombiehaus");
+    }
+
+    private async Task OpenPluginsDialogAsync() {
+        var options = new DialogOptions {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+        await DialogService.ShowAsync<PluginsDialog>("Game Integrations & Plugins", options);
     }
 
     private async Task OpenAboutDialogAsync() {

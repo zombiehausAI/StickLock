@@ -67,3 +67,4 @@ public class StarCitizenPlugin : IGamePlugin {
         return _xmlService.RestoreLatestBackupAsync();
     }
 }
+
