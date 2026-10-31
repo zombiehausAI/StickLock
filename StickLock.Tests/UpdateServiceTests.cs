@@ -107,5 +107,90 @@ public class UpdateServiceTests {
             File.Delete(downloadedPath);
         } catch { }
     }
+
+    [Theory]
+    [InlineData("1.1.0", "1.0.2", true)]
+    [InlineData("1.0.2", "1.1.0", false)]
+    [InlineData("1.1.0-alpha.5", "1.1.0-alpha.4", true)]
+    [InlineData("1.1.0-alpha.4", "1.1.0-alpha.5", false)]
+    [InlineData("1.1.0-beta.1", "1.1.0-alpha.50", true)]
+    [InlineData("1.1.0-alpha.50", "1.1.0-beta.1", false)]
+    [InlineData("1.1.0", "1.1.0-beta.10", true)]
+    [InlineData("1.1.0-beta.10", "1.1.0", false)]
+    [InlineData("1.1.0", "1.1.0", false)]
+    [InlineData("1.1.0-alpha.22", "1.0.2", true)]
+    [InlineData("1.0.2", "1.1.0-alpha.22", false)]
+    public void IsNewerVersion_ThreeTierSemVerComparison_WorksAsExpected(string candidate, string current, bool expected) {
+        var result = UpdateService.IsNewerVersion(candidate, current);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public async Task CheckForUpdateAsync_FiltersByChannel_RespectsChannelPreference() {
+        var json = @"[
+            {
+                ""tag_name"": ""v1.1.0-alpha.22"",
+                ""prerelease"": true,
+                ""target_commitish"": ""feature/plugin-system"",
+                ""body"": ""Alpha plugin build"",
+                ""assets"": [
+                    {
+                        ""name"": ""StickLock-v1.1.0-alpha.22-Setup.exe"",
+                        ""browser_download_url"": ""https://github.com/zombiehausAI/StickLock/releases/download/v1.1.0-alpha.22/StickLock-v1.1.0-alpha.22-Setup.exe"",
+                        ""size"": 40000000
+                    }
+                ]
+            },
+            {
+                ""tag_name"": ""v1.1.0-beta.5"",
+                ""prerelease"": true,
+                ""target_commitish"": ""dev"",
+                ""body"": ""Beta dev build"",
+                ""assets"": [
+                    {
+                        ""name"": ""StickLock-v1.1.0-beta.5-Setup.exe"",
+                        ""browser_download_url"": ""https://github.com/zombiehausAI/StickLock/releases/download/v1.1.0-beta.5/StickLock-v1.1.0-beta.5-Setup.exe"",
+                        ""size"": 40000000
+                    }
+                ]
+            },
+            {
+                ""tag_name"": ""v1.0.2"",
+                ""prerelease"": false,
+                ""target_commitish"": ""main"",
+                ""body"": ""Stable release"",
+                ""assets"": [
+                    {
+                        ""name"": ""StickLock-v1.0.2-Setup.exe"",
+                        ""browser_download_url"": ""https://github.com/zombiehausAI/StickLock/releases/download/v1.0.2/StickLock-v1.0.2-Setup.exe"",
+                        ""size"": 40000000
+                    }
+                ]
+            }
+        ]";
+
+        var mockHandler = new MockHttpMessageHandler(req => new HttpResponseMessage(HttpStatusCode.OK) {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        });
+
+        var httpClient = new HttpClient(mockHandler);
+        var logService = new ActivityLogService();
+        var updateService = new UpdateService(logService, httpClient);
+
+        // When requesting Beta channel
+        var betaInfo = await updateService.CheckForUpdateAsync(force: true, channel: "Beta");
+        Assert.Equal("1.1.0-beta.5", betaInfo.LatestVersion);
+        Assert.Equal("Beta", betaInfo.Channel);
+
+        // When requesting Alpha channel
+        var alphaInfo = await updateService.CheckForUpdateAsync(force: true, channel: "Alpha");
+        Assert.Equal("1.1.0-alpha.22", alphaInfo.LatestVersion);
+        Assert.Equal("Alpha", alphaInfo.Channel);
+
+        // When requesting Release channel
+        var releaseInfo = await updateService.CheckForUpdateAsync(force: true, channel: "Release");
+        Assert.Equal("1.0.2", releaseInfo.LatestVersion);
+        Assert.Equal("Release", releaseInfo.Channel);
+    }
 }
 

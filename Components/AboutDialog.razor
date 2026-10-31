@@ -67,6 +67,21 @@
                     Ko-fi.com/zombiehaus
                 </MudButton>
             </MudPaper>
+
+            <!-- Update Channel Selector -->
+            <MudPaper Class="pa-3 d-flex align-center justify-space-between" Style="background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 6px;">
+                <div class="d-flex flex-column" style="max-width: 58%;">
+                    <div class="font-weight-bold" style="color: #00E5FF; font-size: 0.9rem;">Update Channel</div>
+                    <div style="font-size: 0.8rem; color: #94A3B8;">
+                        Select which release track you want to receive updates from:
+                    </div>
+                </div>
+                <MudSelect T="string" Value="@_currentChannel" ValueChanged="OnChannelChangedAsync" Dense="true" Margin="Margin.Dense" Variant="Variant.Outlined" Style="min-width: 175px;">
+                    <MudSelectItem Value="@("Release")">Release (Stable - main)</MudSelectItem>
+                    <MudSelectItem Value="@("Beta")">Beta (Development - dev)</MudSelectItem>
+                    <MudSelectItem Value="@("Alpha")">Alpha (Feature Previews)</MudSelectItem>
+                </MudSelect>
+            </MudPaper>
         </div>
     </DialogContent>
     <DialogActions>
@@ -92,6 +107,7 @@
 
     private string AppVersion { get; set; } = "v1.0.0";
     private bool _isCheckingUpdate = false;
+    private string _currentChannel = "Release";
 
     protected override void OnInitialized() {
         var version = System.Reflection.Assembly.GetExecutingAssembly()
@@ -104,6 +120,18 @@
             }
             AppVersion = "v" + version;
         }
+
+        _currentChannel = UpdateService.CurrentChannel;
+    }
+
+    private async Task OnChannelChangedAsync(string newChannel) {
+        if (_currentChannel == newChannel) {
+            return;
+        }
+        _currentChannel = newChannel;
+        await UpdateService.SetUpdateChannelAsync(newChannel);
+        Snackbar.Add($"Switched update channel to {newChannel}.", Severity.Info);
+        StateHasChanged();
     }
 
     private async Task CheckForUpdatesAsync() {

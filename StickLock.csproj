@@ -14,10 +14,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="StickLock.Tests\**;artifacts\**;installer\**" />
-    <Content Remove="StickLock.Tests\**;artifacts\**;installer\**" />
-    <EmbeddedResource Remove="StickLock.Tests\**;artifacts\**;installer\**" />
-    <None Remove="StickLock.Tests\**;artifacts\**;installer\**" />
+    <Compile Remove="StickLock.Tests\**;artifacts\**;installer\**;StickLock.SDK\**;examples\**" />
+    <Content Remove="StickLock.Tests\**;artifacts\**;installer\**;StickLock.SDK\**;examples\**" />
+    <EmbeddedResource Remove="StickLock.Tests\**;artifacts\**;installer\**;StickLock.SDK\**;examples\**" />
+    <None Remove="StickLock.Tests\**;artifacts\**;installer\**;StickLock.SDK\**;examples\**" />
     <Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

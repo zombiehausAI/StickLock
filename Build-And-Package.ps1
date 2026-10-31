@@ -81,24 +81,27 @@ if (-not (Test-Path $solutionFile)) {
 # Extract Version from -Version param, root version.json, installer\version.json, or default
 $appVersion = $Version
 if (-not $appVersion) {
-    $candidatePaths = @(
-        (Join-Path $repoRoot "version.json"),
-        (Join-Path $repoRoot "installer\version.json")
-    )
-    foreach ($vPath in $candidatePaths) {
-        if (Test-Path $vPath) {
-            try {
-                $vJson = Get-Content $vPath -Raw | ConvertFrom-Json
-                if ($vJson.version) {
-                    $appVersion = $vJson.version
-                    break
+    $vPath = Join-Path $repoRoot "version.json"
+    if (Test-Path $vPath) {
+        try {
+            $vJson = Get-Content $vPath -Raw | ConvertFrom-Json
+            if ($null -ne $vJson.major -and $null -ne $vJson.minor -and $null -ne $vJson.patch) {
+                $branch = (git -C $repoRoot rev-parse --abbrev-ref HEAD 2>$null)?.Trim()
+                if ($branch -eq "main" -or $branch -eq "release") {
+                    $appVersion = "$($vJson.major).$($vJson.minor).$($vJson.patch)"
+                } else {
+                    $devNum = if ($null -ne $vJson.devBuild) { $vJson.devBuild } else { 0 }
+                    $tier = if ($branch -eq "dev") { "beta" } else { "alpha" }
+                    $appVersion = "$($vJson.major).$($vJson.minor).$($vJson.patch)-$tier.$devNum"
                 }
-            } catch { }
-        }
+            } elseif ($vJson.version) {
+                $appVersion = $vJson.version
+            }
+        } catch { }
     }
 }
 if (-not $appVersion) {
-    $appVersion = "1.0.0"
+    $appVersion = "1.0.2"
 }
 
 Write-Host "===========================================================" -ForegroundColor Cyan
@@ -158,7 +161,7 @@ if (-not $SkipTests) {
 # -------------------------------------------------------------
 Write-Host "`n[3/4] Publishing self-enclosed StickLock application ($Configuration)..." -ForegroundColor Cyan
 
-$cleanNumericVersion = "1.0.0"
+$cleanNumericVersion = "1.0.2"
 if ($appVersion -match '^(\d+\.\d+(\.\d+)?)') {
     $cleanNumericVersion = $Matches[1]
 }

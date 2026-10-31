@@ -26,11 +26,18 @@
     <InformationalVersion>$(Major).$(Minor).$(Patch)</InformationalVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(GitBranch)' != 'main'">
-    <Version>$(Major).$(Minor).$(Patch)-dev.$(DevBuild)</Version>
+  <PropertyGroup Condition="'$(GitBranch)' == 'dev'">
+    <Version>$(Major).$(Minor).$(Patch)-beta.$(DevBuild)</Version>
     <AssemblyVersion>$(Major).$(Minor).$(Patch).$(DevBuild)</AssemblyVersion>
     <FileVersion>$(Major).$(Minor).$(Patch).$(DevBuild)</FileVersion>
-    <InformationalVersion>$(Major).$(Minor).$(Patch)-dev.$(DevBuild)</InformationalVersion>
+    <InformationalVersion>$(Major).$(Minor).$(Patch)-beta.$(DevBuild)</InformationalVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GitBranch)' != 'main' and '$(GitBranch)' != 'dev'">
+    <Version>$(Major).$(Minor).$(Patch)-alpha.$(DevBuild)</Version>
+    <AssemblyVersion>$(Major).$(Minor).$(Patch).$(DevBuild)</AssemblyVersion>
+    <FileVersion>$(Major).$(Minor).$(Patch).$(DevBuild)</FileVersion>
+    <InformationalVersion>$(Major).$(Minor).$(Patch)-alpha.$(DevBuild)</InformationalVersion>
   </PropertyGroup>
 </Project>
 
