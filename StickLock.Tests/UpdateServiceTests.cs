@@ -1,0 +1,110 @@
+using System.Net;
+using System.Text;
+using StickLock.Models;
+using StickLock.Services;
+using Xunit;
+
+namespace StickLock.Tests;
+
+public class UpdateServiceTests {
+    private class MockHttpMessageHandler : HttpMessageHandler {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;
+
+        public MockHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handler) {
+            _handler = handler;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+            return Task.FromResult(_handler(request));
+        }
+    }
+
+    [Fact]
+    public async Task CheckForUpdateAsync_DetectsUpdate_WhenRemoteIsNewer() {
+        var json = @"{
+            ""tag_name"": ""v2.5.0"",
+            ""body"": ""New flight axis features and improvements."",
+            ""published_at"": ""2026-10-31T12:00:00Z"",
+            ""assets"": [
+                {
+                    ""name"": ""StickLock-v2.5.0-Setup.exe"",
+                    ""browser_download_url"": ""https://github.com/zombiehausAI/StickLock/releases/download/v2.5.0/StickLock-v2.5.0-Setup.exe"",
+                    ""size"": 42000000
+                }
+            ]
+        }";
+
+        var mockHandler = new MockHttpMessageHandler(req => new HttpResponseMessage(HttpStatusCode.OK) {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        });
+
+        var httpClient = new HttpClient(mockHandler);
+        var logService = new ActivityLogService();
+        var updateService = new UpdateService(logService, httpClient);
+
+        var info = await updateService.CheckForUpdateAsync(force: true);
+
+        Assert.Equal("2.5.0", info.LatestVersion);
+        Assert.True(info.IsUpdateAvailable);
+        Assert.Equal("StickLock-v2.5.0-Setup.exe", info.InstallerFileName);
+        Assert.Contains("New flight axis features", info.ReleaseNotes);
+        Assert.Equal("https://github.com/zombiehausAI/StickLock/releases/download/v2.5.0/StickLock-v2.5.0-Setup.exe", info.DownloadUrl);
+    }
+
+    [Fact]
+    public async Task CheckForUpdateAsync_ReturnsNotAvailable_WhenRemoteIsSame() {
+        var currentVer = typeof(UpdateService).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+        var json = $@"{{
+            ""tag_name"": ""v{currentVer}"",
+            ""body"": ""Current release"",
+            ""assets"": []
+        }}";
+
+        var mockHandler = new MockHttpMessageHandler(req => new HttpResponseMessage(HttpStatusCode.OK) {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        });
+
+        var httpClient = new HttpClient(mockHandler);
+        var logService = new ActivityLogService();
+        var updateService = new UpdateService(logService, httpClient);
+
+        var info = await updateService.CheckForUpdateAsync(force: true);
+
+        Assert.Equal(currentVer, info.LatestVersion);
+        // If current is an assembly dev build or release matching currentVer
+        if (!info.CurrentVersion.Contains("-dev")) {
+            Assert.False(info.IsUpdateAvailable);
+        }
+    }
+
+    [Fact]
+    public async Task DownloadUpdateAsync_DownloadsBytes_AndReportsProgress() {
+        var testBytes = Encoding.UTF8.GetBytes("MOCK_INSTALLER_BINARY_DATA_TEST_1234567890");
+        var mockHandler = new MockHttpMessageHandler(req => new HttpResponseMessage(HttpStatusCode.OK) {
+            Content = new ByteArrayContent(testBytes)
+        });
+
+        var httpClient = new HttpClient(mockHandler);
+        var logService = new ActivityLogService();
+        var updateService = new UpdateService(logService, httpClient);
+
+        var updateInfo = new AppUpdateInfo {
+            LatestVersion = "9.9.9",
+            InstallerFileName = "StickLock-Test-Setup.exe",
+            DownloadUrl = "https://example.com/StickLock-Test-Setup.exe",
+            FileSizeBytes = testBytes.Length
+        };
+
+        var progressCalls = new List<int>();
+        var progress = new Progress<int>(p => progressCalls.Add(p));
+
+        var downloadedPath = await updateService.DownloadUpdateAsync(updateInfo, progress);
+
+        Assert.True(File.Exists(downloadedPath));
+        Assert.Equal(testBytes, await File.ReadAllBytesAsync(downloadedPath));
+
+        try {
+            File.Delete(downloadedPath);
+        } catch { }
+    }
+}

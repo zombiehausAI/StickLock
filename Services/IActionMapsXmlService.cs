@@ -24,6 +24,8 @@ public interface IActionMapsXmlService {
     Task<SyncResult> PullProfilesFromStarCitizenAsync();
     Task<SyncResult> ApplySavedProfileToActiveAsync(string profileFileName);
     Task<bool> DeleteSavedProfileAsync(string profileFileName);
+    Task<SyncResult> ApplyFlightAxisModeAsync(FlightAxisMode mode, bool force = false);
+    Task<int> DetectFlightStickSlotFromXmlAsync(string? xmlPath = null);
     string? GetStarCitizenMappingsDirectory();
     IReadOnlyList<string> GetStarCitizenCustomMappings();
 }

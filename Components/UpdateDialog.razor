@@ -1,0 +1,130 @@
+@using StickLock.Models
+@using StickLock.Services
+@inject IUpdateService UpdateService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center justify-space-between">
+            <div class="d-flex align-center">
+                <MudIcon Icon="@Icons.Material.Filled.SystemUpdate" Style="color: #00E5FF;" Class="mr-2" />
+                <MudText Typo="Typo.h6" Class="mfd-title glow-cyan" Style="color: #00E5FF;">STICKLOCK UPDATE AVAILABLE</MudText>
+            </div>
+            <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Filled" Class="font-weight-bold">
+                v@(UpdateInfo.LatestVersion)
+            </MudChip>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <div class="d-flex flex-column gap-3 pt-2">
+            <div class="d-flex align-center justify-space-between pa-2" Style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 6px;">
+                <div>
+                    <span style="font-size: 0.8rem; color: #94A3B8;">Installed Version:</span>
+                    <span class="font-weight-bold ml-1" style="color: #E2E8F0;">v@(UpdateInfo.CurrentVersion)</span>
+                </div>
+                <div>
+                    <span style="font-size: 0.8rem; color: #94A3B8;">Latest Version:</span>
+                    <span class="font-weight-bold ml-1" style="color: #00E5FF;">v@(UpdateInfo.LatestVersion)</span>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(UpdateInfo.ReleaseNotes)) {
+                <div class="d-flex flex-column gap-1">
+                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #38BDF8;">RELEASE NOTES</MudText>
+                    <div class="pa-3 mfd-code" style="background: rgba(11, 15, 25, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px; max-height: 200px; overflow-y: auto; font-size: 0.8rem; color: #CBD5E1; white-space: pre-wrap;">@UpdateInfo.ReleaseNotes</div>
+                </div>
+            }
+
+            @if (_isDownloading) {
+                <div class="d-flex flex-column gap-2 mt-2">
+                    <div class="d-flex justify-space-between align-center">
+                        <MudText Typo="Typo.caption" Style="color: #00E5FF;">Downloading update installer...</MudText>
+                        <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #00E5FF;">@(_progress)%</MudText>
+                    </div>
+                    <MudProgressLinear Color="Color.Primary" Value="@_progress" Rounded="true" Size="Size.Medium" />
+                </div>
+            } else if (_downloadComplete) {
+                <MudAlert Severity="Severity.Success" Variant="Variant.Outlined" Dense="true" Class="mfd-card">
+                    Download complete! StickLock will now close and launch the installer to update your application in-place.
+                </MudAlert>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Default"
+                   Disabled="@_isDownloading"
+                   OnClick="Cancel">
+            @(_downloadComplete ? "Close" : "Remind Me Later")
+        </MudButton>
+
+        @if (!_downloadComplete) {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Disabled="@_isDownloading"
+                       StartIcon="@Icons.Material.Filled.Download"
+                       OnClick="StartDownloadAndInstallAsync"
+                       Class="mfd-title"
+                       Style="color: #0B0F19; font-weight: 700;">
+                @(_isDownloading ? "Downloading..." : "Download & Install")
+            </MudButton>
+        } else {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.PlayArrow"
+                       OnClick="InstallAndRestart"
+                       Class="mfd-title"
+                       Style="color: #0B0F19; font-weight: 700;">
+                Install Now
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    [Parameter]
+    public AppUpdateInfo UpdateInfo { get; set; } = new();
+
+    private bool _isDownloading = false;
+    private bool _downloadComplete = false;
+    private int _progress = 0;
+    private string? _downloadedInstallerPath;
+
+    private async Task StartDownloadAndInstallAsync() {
+        _isDownloading = true;
+        _progress = 0;
+        StateHasChanged();
+
+        try {
+            var progressReporter = new Progress<int>(p => {
+                _progress = p;
+                StateHasChanged();
+            });
+
+            _downloadedInstallerPath = await UpdateService.DownloadUpdateAsync(UpdateInfo, progressReporter);
+            _downloadComplete = true;
+            _isDownloading = false;
+            StateHasChanged();
+
+            // Auto install
+            InstallAndRestart();
+        } catch (Exception ex) {
+            _isDownloading = false;
+            Snackbar.Add($"Download failed: {ex.Message}", Severity.Error);
+            StateHasChanged();
+        }
+    }
+
+    private void InstallAndRestart() {
+        if (!string.IsNullOrWhiteSpace(_downloadedInstallerPath)) {
+            UpdateService.LaunchInstallerAndExit(_downloadedInstallerPath);
+        }
+    }
+
+    private void Cancel() {
+        MudDialog?.Close(DialogResult.Cancel());
+    }
+}

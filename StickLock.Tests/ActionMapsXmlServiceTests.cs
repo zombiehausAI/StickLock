@@ -583,6 +583,65 @@ public class ActionMapsXmlServiceTests : IDisposable {
         Assert.Equal(SyncStatus.Aligned, alignmentAfter.Status);
     }
 
+    [Fact]
+    public async Task ApplyFlightAxisMode_DetectsRightStickAtJs3_AndSetsSpaceSimAxes() {
+        var guidK8 = Guid.Parse("0e803434-0000-0000-0000-504944564944");
+        var guidLink = Guid.Parse("d0303434-0000-0000-0000-504944564944");
+        var guidRight = Guid.Parse("0224231d-0000-0000-0000-504944564944");
+        var guidLeft = Guid.Parse("3201231d-0000-0000-0000-504944564944");
+
+        var xmlContent = $@"<ActionMaps>
+            <options type=""joystick"" instance=""1"" Product=""Keychron K8 HE  {{{guidK8}}}""/>
+            <options type=""joystick"" instance=""2"" Product=""Keychron Link   {{{guidLink}}}""/>
+            <options type=""joystick"" instance=""3"" Product="" VKBsim Gladiator EVO R SEM FSM.GA   {{{guidRight}}}""/>
+            <options type=""joystick"" instance=""4"" Product="" VKBsim Gladiator EVO OT L    {{{guidLeft}}}""/>
+            <actionmap name=""spaceship_movement"">
+                <action name=""v_pitch""><rebind input=""js3_y""/></action>
+                <action name=""v_strafe_longitudinal""><rebind input=""js4_y""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(_xmlPath, xmlContent);
+
+        var customConfigPath = Path.Combine(_tempDir, ".sticklock", "config.json");
+        var configService = new AppConfigService(customConfigPath);
+        await configService.SetStarCitizenPathAsync(_xmlPath);
+
+        var diService = new TestDirectInputService();
+        var detector = new TestStarCitizenDetector();
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        // 1. Detect slot directly
+        var detectedSlot = await xmlService.DetectFlightStickSlotFromXmlAsync();
+        Assert.Equal(3, detectedSlot);
+
+        // 2. Apply SpaceSim axis mode
+        var result = await xmlService.ApplyFlightAxisModeAsync(FlightAxisMode.SpaceSim);
+        Assert.True(result.Success);
+
+        var doc = XDocument.Load(_xmlPath);
+        var pitch = doc.Descendants("action").First(a => (string?)a.Attribute("name") == "v_pitch").Element("rebind");
+        var yaw = doc.Descendants("action").First(a => (string?)a.Attribute("name") == "v_yaw").Element("rebind");
+        var roll = doc.Descendants("action").First(a => (string?)a.Attribute("name") == "v_roll").Element("rebind");
+
+        Assert.Equal("js3_y", (string?)pitch?.Attribute("input"));
+        Assert.Equal("js3_x", (string?)yaw?.Attribute("input"));
+        Assert.Equal("js3_rotz", (string?)roll?.Attribute("input"));
+
+        // 3. Switch to Atmospheric mode
+        var atmosResult = await xmlService.ApplyFlightAxisModeAsync(FlightAxisMode.Atmospheric);
+        Assert.True(atmosResult.Success);
+
+        var docAtmos = XDocument.Load(_xmlPath);
+        var pitchA = docAtmos.Descendants("action").First(a => (string?)a.Attribute("name") == "v_pitch").Element("rebind");
+        var rollA = docAtmos.Descendants("action").First(a => (string?)a.Attribute("name") == "v_roll").Element("rebind");
+        var yawA = docAtmos.Descendants("action").First(a => (string?)a.Attribute("name") == "v_yaw").Element("rebind");
+
+        Assert.Equal("js3_y", (string?)pitchA?.Attribute("input"));
+        Assert.Equal("js3_x", (string?)rollA?.Attribute("input"));
+        Assert.Equal("js3_rotz", (string?)yawA?.Attribute("input"));
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {

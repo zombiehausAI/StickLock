@@ -45,5 +45,6 @@ static class Program {
         services.AddSingleton<IUsbWatcherService, UsbWatcherService>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
         services.AddSingleton<IBrowserService, BrowserService>();
+        services.AddSingleton<IUpdateService, UpdateService>();
     }
 }

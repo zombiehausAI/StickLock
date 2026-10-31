@@ -6,6 +6,7 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject IBrowserService BrowserService
+@inject IUpdateService UpdateService
 
 <MudThemeProvider Theme="_theme" IsDarkMode="true" />
 <MudPopoverProvider />
@@ -21,6 +22,21 @@
         </div>
 
         <MudSpacer />
+
+        <!-- Update Available Banner Button -->
+        @if (_updateInfo?.IsUpdateAvailable == true) {
+            <MudTooltip Text="Click to view update details and install">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Success"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.SystemUpdate"
+                           OnClick="OpenUpdateDialogAsync"
+                           Class="mr-3 mfd-title"
+                           Style="color: #0B0F19; font-weight: 700; background-color: #10B981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);">
+                    v@(_updateInfo.LatestVersion) UPDATE
+                </MudButton>
+            </MudTooltip>
+        }
 
         <!-- Ko-fi Support Button -->
         <MudTooltip Text="Support Developer on Ko-fi">
@@ -74,6 +90,7 @@
     private readonly MudTheme _theme = StickLockTheme.CreateTheme();
     private SyncStatus _status = SyncStatus.Unknown;
     private bool _isSyncing = false;
+    private AppUpdateInfo? _updateInfo;
 
     protected override async Task OnInitializedAsync() {
         ConfigService.ConfigChanged += OnStateChanged;
@@ -81,6 +98,15 @@
         UsbWatcher.UsbDevicesChanged += _ => OnStateChanged();
 
         await RefreshStatusAsync();
+
+        _ = Task.Run(async () => {
+            try {
+                _updateInfo = await UpdateService.CheckForUpdateAsync();
+                if (_updateInfo?.IsUpdateAvailable == true) {
+                    await InvokeAsync(StateHasChanged);
+                }
+            } catch { }
+        });
     }
 
     private void OnStateChanged() {
@@ -164,6 +190,22 @@
             FullWidth = true
         };
         await DialogService.ShowAsync<AboutDialog>("About StickLock & Project Disclaimers", options);
+    }
+
+    private async Task OpenUpdateDialogAsync() {
+        if (_updateInfo == null) {
+            return;
+        }
+
+        var parameters = new DialogParameters<UpdateDialog> {
+            { x => x.UpdateInfo, _updateInfo }
+        };
+        var options = new DialogOptions {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+        await DialogService.ShowAsync<UpdateDialog>("StickLock Update Available", parameters, options);
     }
 
     public void Dispose() {

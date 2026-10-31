@@ -45,6 +45,10 @@ Get the latest self-contained Windows release (fully self-contained, no external
 
 ## Key Features
 
+- **Built-in Auto-Updater**: Checks GitHub Releases on startup (and on demand via the About dialog), alerts users with release notes when an update is available, downloads the latest self-contained setup installer with live progress, and updates the application in-place seamlessly.
+- **Intelligent XML Flight Stick & Axis Detection**:
+  - Automatically analyzes `actionmaps.xml` flight binds (`v_pitch`, `v_yaw`, `v_roll`) and product names to identify your Right Stick (Flight Stick) and Left Stick (Strafe Stick), ignoring virtual devices or keyboards.
+  - Dynamically configures and applies primary flight axis profiles (**Space Sim**: Pitch=Y, Yaw=X, Roll=Twist, or **Atmospheric**: Pitch=Y, Roll=X, Yaw=Twist) directly to your detected flight stick and auto-deploys to in-game control profiles.
 - **Self-Enclosed Deployment**: Compiled self-contained (`win-x64`), bundling the .NET 10 CLR and Windows Desktop runtimes so end users do not need to install any external runtimes or SDKs.
 - **Smart Installer & In-Place Updater**:
   - Automatically detects existing installations across the Registry, Windows Uninstall database, shortcuts, and default locations.

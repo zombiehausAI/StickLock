@@ -941,13 +941,14 @@
     }
 
     private async Task OnFlightAxisModeChangedAsync(FlightAxisMode mode) {
-        await ConfigService.SetFlightAxisModeAsync(mode);
-        var label = mode switch {
-            FlightAxisMode.SpaceSim => "Space Sim (Pitch=Y, Yaw=X, Roll=Twist)",
-            FlightAxisMode.Atmospheric => "Atmospheric (Pitch=Y, Roll=X, Yaw=Twist)",
-            _ => "Preserve XML Only"
-        };
-        Snackbar.Add($"Right Stick flight axes set to: {label}", Severity.Info);
+        var res = await XmlService.ApplyFlightAxisModeAsync(mode);
+        if (res.Success) {
+            Snackbar.Add(res.Message, Severity.Success);
+            await ReloadXmlMappingsAsync();
+            await RefreshAlignmentCheckAsync();
+        } else {
+            Snackbar.Add(res.Message, Severity.Warning);
+        }
     }
 
     private async Task AssignDeviceAsync(DirectInputDevice device, int slot, string roleName) {

@@ -180,10 +180,22 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             .Where(x => !string.IsNullOrWhiteSpace(x.ProductName))
             .ToList();
 
+        // Filter out keyboards, keypads, and mice presenting as DirectInput devices if real flight controllers are detected
+        var nonKeyboard = candidates.Where(c =>
+            !c.ProductName.Contains("Keychron", StringComparison.OrdinalIgnoreCase) &&
+            !c.ProductName.Contains("Keyboard", StringComparison.OrdinalIgnoreCase) &&
+            !c.ProductName.Contains("Mouse", StringComparison.OrdinalIgnoreCase)).ToList();
+        if (nonKeyboard.Count >= 2) {
+            candidates = nonKeyboard;
+        }
+
         var withRebinds = candidates.Where(x => boundInstances.Contains(x.Instance)).ToList();
         if (withRebinds.Count >= 2) {
             candidates = withRebinds;
         }
+
+        var detectedFlightSlot = await DetectFlightStickSlotFromXmlAsync(xmlPath);
+        var detectedStrafeSlots = await DetectStrafeStickSlotsFromXmlAsync(xmlPath);
 
         while (_configService.Config.CanonicalSticks.Count > 0) {
             await _configService.RemoveCanonicalStickAsync(_configService.Config.CanonicalSticks[0].RoleSlot);
@@ -199,7 +211,14 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                 string.Equals(d.ProductName, xml.ProductName, StringComparison.OrdinalIgnoreCase));
 
             var stickName = live != null ? live.ProductName : xml.ProductName;
-            var friendlyRole = $"Stick {xml.Instance} ({stickName})";
+            string friendlyRole;
+            if (xml.Instance == detectedFlightSlot || IsRightStickName(stickName)) {
+                friendlyRole = $"Right Stick (Pitch / Yaw / Roll)";
+            } else if (detectedStrafeSlots.Contains(xml.Instance) || IsLeftStickName(stickName)) {
+                friendlyRole = $"Left Stick (Strafe / Throttle)";
+            } else {
+                friendlyRole = $"Stick {xml.Instance} ({stickName})";
+            }
 
             var deviceToAssign = live ?? new DirectInputDevice {
                 SlotIndex = xml.Instance,
@@ -1152,39 +1171,205 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         }
 
         if (_configService.Config.AutoEnsureFlightAxes && _configService.Config.FlightAxisMode != FlightAxisMode.PreserveOnly) {
-            EnsureFlightAxes(doc, swapMap);
+            EnsureFlightAxes(doc);
         }
     }
 
-    private void EnsureFlightAxes(XDocument doc, Dictionary<int, int> swapMap) {
+    public async Task<int> DetectFlightStickSlotFromXmlAsync(string? xmlPath = null) {
+        xmlPath ??= _configService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
+            return 1;
+        }
+
+        try {
+            await using var stream = File.OpenRead(xmlPath);
+            var doc = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
+            return DetectFlightStickSlotFromDoc(doc);
+        } catch {
+            return 1;
+        }
+    }
+
+    private static async Task<HashSet<int>> DetectStrafeStickSlotsFromXmlAsync(string? xmlPath) {
+        var slots = new HashSet<int>();
+        if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
+            return slots;
+        }
+
+        try {
+            await using var stream = File.OpenRead(xmlPath);
+            var doc = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
+            var movementMap = doc.Descendants("actionmap")
+                .FirstOrDefault(e => string.Equals((string?)e.Attribute("name"), "spaceship_movement", StringComparison.OrdinalIgnoreCase));
+            var jsRegex = new Regex(@"\bjs(\d+)_", RegexOptions.Compiled);
+
+            if (movementMap != null) {
+                foreach (var action in movementMap.Elements("action")) {
+                    var actionName = (string?)action.Attribute("name") ?? "";
+                    if (actionName.Contains("strafe", StringComparison.OrdinalIgnoreCase) ||
+                        actionName.Contains("throttle", StringComparison.OrdinalIgnoreCase)) {
+                        var input = (string?)action.Element("rebind")?.Attribute("input");
+                        if (!string.IsNullOrWhiteSpace(input)) {
+                            var m = jsRegex.Match(input);
+                            if (m.Success && int.TryParse(m.Groups[1].Value, out var s) && s > 0) {
+                                slots.Add(s);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch { }
+
+        return slots;
+    }
+
+    private int DetectFlightStickSlotFromDoc(XDocument doc) {
+        // 1. Check spaceship_movement for existing v_pitch, v_yaw, or v_roll rebind
+        var movementMap = doc.Descendants("actionmap")
+            .FirstOrDefault(e => string.Equals((string?)e.Attribute("name"), "spaceship_movement", StringComparison.OrdinalIgnoreCase));
+        var jsRegex = new Regex(@"\bjs(\d+)_", RegexOptions.Compiled);
+
+        if (movementMap != null) {
+            foreach (var actionName in new[] { "v_pitch", "v_yaw", "v_roll" }) {
+                var rebind = movementMap.Elements("action")
+                    .FirstOrDefault(a => string.Equals((string?)a.Attribute("name"), actionName, StringComparison.OrdinalIgnoreCase))
+                    ?.Element("rebind");
+                var input = (string?)rebind?.Attribute("input");
+                if (!string.IsNullOrWhiteSpace(input)) {
+                    var match = jsRegex.Match(input);
+                    if (match.Success && int.TryParse(match.Groups[1].Value, out var slot) && slot > 0) {
+                        return slot;
+                    }
+                }
+            }
+        }
+
+        // 2. Check options for products with Right / R in name
+        foreach (var opt in doc.Descendants("options").Where(o => (string?)o.Attribute("type") == "joystick")) {
+            var prod = (string?)opt.Attribute("Product") ?? "";
+            var instStr = (string?)opt.Attribute("instance") ?? "";
+            if (int.TryParse(instStr, out var inst)) {
+                if (IsRightStickName(prod)) {
+                    return inst;
+                }
+            }
+        }
+
+        // 3. Check canonical sticks
+        var rightCanonical = _configService.Config.CanonicalSticks
+            .FirstOrDefault(s => s.FriendlyRoleName.Contains("Right", StringComparison.OrdinalIgnoreCase));
+        if (rightCanonical != null) {
+            return rightCanonical.RoleSlot;
+        }
+
+        return 1;
+    }
+
+    private static bool IsRightStickName(string productName) {
+        if (string.IsNullOrWhiteSpace(productName)) {
+            return false;
+        }
+        var tokens = productName.Split(new[] { ' ', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+        return tokens.Any(t => string.Equals(t, "R", StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(t, "Right", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsLeftStickName(string productName) {
+        if (string.IsNullOrWhiteSpace(productName)) {
+            return false;
+        }
+        var tokens = productName.Split(new[] { ' ', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+        return tokens.Any(t => string.Equals(t, "L", StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(t, "Left", StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(t, "Omni", StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<SyncResult> ApplyFlightAxisModeAsync(FlightAxisMode mode, bool force = false) {
+        await _configService.SetFlightAxisModeAsync(mode);
+        if (mode == FlightAxisMode.PreserveOnly) {
+            return SyncResult.Ok("Flight Axis Mode set to Preserve XML Only.", changesMade: false);
+        }
+
+        var isGameRunning = _starCitizenDetector.IsGameRunning();
+        if (isGameRunning && !force && !_configService.Config.AllowSyncWhileGameRunning) {
+            return SyncResult.Fail("Star Citizen is currently running. Close the game or enable Force Sync to apply flight axes.", SyncStatus.StarCitizenActive);
+        }
+
+        var xmlPath = _configService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
+            return SyncResult.Fail($"File not found: {xmlPath}", SyncStatus.FileNotFound);
+        }
+
+        await _syncLock.WaitAsync();
+        try {
+            string? backupPath = null;
+            await Task.Run(() => {
+                backupPath = CreateBackup(xmlPath);
+                var doc = XDocument.Load(xmlPath);
+                EnsureFlightAxes(doc);
+                doc.Save(xmlPath);
+
+                try {
+                    Directory.CreateDirectory(_configService.MappingsDirectory);
+                    var persistentActivePath = Path.Combine(_configService.MappingsDirectory, "active_actionmaps.xml");
+                    doc.Save(persistentActivePath);
+                } catch { }
+
+                if (_configService.Config.AutoDeployToMappingsFolder) {
+                    try {
+                        var scMappingsDir = ResolveMappingsDirectoryForXml(xmlPath);
+                        if (!string.IsNullOrWhiteSpace(scMappingsDir)) {
+                            Directory.CreateDirectory(scMappingsDir);
+                            var activeDeployPath = Path.Combine(scMappingsDir, "layout_StickLock_Active.xml");
+                            doc.Save(activeDeployPath);
+                        }
+                    } catch { }
+                }
+            });
+
+            var label = mode switch {
+                FlightAxisMode.SpaceSim => "Space Sim (Pitch=Y, Yaw=X, Roll=Twist)",
+                FlightAxisMode.Atmospheric => "Atmospheric (Pitch=Y, Roll=X, Yaw=Twist)",
+                _ => "Preserve XML Only"
+            };
+
+            _logService.LogSuccess($"Applied flight axes: {label}", $"Updated: {Path.GetFileName(xmlPath)}");
+            return SyncResult.Ok($"Applied {label} to Star Citizen actionmaps.", changesMade: true, backupPath: backupPath, status: SyncStatus.Aligned);
+        } catch (Exception ex) {
+            _logService.LogError($"Failed to apply flight axes: {ex.Message}", ex.ToString());
+            return SyncResult.Fail($"Error: {ex.Message}");
+        } finally {
+            _syncLock.Release();
+        }
+    }
+
+    private void EnsureFlightAxes(XDocument doc) {
         var movementMap = doc.Descendants("actionmap")
             .FirstOrDefault(e => string.Equals((string?)e.Attribute("name"), "spaceship_movement", StringComparison.OrdinalIgnoreCase));
         if (movementMap == null) {
             return;
         }
 
-        var rightStick = _configService.Config.CanonicalSticks
-            .FirstOrDefault(s => s.RoleSlot == 1 || s.FriendlyRoleName.Contains("Right", StringComparison.OrdinalIgnoreCase))
-            ?? _configService.Config.CanonicalSticks.FirstOrDefault();
-
-        var rightSlot = 1;
-        if (rightStick != null) {
-            if (swapMap.TryGetValue(rightStick.RoleSlot, out var mappedSlot)) {
-                rightSlot = mappedSlot;
-            } else {
+        var rightSlot = DetectFlightStickSlotFromDoc(doc);
+        if (rightSlot <= 0) {
+            var rightStick = _configService.Config.CanonicalSticks
+                .FirstOrDefault(s => s.FriendlyRoleName.Contains("Right", StringComparison.OrdinalIgnoreCase));
+            if (rightStick != null) {
                 var live = _directInputService.CurrentDevices.FirstOrDefault(d => IsStickMatch(rightStick, d));
                 rightSlot = live?.SlotIndex ?? rightStick.RoleSlot;
+            } else {
+                rightSlot = 1;
             }
         }
 
         var isSpaceSim = _configService.Config.FlightAxisMode == FlightAxisMode.SpaceSim;
 
-        EnsureActionRebind(movementMap, "v_pitch", $"js{rightSlot}_y");
-        EnsureActionRebind(movementMap, isSpaceSim ? "v_yaw" : "v_roll", $"js{rightSlot}_x");
-        EnsureActionRebind(movementMap, isSpaceSim ? "v_roll" : "v_yaw", $"js{rightSlot}_rotz");
+        EnsureActionRebind(movementMap, "v_pitch", $"js{rightSlot}_y", forceOverwrite: true);
+        EnsureActionRebind(movementMap, isSpaceSim ? "v_yaw" : "v_roll", $"js{rightSlot}_x", forceOverwrite: true);
+        EnsureActionRebind(movementMap, isSpaceSim ? "v_roll" : "v_yaw", $"js{rightSlot}_rotz", forceOverwrite: true);
     }
 
-    private static void EnsureActionRebind(XElement actionMap, string actionName, string defaultInput) {
+    private static void EnsureActionRebind(XElement actionMap, string actionName, string defaultInput, bool forceOverwrite = false) {
         var action = actionMap.Elements("action")
             .FirstOrDefault(a => string.Equals((string?)a.Attribute("name"), actionName, StringComparison.OrdinalIgnoreCase));
         if (action == null) {
@@ -1198,7 +1383,7 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             action.Add(rebind);
         } else {
             var currentInput = (string?)rebind.Attribute("input") ?? "";
-            if (string.IsNullOrWhiteSpace(currentInput) || currentInput.EndsWith("_ ") || currentInput.StartsWith("js1_")) {
+            if (forceOverwrite || string.IsNullOrWhiteSpace(currentInput) || currentInput.EndsWith("_ ") || currentInput.StartsWith("js1_")) {
                 rebind.SetAttributeValue("input", defaultInput);
             }
         }
