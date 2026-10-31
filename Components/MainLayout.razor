@@ -23,17 +23,16 @@
         </div>
 
         <!-- Game Profile Switcher -->
-        <MudMenu Dense="true" Class="ml-4" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
-            <ActivatorContent>
-                <MudButton Variant="Variant.Outlined"
-                           Size="Size.Small"
-                           EndIcon="@Icons.Material.Filled.ArrowDropDown"
-                           Class="mfd-title"
-                           Style="color: #00E5FF; border-color: rgba(0, 229, 255, 0.4); background: rgba(0, 229, 255, 0.05); font-weight: 700; font-size: 0.8rem;">
-                    <MudIcon Icon="@Icons.Material.Filled.SportsEsports" Size="Size.Small" Class="mr-1" />
-                    @(PluginManager.ActivePlugin.Name.ToUpperInvariant())
-                </MudButton>
-            </ActivatorContent>
+        <MudMenu Label="@(PluginManager.ActivePlugin.Name.ToUpperInvariant())"
+                 StartIcon="@Icons.Material.Filled.SportsEsports"
+                 EndIcon="@Icons.Material.Filled.ArrowDropDown"
+                 Variant="Variant.Outlined"
+                 Size="Size.Small"
+                 Class="mfd-title ml-4"
+                 Style="color: #00E5FF; border-color: rgba(0, 229, 255, 0.4); background: rgba(0, 229, 255, 0.05); font-weight: 700; font-size: 0.8rem;"
+                 Dense="true"
+                 AnchorOrigin="Origin.BottomLeft"
+                 TransformOrigin="Origin.TopLeft">
             <ChildContent>
                 @foreach (var plugin in PluginManager.AvailablePlugins) {
                     <MudMenuItem OnClick="@(() => OnGamePluginSelected(plugin.Id))"
@@ -57,17 +56,16 @@
         <MudSpacer />
 
         <!-- Update Track Switcher -->
-        <MudMenu Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="mr-3">
-            <ActivatorContent>
-                <MudButton Variant="Variant.Outlined"
-                           Size="Size.Small"
-                           EndIcon="@Icons.Material.Filled.ArrowDropDown"
-                           Class="mfd-title"
-                           Style="@GetChannelButtonStyle()">
-                    <MudIcon Icon="@Icons.Material.Filled.AltRoute" Size="Size.Small" Class="mr-1" />
-                    TRACK: @(UpdateService.CurrentChannel.ToUpperInvariant())
-                </MudButton>
-            </ActivatorContent>
+        <MudMenu Label="@($"TRACK: {UpdateService.CurrentChannel.ToUpperInvariant()}")"
+                 StartIcon="@Icons.Material.Filled.AltRoute"
+                 EndIcon="@Icons.Material.Filled.ArrowDropDown"
+                 Variant="Variant.Outlined"
+                 Size="Size.Small"
+                 Class="mfd-title mr-3"
+                 Style="@GetChannelButtonStyle()"
+                 Dense="true"
+                 AnchorOrigin="Origin.BottomRight"
+                 TransformOrigin="Origin.TopRight">
             <ChildContent>
                 <MudMenuItem OnClick="@(() => OnChannelSelectedAsync("Release"))">
                     <div class="d-flex align-center justify-space-between" style="min-width: 200px;">

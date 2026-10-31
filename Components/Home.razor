@@ -376,7 +376,7 @@
                                                Size="Size.Small"
                                                OnClick="OpenSlotExplanationDialogAsync" />
                             </MudTooltip>
-                            <MudTooltip Text="Auto-detect and lock only joysticks with active bindings in Star Citizen XML">
+                            <MudTooltip Text="Auto-detect and lock flight stick slots from configuration">
                                 <MudButton Variant="Variant.Text"
                                            Color="Color.Primary"
                                            Size="Size.Small"
@@ -386,16 +386,18 @@
                                     Auto-Detect Sticks
                                 </MudButton>
                             </MudTooltip>
-                            <MudTooltip Text="@(string.IsNullOrWhiteSpace(_dynamicResortCommand) ? "Sticks are currently aligned (no in-game resort needed)" : $"Copy in-game console resort command: '{_dynamicResortCommand}'")">
-                                <MudButton Variant="Variant.Text"
-                                           Color="@(string.IsNullOrWhiteSpace(_dynamicResortCommand) ? Color.Default : Color.Secondary)"
-                                           Size="Size.Small"
-                                           StartIcon="@Icons.Material.Filled.ContentCopy"
-                                           OnClick="CopyConsoleCommandAsync"
-                                           Class="mfd-title">
-                                    Copy Resort Cmd
-                                </MudButton>
-                            </MudTooltip>
+                            @if (PluginManager.ActivePlugin.Id == "starcitizen") {
+                                <MudTooltip Text="@(string.IsNullOrWhiteSpace(_dynamicResortCommand) ? "Sticks are currently aligned (no in-game resort needed)" : $"Copy in-game console resort command: '{_dynamicResortCommand}'")">
+                                    <MudButton Variant="Variant.Text"
+                                               Color="@(string.IsNullOrWhiteSpace(_dynamicResortCommand) ? Color.Default : Color.Secondary)"
+                                               Size="Size.Small"
+                                               StartIcon="@Icons.Material.Filled.ContentCopy"
+                                               OnClick="CopyConsoleCommandAsync"
+                                               Class="mfd-title">
+                                        Copy Resort Cmd
+                                    </MudButton>
+                                </MudTooltip>
+                            }
                         </div>
                     </div>
 
@@ -411,7 +413,7 @@
                                 <MudTh Style="color: #00E5FF; font-weight: 700;">LOCKED</MudTh>
                                 <MudTh Style="color: #00E5FF; font-weight: 700;">DEVICE</MudTh>
                                 <MudTh Style="color: #00E5FF; font-weight: 700;">WIN</MudTh>
-                                <MudTh Style="color: #00E5FF; font-weight: 700;">XML</MudTh>
+                                <MudTh Style="color: #00E5FF; font-weight: 700;">@(PluginManager.ActivePlugin.Id == "starcitizen" ? "XML" : "CONFIG")</MudTh>
                                 <MudTh Style="color: #00E5FF; font-weight: 700; text-align: right;"></MudTh>
                             </HeaderContent>
                             <RowTemplate>
@@ -432,14 +434,14 @@
                                         <div class="d-flex align-center gap-1 mt-1">
                                             <MudIcon Icon="@Icons.Material.Filled.Shuffle" Size="Size.Small" Color="Color.Warning" Style="font-size: 0.8rem;" />
                                             <span style="color: #F59E0B; font-size: 0.72rem; font-weight: 600;">
-                                                Windows moved stick to js@(liveSlot) • XML has js@(xmlInst) (Click Fix &amp; Sync)
+                                                Windows moved stick to js@(liveSlot) • Config has js@(xmlInst) (Click Fix &amp; Sync)
                                             </span>
                                         </div>
                                     } else if (isAlignedWithXml) {
                                         <div class="d-flex align-center gap-1 mt-1">
                                             <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" Style="font-size: 0.8rem;" />
                                             <span style="color: #10B981; font-size: 0.72rem;">
-                                                Aligned • Windows and Star Citizen both use js@(liveSlot)
+                                                Aligned • Windows and @(PluginManager.ActivePlugin.Name) both match js@(liveSlot)
                                             </span>
                                         </div>
                                     }
@@ -483,7 +485,7 @@
                 <div>
                     <MudText Typo="Typo.subtitle2" Class="mfd-title" Style="color: #00E5FF;">PERSISTENT MAPPINGS LIBRARY</MudText>
                     <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8;">
-                        Stored in <span style="color: #FFAB00;">~/.sticklock/mappings/</span> — deploys across @(ConfigService.Config.SyncAllDetectedInstalls ? "all detected SC installs" : ConfigService.Config.SelectedEnvironment.ToString())
+                        Stored in <span style="color: #FFAB00;">~/.sticklock/mappings/</span>@(PluginManager.ActivePlugin.Id == "starcitizen" ? $" — deploys across {(ConfigService.Config.SyncAllDetectedInstalls ? "all detected SC installs" : ConfigService.Config.SelectedEnvironment.ToString())}" : "")
                     </MudText>
                 </div>
                 <div class="d-flex flex-wrap align-center gap-2">
@@ -496,29 +498,31 @@
                                Style="color: #0B0F19; font-weight: 700;">
                         Save Active
                     </MudButton>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Secondary"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.CloudUpload"
-                               OnClick="CopyAllToStarCitizenAsync"
-                               Class="mfd-title">
-                        Deploy All to SC
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Default"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.CloudDownload"
-                               OnClick="PullFromStarCitizenAsync"
-                               Class="mfd-title">
-                        Pull from SC
-                    </MudButton>
+                    @if (PluginManager.ActivePlugin.Id == "starcitizen") {
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Secondary"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.CloudUpload"
+                                   OnClick="CopyAllToStarCitizenAsync"
+                                   Class="mfd-title">
+                            Deploy All to SC
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Default"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.CloudDownload"
+                                   OnClick="PullFromStarCitizenAsync"
+                                   Class="mfd-title">
+                            Pull from SC
+                        </MudButton>
+                    }
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Primary"
                                Size="Size.Small"
                                StartIcon="@Icons.Material.Filled.FileDownload"
                                OnClick="ImportAndApplyProfileXmlAsync"
                                Class="mfd-title">
-                        Import XML
+                        Import File
                     </MudButton>
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Default"
@@ -526,7 +530,7 @@
                                StartIcon="@Icons.Material.Filled.FileUpload"
                                OnClick="ExportProfileXmlAsync"
                                Class="mfd-title">
-                        Export XML
+                        Export File
                     </MudButton>
                     <MudTooltip Text="Open ~/.sticklock/mappings in Explorer">
                         <MudIconButton Icon="@Icons.Material.Filled.FolderOpen"
@@ -542,7 +546,7 @@
                     <MudIcon Icon="@Icons.Material.Filled.FolderZip" Size="Size.Large" Color="Color.Default" Class="mb-2" />
                     <MudText Typo="Typo.body2" Style="color: #94A3B8;">No Saved Profiles Yet</MudText>
                     <MudText Typo="Typo.caption" Style="color: #64748B;">
-                        Click "Save Active" to snapshot your current bindings, or "Pull from SC" to import your Star Citizen Control Profiles.
+                        Click "Save Active" to snapshot your current bindings.
                     </MudText>
                 </div>
             } else {
@@ -551,7 +555,9 @@
                         <MudTh Style="color: #00E5FF; font-weight: 700;">PROFILE</MudTh>
                         <MudTh Style="color: #00E5FF; font-weight: 700;">DEVICES</MudTh>
                         <MudTh Style="color: #00E5FF; font-weight: 700;">BINDS</MudTh>
-                        <MudTh Style="color: #00E5FF; font-weight: 700;">STATUS</MudTh>
+                        @if (PluginManager.ActivePlugin.Id == "starcitizen") {
+                            <MudTh Style="color: #00E5FF; font-weight: 700;">STATUS</MudTh>
+                        }
                         <MudTh Style="color: #00E5FF; font-weight: 700; text-align: right;">ACTIONS</MudTh>
                     </HeaderContent>
                     <RowTemplate>
@@ -577,17 +583,19 @@
                         <MudTd>
                             <span class="mfd-code" style="color: #CBD5E1;">@context.RebindCount</span>
                         </MudTd>
-                        <MudTd>
-                            @if (context.ExistsInStarCitizen) {
-                                <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Filled">
-                                    Deployed
-                                </MudChip>
-                            } else {
-                                <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
-                                    Local Only
-                                </MudChip>
-                            }
-                        </MudTd>
+                        @if (PluginManager.ActivePlugin.Id == "starcitizen") {
+                            <MudTd>
+                                @if (context.ExistsInStarCitizen) {
+                                    <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Filled">
+                                        Deployed
+                                    </MudChip>
+                                } else {
+                                    <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
+                                        Local Only
+                                    </MudChip>
+                                }
+                            </MudTd>
+                        }
                         <MudTd Style="text-align: right;">
                             <div class="d-flex align-center justify-end gap-1">
                                 <MudButton Variant="Variant.Filled"
@@ -597,13 +605,15 @@
                                            Style="color: #0B0F19; font-weight: 700; font-size: 0.75rem;">
                                     Apply
                                 </MudButton>
-                                <MudButton Variant="Variant.Outlined"
-                                           Color="Color.Secondary"
-                                           Size="Size.Small"
-                                           OnClick="@(() => CopyProfileToStarCitizenAsync(context.FileName))"
-                                           Style="font-size: 0.75rem;">
-                                    Deploy
-                                </MudButton>
+                                @if (PluginManager.ActivePlugin.Id == "starcitizen") {
+                                    <MudButton Variant="Variant.Outlined"
+                                               Color="Color.Secondary"
+                                               Size="Size.Small"
+                                               OnClick="@(() => CopyProfileToStarCitizenAsync(context.FileName))"
+                                               Style="font-size: 0.75rem;">
+                                        Deploy
+                                    </MudButton>
+                                }
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                                Color="Color.Error"
                                                Size="Size.Small"
