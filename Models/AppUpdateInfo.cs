@@ -11,3 +11,4 @@ public class AppUpdateInfo {
     public DateTime? PublishedAt { get; set; }
     public string? ErrorMessage { get; set; }
 }
+

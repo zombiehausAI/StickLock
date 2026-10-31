@@ -8,3 +8,4 @@ public interface IUpdateService {
     Task<string> DownloadUpdateAsync(AppUpdateInfo updateInfo, IProgress<int>? progress = null, CancellationToken cancellationToken = default);
     void LaunchInstallerAndExit(string installerPath);
 }
+
