@@ -43,7 +43,123 @@ The **StickLock Plugin System** allows anyone to write and distribute custom gam
 
 ---
 
-## 2. Getting the SDK
+StickLock supports three distinct plugin authoring formats depending on creator preference and game complexity:
+
+1. **Declarative JSON (`game.json`)**: Zero code required. Define paths, process names, and patterns in a plain text configuration file.
+2. **Scriptable JavaScript (`plugin.js`)**: Lightweight, dynamic scripting powered by the embedded Jint ECMAScript engine. Write custom parsing and sync logic without any compilation or .NET SDK.
+3. **Compiled C# SDK (`.dll`)**: Full-featured .NET class libraries for deep system integrations, high performance, and native libraries.
+
+---
+
+## 2. Declarative JSON Plugins (`game.json`)
+
+The fastest way to add support for a flight simulator is a declarative JSON file. No compiler, SDK, or code is needed.
+
+### File Location
+Place `game.json` in a folder under `%USERPROFILE%\.sticklock\plugins\<PluginName>\game.json` (or `<PluginName>.plugin.json`).
+
+### Schema & Example
+```json
+{
+  "id": "dcsworld",
+  "name": "DCS World",
+  "description": "Digital Combat Simulator controller GUID and slot synchronization.",
+  "processName": "DCS.exe",
+  "configDirectory": "%USERPROFILE%\\Saved Games\\DCS\\Config\\Input",
+  "filePattern": "*.diff.lua",
+  "matchStrategy": "GuidInFileName",
+  "supportsFlightAxisMode": false
+}
+```
+
+### Supported Properties
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | string | Unique identifier for the game plugin (e.g. `dcsworld`). |
+| `name` | string | User-friendly display name (e.g. `DCS World`). |
+| `description` | string | Short description shown in tooltips and settings. |
+| `processName` | string | Executable name (e.g. `DCS.exe`) to prevent syncing while running. |
+| `configDirectory`| string | Directory containing configuration files. Supports environment variables (`%USERPROFILE%`, `%LOCALAPPDATA%`, etc.). |
+| `filePattern` | string | Glob/filter for matching files (e.g. `*.diff.lua`, `*.binds`, `*.cfg`). |
+| `matchStrategy` | string | Strategy used to match devices (`GuidInFileName`, `SingleFile`). |
+| `supportsFlightAxisMode` | bool | Whether this game uses pitch/yaw/roll axis mode defaults. |
+
+---
+
+## 3. JavaScript / TypeScript Plugins (`plugin.js`)
+
+For games with non-trivial configurations, custom text formats, or specialized slot swapping, StickLock embeds **Jint** (a managed, fast ECMAScript engine).
+
+### File Location
+Place `plugin.js` in `%USERPROFILE%\.sticklock\plugins\<PluginName>\plugin.js` (or `<PluginName>.plugin.js`).
+
+### Template
+```javascript
+({
+    id: "falcon-bms",
+    name: "Falcon BMS",
+    description: "Falcon BMS flight stick and throttle slot synchronization.",
+    processName: "Falcon BMS.exe",
+
+    // Returns whether the game is installed on this system
+    isInstalled: function() {
+        var baseDir = sticklock.env.expand("%USERPROFILE%\\Falcon BMS");
+        return sticklock.fs.dirExists(baseDir);
+    },
+
+    // Detects active bindings file
+    detectActiveBindingsPath: function() {
+        var configPath = sticklock.env.expand("%USERPROFILE%\\Falcon BMS\\User\\Config\\DeviceSort.txt");
+        return sticklock.fs.fileExists(configPath) ? configPath : null;
+    },
+
+    // Checks slot alignment
+    checkAlignment: function(context) {
+        // context.liveDevices     -> Array of connected DirectInput devices
+        // context.canonicalSticks -> Array of locked slots in StickLock
+        // context.isGameRunning   -> boolean
+        if (context.canonicalSticks.length < 2) {
+            return { status: "Aligned", statusMessage: "Awaiting canonical slot lock." };
+        }
+        return {
+            status: context.isGameRunning ? "StarCitizenActive" : "Aligned",
+            statusMessage: "Falcon BMS flight controllers aligned."
+        };
+    },
+
+    // Executes synchronization
+    sync: function(context) {
+        // context.force      -> boolean
+        // context.activePath -> path to active bindings file
+        // context.backupPath -> path to automatic timestamped backup
+        sticklock.log.info("Synchronizing Falcon BMS controller slots...");
+        return {
+            success: true,
+            message: "Falcon BMS controller order synchronized successfully."
+        };
+    }
+})
+```
+
+### Sandboxed `sticklock` JavaScript Bridge
+| API | Description |
+| :--- | :--- |
+| `sticklock.env.expand(str)` | Expands Windows environment variables like `%LOCALAPPDATA%`. |
+| `sticklock.fs.readFile(path)` | Reads file content as text. |
+| `sticklock.fs.writeFile(path, content)` | Writes text to a file. |
+| `sticklock.fs.fileExists(path)` | Returns boolean whether file exists. |
+| `sticklock.fs.dirExists(path)` | Returns boolean whether directory exists. |
+| `sticklock.fs.getFiles(dir, pattern)` | Returns array of matching file paths in directory. |
+| `sticklock.isProcessRunning(name)` | Checks if a process (e.g. `"DCS.exe"`) is currently running. |
+| `sticklock.log.info/warn/error/success(msg)` | Logs to the StickLock MFD activity log. |
+
+---
+
+## 4. Compiled C# SDK Plugins (`.dll`)
+
+For high-performance, deeply integrated, or compiled plugins, use the standard C# SDK.
+
+### Getting the SDK
 
 Third-party plugin developers do not need the StickLock source code. All contracts, base classes, and data structures are distributed via `StickLock.SDK`.
 

@@ -1,0 +1,10 @@
+{
+  "id": "dcsworld",
+  "name": "DCS World",
+  "description": "Digital Combat Simulator controller GUID and slot synchronization.",
+  "processName": "DCS.exe",
+  "configDirectory": "%USERPROFILE%\\Saved Games\\DCS\\Config\\Input",
+  "filePattern": "*.diff.lua",
+  "matchStrategy": "GuidInFileName",
+  "supportsFlightAxisMode": false
+}

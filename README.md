@@ -31,12 +31,15 @@ StickLock runs quietly in the Windows System Tray, monitors USB hardware changes
 
 ## Key Features
 
-### 🔌 Multi-Game Plugin Architecture & SDK
+### 🔌 Multi-Game Plugin Architecture (JSON, JavaScript & C#)
 - **Game-Agnostic Core**: DirectInput device discovery, canonical slot locking, USB hotplug monitoring, and configuration storage operate independently of any specific game title.
-- **Out-of-Tree Plugin SDK (`StickLock.SDK`)**: Anyone can write, build, and publish custom game integration plugins without access to the StickLock source code. Community developers only need to implement the `IGamePlugin` interface and reference the lightweight SDK.
-- **Dynamic Assembly Loading**: Automatically discovers, loads, and initializes plugins from `%USERPROFILE%\.sticklock\plugins\` in collectible, isolated assembly load contexts.
+- **Three Plugin Authoring Formats**:
+  - **Declarative JSON (`game.json`)**: Zero-code integration. Drop a single `game.json` file into `%USERPROFILE%\.sticklock\plugins\<Game>\` defining paths, process names, and file patterns.
+  - **Scriptable JavaScript (`plugin.js`)**: Lightweight, dynamic scripting powered by the embedded Jint ECMAScript engine. Write custom parsing and sync logic without any compilation or .NET SDK.
+  - **Compiled C# SDK (`StickLock.SDK`)**: High-performance .NET assemblies for deep system integrations and complex game logic.
+- **Game-Partitioned Mappings Library**: Automatically keeps profiles and bindings organized per game under `~/.sticklock/mappings/<game-id>/` with seamless legacy migration.
 - **In-App Plugin Management**: Switch active games dynamically, reload plugins without restarting the application, and browse the plugins directory with a single click.
-- **Extensive Plugin Guide**: Full architectural specifications, tutorials, and game case studies are available in [docs/PLUGIN_AUTHORING_GUIDE.md](docs/PLUGIN_AUTHORING_GUIDE.md).
+- **Extensive Plugin Guide**: Full architectural specifications, templates, and game case studies are available in [docs/PLUGIN_AUTHORING_GUIDE.md](docs/PLUGIN_AUTHORING_GUIDE.md).
 
 ### 🎮 Native Game Integrations
 - **Star Citizen**:
