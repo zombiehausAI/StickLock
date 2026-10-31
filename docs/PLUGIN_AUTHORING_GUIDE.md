@@ -355,18 +355,26 @@ A DCS plugin:
 ## 6. Distributing and Installing Plugins
 
 ### Where Plugins Live
-StickLock scans the following directories on startup:
+StickLock automatically scans the following directories on startup and on reload:
 1. **User Plugins (Recommended)**:
    `%USERPROFILE%\.sticklock\plugins\<PluginName>\`
 2. **Application Directory**:
    `<StickLock-Folder>\plugins\<PluginName>\`
 
+### Dedicated Game Mappings Directories
+Each active game plugin automatically receives its own isolated profiles folder in the user library:
+- `%USERPROFILE%\.sticklock\mappings\<plugin-id>\`
+Whenever a user saves, imports, or browses profiles for that game, StickLock scopes all operations to that game's isolated directory, preventing cross-game configuration pollution.
+
 ### Installation Steps for Players
-1. Build or download the plugin `.dll` (e.g., `StickLock.Plugin.Il2Sturmovik.dll`).
-2. Open StickLock.
-3. In the top bar game dropdown, select **Manage Plugins...**.
-4. Click **Open Plugins Folder**.
-5. Create a folder for the plugin (e.g. `Il2Sturmovik`) and copy the `.dll` (and any third-party dependencies) into it.
+1. Open StickLock.
+2. In the top bar game dropdown, select **Manage Plugins...**.
+3. Click **Open Plugins Folder**.
+4. Create a folder for the game (e.g. `DCSWorld` or `FalconBMS`).
+5. Copy your plugin file(s) into that folder:
+   - **For Declarative Plugins**: Place `game.json` (or `<name>.plugin.json`).
+   - **For JavaScript Plugins**: Place `plugin.js` (or `<name>.plugin.js`).
+   - **For C# SDK Plugins**: Place the compiled `.dll` (e.g. `StickLock.Plugin.Il2Sturmovik.dll`) and any dependencies.
 6. Return to StickLock and click **Reload Plugins**.
 7. The new game integration appears in the list and can be activated immediately!
 
