@@ -97,3 +97,4 @@ public abstract class GamePluginBase : IGamePlugin {
         }
     }
 }
+

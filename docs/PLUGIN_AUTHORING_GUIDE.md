@@ -263,3 +263,4 @@ StickLock scans the following directories on startup:
 3. **Atomic File Writes**: Write new content to a temporary file (`.tmp`) first, then use `File.Move(tempFile, targetFile, overwrite: true)` to ensure atomic updates.
 4. **Use K&R Style**: Keep plugin code clean, structured, and compliant with K&R (One True Brace Style).
 5. **Report Detailed Status**: In `MappingAlignmentCheck`, populate `StatusMessage` and `Mismatches` with actionable descriptions so users understand what changed.
+
