@@ -14,6 +14,7 @@ if ($branch -eq "dev" -or $branch.StartsWith("feature/")) {
     $oldBuild = [int]$content.devBuild
     $newBuild = $oldBuild + 1
     $content.devBuild = $newBuild
+    $content.version = "$($content.major).$($content.minor).$($content.patch)"
 
     $jsonStr = $content | ConvertTo-Json -Depth 4
     [System.IO.File]::WriteAllText($versionFile, $jsonStr + [System.Environment]::NewLine, [System.Text.Encoding]::UTF8)

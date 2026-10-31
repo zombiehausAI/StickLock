@@ -1,6 +1,6 @@
 ; Inno Setup Script for StickLock
 #ifndef MyAppVersion
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.1.0"
 #endif
 #ifndef MySourceDir
 #define MySourceDir "..\artifacts\staging\StickLock"

@@ -36,12 +36,22 @@ jobs:
           "version=$ver" >> $env:GITHUB_OUTPUT
 
       - name: Publish Self-Contained App
-        run: >
-          dotnet publish StickLock.csproj
-          --configuration Release
-          --runtime win-x64
-          --self-contained true
-          -o artifacts/staging/StickLock
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.version.outputs.version }}"
+          $cleanNumeric = "1.1.0"
+          if ($ver -match '^(\d+\.\d+(\.\d+)?)') {
+              $cleanNumeric = $Matches[1]
+          }
+          dotnet publish StickLock.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            "-p:Version=$cleanNumeric" `
+            "-p:AssemblyVersion=$cleanNumeric" `
+            "-p:FileVersion=$cleanNumeric" `
+            "-p:InformationalVersion=$ver" `
+            -o artifacts/staging/StickLock
 
       - name: Build & Pack StickLock.SDK
         run: >

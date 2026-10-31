@@ -398,10 +398,26 @@ Set-Content -Path $uninstallerScript -Value $uninstallerContent -Encoding utf8
 
 # Register in Windows Add/Remove Programs (HKCU uninstall)
 try {
+    $displayVersion = "1.1.0"
+    $vFile = Join-Path $InstallPath "version.json"
+    if (-not (Test-Path $vFile)) {
+        $vFile = Join-Path $sourceDirFinal "version.json"
+    }
+    if (Test-Path $vFile) {
+        try {
+            $vObj = Get-Content $vFile -Raw | ConvertFrom-Json
+            if ($vObj.version) {
+                $displayVersion = $vObj.version
+            } elseif ($null -ne $vObj.major) {
+                $displayVersion = "$($vObj.major).$($vObj.minor).$($vObj.patch)"
+            }
+        } catch { }
+    }
+
     $uninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\StickLock"
     New-Item -Path $uninstallKey -Force -ErrorAction SilentlyContinue | Out-Null
     Set-ItemProperty -Path $uninstallKey -Name "DisplayName" -Value "StickLock" -Force
-    Set-ItemProperty -Path $uninstallKey -Name "DisplayVersion" -Value "1.0.0" -Force
+    Set-ItemProperty -Path $uninstallKey -Name "DisplayVersion" -Value $displayVersion -Force
     Set-ItemProperty -Path $uninstallKey -Name "Publisher" -Value "StickLock Avionics" -Force
     Set-ItemProperty -Path $uninstallKey -Name "InstallLocation" -Value $InstallPath -Force
     Set-ItemProperty -Path $uninstallKey -Name "DisplayIcon" -Value "$targetExe,0" -Force
