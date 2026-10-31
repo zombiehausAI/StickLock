@@ -1,6 +1,8 @@
 namespace StickLock.Models;
 
 public class AppConfig {
+    public string ActiveGamePluginId { get; set; } = "starcitizen";
+    public string EliteDangerousBindingsPath { get; set; } = string.Empty;
     public string StarCitizenRootPath { get; set; } = string.Empty;
     public string StarCitizenPath { get; set; } = string.Empty;
     public ScEnvironment SelectedEnvironment { get; set; } = ScEnvironment.LIVE;

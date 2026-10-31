@@ -7,6 +7,7 @@
 @inject IDialogService DialogService
 @inject IBrowserService BrowserService
 @inject IUpdateService UpdateService
+@inject StickLock.Plugins.IGamePluginManager PluginManager
 
 <MudThemeProvider Theme="_theme" IsDarkMode="true" />
 <MudPopoverProvider />
@@ -18,8 +19,33 @@
         <img src="icon.png" alt="StickLock" style="width: 38px; height: 38px; border-radius: 8px; filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.35));" class="mr-3" />
         <div>
             <MudText Typo="Typo.h6" Class="mfd-title glow-cyan" Style="color: #00E5FF; line-height: 1.1;">STICKLOCK</MudText>
-            <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8; letter-spacing: 1px;">STAR CITIZEN FLIGHT CONTROLLER SYNC</MudText>
+            <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8; letter-spacing: 1px;">@(PluginManager.ActivePlugin.Name.ToUpperInvariant()) CONTROLLER SYNC</MudText>
         </div>
+
+        <!-- Game Profile Switcher -->
+        <MudMenu Dense="true" Class="ml-4" AnchorOrigin="Origin.BottomLeft" TransformOrigin="Origin.TopLeft">
+            <ActivatorContent>
+                <MudButton Variant="Variant.Outlined"
+                           Size="Size.Small"
+                           EndIcon="@Icons.Material.Filled.ArrowDropDown"
+                           Class="mfd-title"
+                           Style="color: #00E5FF; border-color: rgba(0, 229, 255, 0.4); background: rgba(0, 229, 255, 0.05); font-weight: 700; font-size: 0.8rem;">
+                    <MudIcon Icon="@Icons.Material.Filled.SportsEsports" Size="Size.Small" Class="mr-1" />
+                    @(PluginManager.ActivePlugin.Name.ToUpperInvariant())
+                </MudButton>
+            </ActivatorContent>
+            <ChildContent>
+                @foreach (var plugin in PluginManager.AvailablePlugins) {
+                    <MudMenuItem OnClick="@(() => OnGamePluginSelected(plugin.Id))"
+                                 Style="@(plugin.Id == PluginManager.ActivePlugin.Id ? "background: rgba(0, 229, 255, 0.15); color: #00E5FF; font-weight: bold;" : "")">
+                        <div class="d-flex align-center gap-2">
+                            <MudIcon Icon="@(plugin.Id == "starcitizen" ? Icons.Material.Filled.RocketLaunch : Icons.Material.Filled.Explore)" Size="Size.Small" Color="@(plugin.Id == PluginManager.ActivePlugin.Id ? Color.Primary : Color.Default)" />
+                            <span>@plugin.Name</span>
+                        </div>
+                    </MudMenuItem>
+                }
+            </ChildContent>
+        </MudMenu>
 
         <MudSpacer />
 
@@ -96,6 +122,7 @@
         ConfigService.ConfigChanged += OnStateChanged;
         DirectInputService.DevicesRefreshed += _ => OnStateChanged();
         UsbWatcher.UsbDevicesChanged += _ => OnStateChanged();
+        PluginManager.ActivePluginChanged += _ => OnStateChanged();
 
         await RefreshStatusAsync();
 
@@ -116,9 +143,17 @@
         });
     }
 
+    private async Task OnGamePluginSelected(string pluginId) {
+        await PluginManager.SetActivePluginAsync(pluginId);
+        Snackbar.Add($"Switched active flight profile to {PluginManager.ActivePlugin.Name}.", Severity.Info);
+        await RefreshStatusAsync();
+        StateHasChanged();
+    }
+
     private async Task RefreshStatusAsync() {
         try {
-            _status = await XmlService.CheckSyncStatusAsync();
+            var check = await PluginManager.ActivePlugin.CheckAlignmentAsync();
+            _status = check.Status;
         } catch {
             _status = SyncStatus.Error;
         }
@@ -133,7 +168,7 @@
         StateHasChanged();
 
         try {
-            var result = await XmlService.SyncAsync();
+            var result = await PluginManager.ActivePlugin.SyncAsync();
             if (result.Success) {
                 if (result.ChangesMade) {
                     Snackbar.Add(result.Message, Severity.Success);
@@ -210,6 +245,7 @@
 
     public void Dispose() {
         ConfigService.ConfigChanged -= OnStateChanged;
+        PluginManager.ActivePluginChanged -= _ => OnStateChanged();
     }
 }
 

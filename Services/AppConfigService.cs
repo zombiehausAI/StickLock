@@ -124,6 +124,16 @@ public class AppConfigService : IAppConfigService {
         ConfigChanged?.Invoke();
     }
 
+    public async Task SetActiveGamePluginIdAsync(string pluginId) {
+        _config.ActiveGamePluginId = pluginId.Trim();
+        await SaveConfigAsync();
+    }
+
+    public async Task SetEliteDangerousBindingsPathAsync(string path) {
+        _config.EliteDangerousBindingsPath = path.Trim();
+        await SaveConfigAsync();
+    }
+
     public async Task SetRunOnStartupAsync(bool enable) {
         _config.RunOnWindowsStartup = enable;
         ApplyStartupRegistry(enable);

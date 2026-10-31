@@ -9,6 +9,8 @@ public interface IAppConfigService {
     event Action? ConfigChanged;
     Task LoadConfigAsync();
     Task SaveConfigAsync();
+    Task SetActiveGamePluginIdAsync(string pluginId);
+    Task SetEliteDangerousBindingsPathAsync(string path);
     Task SetRunOnStartupAsync(bool enable);
     Task SetAutoSyncAsync(bool enable);
     Task SetStartMinimizedAsync(bool enable);

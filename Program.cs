@@ -46,5 +46,10 @@ static class Program {
         services.AddSingleton<IFileDialogService, FileDialogService>();
         services.AddSingleton<IBrowserService, BrowserService>();
         services.AddSingleton<IUpdateService, UpdateService>();
+
+        // Game Plugins
+        services.AddSingleton<StickLock.Plugins.IGamePlugin, StickLock.Plugins.StarCitizen.StarCitizenPlugin>();
+        services.AddSingleton<StickLock.Plugins.IGamePlugin, StickLock.Plugins.EliteDangerous.EliteDangerousPlugin>();
+        services.AddSingleton<StickLock.Plugins.IGamePluginManager, StickLock.Plugins.GamePluginManager>();
     }
 }
