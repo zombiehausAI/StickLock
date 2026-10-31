@@ -9,7 +9,7 @@ if (-not (Test-Path $versionFile)) {
 }
 
 $branch = (git -C $repoRoot rev-parse --abbrev-ref HEAD 2>$null).Trim()
-if ($branch -eq "dev") {
+if ($branch -eq "dev" -or $branch.StartsWith("feature/")) {
     $content = Get-Content $versionFile -Raw | ConvertFrom-Json
     $oldBuild = [int]$content.devBuild
     $newBuild = $oldBuild + 1
@@ -21,6 +21,6 @@ if ($branch -eq "dev") {
     Write-Host "Incremented devBuild from $oldBuild to $newBuild on branch '$branch'."
     git -C $repoRoot add "$versionFile"
 } else {
-    Write-Host "Branch is '$branch' (not 'dev'). Skipping version auto-increment."
+    Write-Host "Branch is '$branch' (not dev/feature). Skipping version auto-increment."
 }
 
