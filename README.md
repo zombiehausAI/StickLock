@@ -11,88 +11,67 @@
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/zombiehaus)
 
-**Star Citizen Flight Controller Slot Synchronizer & Anti-Inversion Daemon**
+**Universal Flight Controller Slot Synchronizer & Anti-Inversion Daemon for Space & Flight Sims**
 
 StickLock is a zero-XAML, high-performance Windows desktop utility built with **.NET 10**, **WinForms Blazor Hybrid** (`Microsoft.AspNetCore.Components.WebView.WindowsForms`), and **MudBlazor**.
 
-Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.) to map physical flight sticks. When joysticks are unplugged, USB hubs reset, or Windows reboots, DirectInput frequently flips their enumeration order. StickLock runs quietly in the Windows System Tray, monitors USB hardware changes in real time, compares current DirectInput device indices against user-locked canonical slots, and automatically updates Star Citizen's `actionmaps.xml` before game launch.
+Space and flight simulators (including **Star Citizen**, **Elite Dangerous**, and other simulators) rely on Windows DirectInput enumeration order (`js1`, `js2`, device GUIDs, or instance IDs) to map physical flight sticks, throttles, and pedals. When controllers are disconnected, USB hubs power-cycle, or Windows reboots, DirectInput frequently shifts or inverts device enumeration order, scrambling your in-game flight controls. 
+
+StickLock runs quietly in the Windows System Tray, monitors USB hardware changes in real time, compares current DirectInput device indices against user-locked canonical slots, and automatically keeps your controller bindings aligned across your favorite games via an extensible plugin architecture.
 
 ---
 
 > [!NOTE]
 > **Project Context & Disclaimer**:
 > - **Solo Developer Side Project**: StickLock is an independent side project created and maintained by a single developer. Due to full-time work and outside commitments, I'm unable to dedicate full-time hours to it—updates, bug fixes, and maintenance happen as personal time permits. Your patience and understanding are greatly appreciated!
-> - **Proof of Concept**: This application, setup scripts, utilities, and technical documentation represent an early **proof of concept** created to overcome Windows DirectInput enumeration order quirks and Star Citizen device mapping hurdles. While these setups have been tested and verified across local Windows environments (such as Windows 10 and 11) and dual-stick / HOSAS / HOTAS hardware configurations, hardware setups, Windows driver versions, and USB topologies can differ significantly—what works seamlessly in one test environment may require adjustments or further testing on yours. Community feedback, issue reports, and real-world testing are warmly welcomed!
+> - **Proof of Concept**: This application, setup scripts, utilities, and technical documentation represent an early **proof of concept** created to overcome Windows DirectInput enumeration order quirks and flight controller device mapping hurdles. While these setups have been tested across local Windows environments (Windows 10/11) and dual-stick / HOSAS / HOTAS hardware configurations, USB topologies, controller firmware, and driver versions can differ significantly. Community feedback, issue reports, and real-world testing are warmly welcomed!
 > - **AI-Assisted Development**: This application and documentation were created with AI assistance. In the spirit of complete transparency: if you prefer not to use AI-assisted code, please feel free to pass on this project.
 
 ---
 
 ## Key Features
 
-- **Built-in Auto-Updater & Channel Switching**:
-  - Automatically checks GitHub Releases on startup and on demand via the About dialog.
-  - **Branch & Channel Switching**: Users can select between **Stable** (`main` production releases) and **Development** (`dev` & preview pre-releases).
-  - Accurate semantic version tracking differentiates between stable releases (`1.0.1`, `1.1.0`) and branch preview builds (`1.1.0-dev.20`).
-  - Downloads setup installers with live progress indicators and applies updates in-place seamlessly.
-- **Intelligent XML Flight Stick & Axis Detection**:
-  - Automatically analyzes `actionmaps.xml` flight binds (`v_pitch`, `v_yaw`, `v_roll`) and product names to identify your Right Stick (Flight Stick) and Left Stick (Strafe Stick), ignoring virtual devices or keyboards.
-  - Dynamically configures and applies primary flight axis profiles (**Space Sim**: Pitch=Y, Yaw=X, Roll=Twist, or **Atmospheric**: Pitch=Y, Roll=X, Yaw=Twist) directly to your detected flight stick and auto-deploys to in-game control profiles.
-- **Self-Enclosed Deployment**: Compiled self-contained (`win-x64`), bundling the .NET 10 CLR and Windows Desktop runtimes so end users do not need to install any external runtimes or SDKs.
-- **Smart Installer & In-Place Updater**:
-  - Automatically detects existing installations across the Registry, Windows Uninstall database, shortcuts, and default locations.
-  - Automatically defaults to updating existing installations in-place while preserving user configurations.
-  - Allows custom folder selection on any drive via command-line or native Windows folder browser GUI.
-  - User-level install (`%LOCALAPPDATA%\StickLock\app`) requiring no Administrator UAC prompts.
-  - Integrates with Windows Add/Remove Programs (Installed Apps) and creates Desktop / Start Menu shortcuts.
-- **Multi-Install Star Citizen Auto-Detection & Cross-Channel Sync (`LIVE`, `PTU`, `EPTU`, `TECH-PREVIEW`)**:
-  - Point StickLock at your root `StarCitizen` folder (or click **Auto-Detect**), and it automatically discovers all installed environments (`LIVE`, `PTU`, `EPTU`, `TECH-PREVIEW`) and their `actionmaps.xml` files.
-  - **Sync All Detected Installs**: Automatically aligns joystick slot assignments and deploys `layout_StickLock_Active.xml` across every detected Star Citizen channel simultaneously.
-  - **1-Click Propagate to All**: Copies and aligns your active bindings across all detected Star Citizen environments (`LIVE`, `PTU`, `EPTU`, `TECH-PREVIEW`) in a single click.
-- **Automatic Misalignment Detection & 1-Click Fix & Backup**:
-  - Automatically parses existing Star Citizen `actionmaps.xml` to detect which joystick owns which slot (`js1`, `js2`, etc.).
-  - Compares the game's expected device slots against live Windows DirectInput enumeration.
-  - When a slot inversion or misalignment is detected, displays an unmissable Star Citizen MFD Alert Banner and triggers Windows tray balloon notifications.
-  - **1-Click "Fix & Update Mappings"**: Immediately creates a timestamped backup in `~/.sticklock/backups/`, rewrites `actionmaps.xml` in Star Citizen so controls match current Windows order, and mirrors the aligned configuration in `.sticklock`.
-  - Full rollback support via the one-click "Restore This Backup" button.
-- **Background USB Monitoring**: WMI hardware watcher (`Win32_DeviceChangeEvent`) with a 1.5-second debounce timer to absorb USB hub power-cycles.
-- **Star Citizen Process Guard, Force Sync & In-Game Profile Auto-Deploy**:
-  - Detects active `StarCitizen.exe` processes and safely defers background writes by default to prevent game clobbering.
-  - **In-Game Console Resort**: Dynamically calculates and formats the exact in-game console resort command(s) for your specific hardware slots (e.g. `pp_resortdevices joystick 1 4`, `pp_resortdevices joystick 0 4`, etc.) with 1-click clipboard copy for live in-game resorting.
-  - **Force Sync While Game Is Running**: Optional setting allowing direct disk writes and backups even while Star Citizen is running.
-  - **Auto-Deploy to In-Game Controls\Mappings**: Automatically deploys the synchronized profile as `layout_StickLock_Active.xml` inside Star Citizen's `USER\Client\0\Controls\Mappings\` folder, allowing you to reload your corrected controls into RAM live from the in-game Options -> Keybindings -> Control Profiles menu without restarting the game.
-- **Idempotent Two-Pass Transformation**: Replaces `<options type="joystick" instance="X">` and `<rebind input="jsX_...">` attributes using unique intermediary placeholders to eliminate collision errors.
-- **Automated Backup & Pruning**: Creates timestamped backups in `StickLock_Backups` with customizable pruning limits and one-click restoration.
-- **Centralized `.sticklock` User Directory & Immune Mappings Library**:
-  - All configurations, profile backups, and persistent mappings are stored in `~/.sticklock` (`%USERPROFILE%\.sticklock\`), completely outside the Star Citizen install folder so they are immune to game reinstalls and USER folder wipes.
-  - `~/.sticklock/mappings/`: Primary repository for all saved flight controller mapping profiles.
-  - `~/.sticklock/config.json`: Active StickLock settings, canonical joystick assignments, and saved window size/position.
-  - `~/.sticklock/settings_backups/`: Timestamped snapshots created via the one-click **"Backup Current Settings"** button.
-  - `~/.sticklock/backups/`: ActionMaps XML backups created prior to sync operations or profile imports.
-  - `~/.sticklock/exports/`: Default repository for exported custom control profiles.
-- **Two-Way Star Citizen USER Sync**:
-  - **Save Active as Profile**: Snapshot current `actionmaps.xml` directly into `~/.sticklock/mappings/<name>.xml`.
-  - **Deploy / Sync to Star Citizen**: Automatically copies profiles from `~/.sticklock/mappings/` to Star Citizen's `USER\Client\0\Controls\Mappings\` folder so you can select and modify them in-game under Control Profiles.
-  - **Pull from Star Citizen**: Imports custom XML mappings from Star Citizen's `USER\Client\0\Controls\Mappings\` folder into `~/.sticklock/mappings/` so any in-game edits are safely preserved.
-  - **Apply to Active XML**: Applies any saved profile directly to the active `actionmaps.xml` and immediately aligns DirectInput stick slots.
-  - **Open Mappings Folder**: Instant one-click Explorer button to browse your `.sticklock/mappings` folder.
-- **Export & Import Profiles**:
-  - Export active control profiles as user-named XML files directly to any custom folder.
-  - Import any Star Citizen mapping XML, inspect device and bind counts, and apply it directly to the active `actionmaps.xml` with automated backup and instant physical DirectInput slot alignment.
-  - One-click **"Backup Current Settings"** to snapshot canonical stick assignments, paths, and preferences at any time.
-  - Export and import StickLock configuration JSON to easily migrate settings across machines.
-- **Multi-Game Integration & Pluggable Architecture**:
-  - Pluggable architecture supporting **Star Citizen**, **Elite Dangerous**, and community space/flight simulators.
-  - **Out-of-Tree Plugin SDK (`StickLock.SDK`)**: Anyone can write, build, and publish custom game integration plugins without access to the StickLock source code.
-  - **Dynamic Assembly Loading**: Automatically discovers and loads plugins from `%USERPROFILE%\.sticklock\plugins\` in isolated, collectible assembly contexts.
-  - **In-App Plugin Management**: Switch active games on the fly, browse the plugins directory with 1 click, and hot-reload plugins without restarting the application.
-  - **Extensive Plugin Guide**: Full architectural specifications, tutorials, and game case studies are available in [docs/PLUGIN_AUTHORING_GUIDE.md](docs/PLUGIN_AUTHORING_GUIDE.md).
-- **Star Citizen MFD Dark UI**: Custom obsidian (`#0B0F19`), cyan (`#00E5FF`), and amber (`#FFAB00`) glass theme reminiscent of spaceship avionics.
+### 🔌 Multi-Game Plugin Architecture & SDK
+- **Game-Agnostic Core**: DirectInput device discovery, canonical slot locking, USB hotplug monitoring, and configuration storage operate independently of any specific game title.
+- **Out-of-Tree Plugin SDK (`StickLock.SDK`)**: Anyone can write, build, and publish custom game integration plugins without access to the StickLock source code. Community developers only need to implement the `IGamePlugin` interface and reference the lightweight SDK.
+- **Dynamic Assembly Loading**: Automatically discovers, loads, and initializes plugins from `%USERPROFILE%\.sticklock\plugins\` in collectible, isolated assembly load contexts.
+- **In-App Plugin Management**: Switch active games dynamically, reload plugins without restarting the application, and browse the plugins directory with a single click.
+- **Extensive Plugin Guide**: Full architectural specifications, tutorials, and game case studies are available in [docs/PLUGIN_AUTHORING_GUIDE.md](docs/PLUGIN_AUTHORING_GUIDE.md).
+
+### 🎮 Native Game Integrations
+- **Star Citizen**:
+  - Automatically detects root install folders and multiple channel environments (`LIVE`, `PTU`, `EPTU`, `TECH-PREVIEW`).
+  - Reads and synchronizes `actionmaps.xml` across single or all detected environments simultaneously.
+  - Automatically identifies Right Stick (Flight Stick) vs Left Stick (Strafe Stick) and configures primary flight axis profiles (**Space Sim** vs **Atmospheric**).
+  - Dynamically calculates in-game console resort commands (e.g. `pp_resortdevices joystick 1 4`) with 1-click clipboard copy for live in-game resorting.
+  - Auto-deploys synchronized profiles into `USER\Client\0\Controls\Mappings\layout_StickLock_Active.xml` for zero-restart reloading via in-game Control Profiles.
+- **Elite Dangerous**:
+  - Auto-detects bindings directories at `%LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings\`.
+  - Scans active `.binds` files (e.g. `Custom.4.2.binds`), analyzes bound DirectInput device names and GUIDs, and aligns controller indices to eliminate device order swapping.
+
+### 🕹️ Universal DirectInput Slot Locking & USB Monitoring
+- **Canonical Hardware Slot Locks**: Lock each physical stick to a fixed slot (`Slot 1 = Right VKB Gladiator`, `Slot 2 = Left VKB Gladiator`, etc.).
+- **Real-Time WMI USB Monitoring**: Listens for `Win32_DeviceChangeEvent` notifications with a 1.5-second debounce window to absorb USB hub power-cycles and re-enumeration bursts.
+- **Automatic Misalignment Detection**: Compares current Windows DirectInput enumeration against canonical slots and displays prominent avionics alert banners and tray notifications when swaps are detected.
+- **Idempotent Multi-Pass Alignment**: Swaps and realigns controller references using intermediary placeholders to prevent keybind collision and corruption.
+
+### 🔄 Built-In Auto-Updater & Channel Track Selector
+- **Three-Tier Release Tracks**: Select your preferred update channel directly in the app:
+  - **Release (Stable)**: Production-ready releases from the `main` branch.
+  - **Beta (Development)**: Pre-releases from the `dev` branch for integration testing.
+  - **Alpha (Feature Previews)**: Early-access builds from feature branches (e.g. `feature/plugin-system`).
+- **In-Place Automated Updates**: Downloads installers with live progress indicators and applies updates seamlessly.
+
+### 🛡️ Immune Storage & Process Protection
+- **Immune User Storage (`~/.sticklock`)**: All configurations, custom profiles, and backups reside in `%USERPROFILE%\.sticklock\`, completely outside game folders to ensure immunity from game updates or folder wipes.
+- **Process Guard**: Detects active game processes and safely defers background disk writes by default to prevent clobbering, with an optional "Force Sync" setting for advanced users.
+- **Automated Rolling Backups**: Timestamped backups with configurable retention pruning and one-click restoration.
 
 ---
 
 ## Build, Test & Package Pipeline
 
-StickLock includes an automated pipeline script modelled after modern release orchestrators:
+StickLock includes an automated pipeline script for development, continuous integration, and packaging:
 
 ```powershell
 # Full release cycle: Clean -> Unit Tests -> Self-Contained Publish -> ZIP, Windows Setup Installer (EXE), & SHA256 Checksums
@@ -104,7 +83,7 @@ StickLock includes an automated pipeline script modelled after modern release or
 # Build, package, and install to a specific custom folder or drive
 .\Build-And-Package.ps1 -Install -InstallPath "D:\StickLock"
 
-# Skip automated tests during development
+# Skip automated tests during rapid iteration
 .\Build-And-Package.ps1 -SkipTests
 ```
 
@@ -118,34 +97,28 @@ StickLock follows a strict three-tier progression model:
 v1.1.0-alpha.X         v1.1.0-beta.X          v1.1.0
 ```
 
-- **Feature Branches (`feature/*` - Alpha)**:
-  - Cutting-edge, work-in-progress implementations (e.g. `feature/plugin-system`).
-  - Compiled and published automatically as **Alpha** pre-releases (e.g. `1.1.0-alpha.21`).
-- **Development Branch (`dev` - Beta)**:
-  - Consolidated and validated feature sets undergoing end-to-end integration testing.
-  - Compiled and published automatically as **Beta** pre-releases (e.g. `1.1.0-beta.1`).
-- **Main Branch (`main` - Release)**:
-  - Production-ready, fully validated software.
-  - Automatically tagged and published as official stable releases (e.g. `1.1.0`).
-- **Auto-Increment Hook**: Managed via `.githooks/pre-commit` and `scripts/increment-dev-version.ps1` (`git config core.hooksPath .githooks`).
+- **Feature Branches (`feature/*` - Alpha)**: Work-in-progress implementations compiled automatically into **Alpha** pre-releases.
+- **Development Branch (`dev` - Beta)**: Consolidated features undergoing integration testing compiled automatically into **Beta** pre-releases.
+- **Main Branch (`main` - Release)**: Validated production software published as official stable releases.
+- **Automated Version Tracking**: Managed via `.githooks/pre-commit` and `scripts/increment-dev-version.ps1` (`git config core.hooksPath .githooks`).
 - **GitHub Actions CI/CD**:
-  - `.github/workflows/release.yml`: Triggers on pushes to `main`, running automated tests, publishing self-contained `win-x64` binaries, compiling the Inno Setup installer (`StickLock-v<version>-Setup.exe`), and creating official stable GitHub Releases.
-  - `.github/workflows/dev-build.yml`: Triggers on `feature/*` and `dev`, building Alpha and Beta pre-releases and attaching installers for immediate testing.
+  - `.github/workflows/release.yml`: Runs tests, builds self-contained `win-x64` binaries, compiles Inno Setup installers, and publishes stable GitHub Releases on pushes to `main`.
+  - `.github/workflows/dev-build.yml`: Builds Alpha and Beta pre-releases and attaches installers on pushes to `feature/*` and `dev`.
 
 ### Build Artifacts Output
 Artifacts are generated in the `artifacts/` folder:
 - `StickLock-v<version>-win-x64.zip` — Standalone portable archive.
-- `StickLock-v<version>-Setup.exe` — Windows Setup installer executable (auto-acquires Inno Setup compiler if missing).
+- `StickLock-v<version>-Setup.exe` — Windows Setup installer executable.
 - `checksums.sha256` — SHA256 integrity manifest.
 
 ---
 
 ## Installer Usage (`installer\Install-StickLock.ps1`)
 
-The installer script can be run standalone from the repository or from inside an extracted distribution package:
+The installer script can be executed standalone from the repository or from inside an extracted distribution package:
 
 ```powershell
-# Interactive installation (auto-detects updates or prompts for folder)
+# Interactive installation (auto-detects existing installs or prompts for target directory)
 .\installer\Install-StickLock.ps1
 
 # Non-interactive / unattended update or install
@@ -163,12 +136,10 @@ This project and its accompanying utilities were developed with AI assistance (*
 
 ## Support & Contributions
 
-If you find StickLock helpful for your Star Citizen setup or flight sim configuration, consider supporting ongoing development:
+If you find StickLock helpful for your flight controller setup, consider supporting ongoing development:
 
 [![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/zombiehaus)
 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
-
-
