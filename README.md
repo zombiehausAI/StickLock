@@ -29,7 +29,11 @@ Star Citizen relies on Windows DirectInput enumeration order (`js1`, `js2`, etc.
 
 ## Key Features
 
-- **Built-in Auto-Updater**: Checks GitHub Releases on startup (and on demand via the About dialog), alerts users with release notes when an update is available, downloads the latest self-contained setup installer with live progress, and updates the application in-place seamlessly.
+- **Built-in Auto-Updater & Channel Switching**:
+  - Automatically checks GitHub Releases on startup and on demand via the About dialog.
+  - **Branch & Channel Switching**: Users can select between **Stable** (`main` production releases) and **Development** (`dev` & preview pre-releases).
+  - Accurate semantic version tracking differentiates between stable releases (`1.0.1`, `1.1.0`) and branch preview builds (`1.1.0-dev.20`).
+  - Downloads setup installers with live progress indicators and applies updates in-place seamlessly.
 - **Intelligent XML Flight Stick & Axis Detection**:
   - Automatically analyzes `actionmaps.xml` flight binds (`v_pitch`, `v_yaw`, `v_roll`) and product names to identify your Right Stick (Flight Stick) and Left Stick (Strafe Stick), ignoring virtual devices or keyboards.
   - Dynamically configures and applies primary flight axis profiles (**Space Sim**: Pitch=Y, Yaw=X, Roll=Twist, or **Atmospheric**: Pitch=Y, Roll=X, Yaw=Twist) directly to your detected flight stick and auto-deploys to in-game control profiles.

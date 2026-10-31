@@ -33,4 +33,5 @@ public interface IAppConfigService {
     Task<string> BackupCurrentSettingsAsync();
     IReadOnlyList<string> GetSettingsBackups();
     Task RestoreSettingsBackupAsync(string backupFilePath);
+    Task SetUpdateChannelAsync(string channel);
 }

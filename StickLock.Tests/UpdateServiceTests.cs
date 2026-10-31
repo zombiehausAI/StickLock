@@ -107,5 +107,57 @@ public class UpdateServiceTests {
             File.Delete(downloadedPath);
         } catch { }
     }
+
+    [Fact]
+    public void IsNewerVersion_DevBuildsAndReleases_ComparesCorrectly() {
+        // Base version increment
+        Assert.True(UpdateService.IsNewerVersion("1.1.0", "1.0.1"));
+        Assert.False(UpdateService.IsNewerVersion("1.0.1", "1.1.0"));
+
+        // Dev build number increments
+        Assert.True(UpdateService.IsNewerVersion("1.1.0-dev.21", "1.1.0-dev.20"));
+        Assert.False(UpdateService.IsNewerVersion("1.1.0-dev.19", "1.1.0-dev.20"));
+        Assert.False(UpdateService.IsNewerVersion("1.1.0-dev.20", "1.1.0-dev.20"));
+
+        // Official release beats dev build with same base version
+        Assert.True(UpdateService.IsNewerVersion("1.1.0", "1.1.0-dev.20"));
+        Assert.False(UpdateService.IsNewerVersion("1.1.0-dev.20", "1.1.0"));
+    }
+
+    [Fact]
+    public async Task CheckForUpdateAsync_FiltersByChannel_StableVsDevelopment() {
+        var json = @"[
+            {
+                ""tag_name"": ""v1.1.0-dev.25"",
+                ""prerelease"": true,
+                ""target_commitish"": ""dev"",
+                ""assets"": [ { ""name"": ""StickLock-v1.1.0-dev.25-Setup.exe"", ""browser_download_url"": ""https://example.com/dev.exe"" } ]
+            },
+            {
+                ""tag_name"": ""v1.0.1"",
+                ""prerelease"": false,
+                ""target_commitish"": ""main"",
+                ""assets"": [ { ""name"": ""StickLock-v1.0.1-Setup.exe"", ""browser_download_url"": ""https://example.com/stable.exe"" } ]
+            }
+        ]";
+
+        var mockHandler = new MockHttpMessageHandler(req => new HttpResponseMessage(HttpStatusCode.OK) {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        });
+
+        var httpClient = new HttpClient(mockHandler);
+        var logService = new ActivityLogService();
+        var updateService = new UpdateService(logService, httpClient);
+
+        // When checking Stable channel, picks 1.0.1
+        var stableInfo = await updateService.CheckForUpdateAsync(force: true, channel: "Stable");
+        Assert.Equal("1.0.1", stableInfo.LatestVersion);
+        Assert.False(stableInfo.IsPrerelease);
+
+        // When checking Development channel, picks 1.1.0-dev.25
+        var devInfo = await updateService.CheckForUpdateAsync(force: true, channel: "Development");
+        Assert.Equal("1.1.0-dev.25", devInfo.LatestVersion);
+        Assert.True(devInfo.IsPrerelease);
+    }
 }
 

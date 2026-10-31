@@ -48,6 +48,27 @@
                 </div>
             </MudAlert>
 
+            <!-- Update Channel Selector -->
+            <MudPaper Class="pa-3 d-flex align-center justify-space-between" Style="background: #111A24; border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 6px;">
+                <div>
+                    <div class="font-weight-bold" style="color: #38BDF8; font-size: 0.9rem;">Update Channel</div>
+                    <div style="font-size: 0.8rem; color: #94A3B8;">
+                        Switch between official stable releases and development / preview pre-releases.
+                    </div>
+                </div>
+                <div style="min-width: 170px;">
+                    <MudSelect T="string"
+                               Value="@UpdateService.CurrentChannel"
+                               ValueChanged="OnChannelChangedAsync"
+                               Dense="true"
+                               Margin="Margin.Dense"
+                               Variant="Variant.Outlined">
+                        <MudSelectItem Value="@("Stable")">Stable (main)</MudSelectItem>
+                        <MudSelectItem Value="@("Development")">Development (dev)</MudSelectItem>
+                    </MudSelect>
+                </div>
+            </MudPaper>
+
             <!-- Ko-fi Support Banner -->
             <MudPaper Class="pa-3 d-flex align-center justify-space-between" Style="background: rgba(255, 94, 91, 0.08); border: 1px solid rgba(255, 94, 91, 0.3); border-radius: 6px;">
                 <div class="d-flex align-center gap-3">
@@ -137,6 +158,12 @@
 
     private void OpenKofi() {
         BrowserService.OpenUrl("https://ko-fi.com/zombiehaus");
+    }
+
+    private async Task OnChannelChangedAsync(string newChannel) {
+        await UpdateService.SetUpdateChannelAsync(newChannel);
+        Snackbar.Add($"Switched to {newChannel} update channel", Severity.Info);
+        await CheckForUpdatesAsync();
     }
 
     private void Close() {

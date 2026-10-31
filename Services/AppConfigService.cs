@@ -160,6 +160,11 @@ public class AppConfigService : IAppConfigService {
         await SaveConfigAsync();
     }
 
+    public async Task SetUpdateChannelAsync(string channel) {
+        _config.UpdateChannel = string.IsNullOrWhiteSpace(channel) ? "Stable" : channel;
+        await SaveConfigAsync();
+    }
+
     public async Task SetAutoDeployToMappingsFolderAsync(bool enable) {
         _config.AutoDeployToMappingsFolder = enable;
         await SaveConfigAsync();
