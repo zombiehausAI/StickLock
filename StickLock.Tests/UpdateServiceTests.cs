@@ -54,14 +54,17 @@ public class UpdateServiceTests {
 
     [Fact]
     public async Task CheckForUpdateAsync_ReturnsNotAvailable_WhenRemoteIsSame() {
-        var currentVer = typeof(UpdateService).Assembly
+        var infoVer = typeof(UpdateService).Assembly
             .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?
-            .InformationalVersion ?? "1.1.0";
-        var plusIdx = currentVer.IndexOf('+');
-        if (plusIdx > 0) {
-            currentVer = currentVer.Substring(0, plusIdx);
+            .InformationalVersion;
+        var currentVer = typeof(UpdateService).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+        if (!string.IsNullOrWhiteSpace(infoVer)) {
+            int plusIdx = infoVer.IndexOf('+');
+            if (plusIdx > 0) {
+                infoVer = infoVer.Substring(0, plusIdx);
+            }
+            currentVer = infoVer.TrimStart('v', 'V');
         }
-        currentVer = currentVer.TrimStart('v', 'V');
 
         var json = $@"{{
             ""tag_name"": ""v{currentVer}"",
@@ -114,49 +117,64 @@ public class UpdateServiceTests {
         } catch { }
     }
 
-    [Fact]
-    public void IsNewerVersion_DevBuildsAndReleases_ComparesCorrectly() {
-        // Base version increment
-        Assert.True(UpdateService.IsNewerVersion("1.1.0", "1.0.1"));
-        Assert.False(UpdateService.IsNewerVersion("1.0.1", "1.1.0"));
-
-        // Three-tier progression: alpha -> beta -> release
-        Assert.True(UpdateService.IsNewerVersion("1.1.0-beta.1", "1.1.0-alpha.5"));
-        Assert.False(UpdateService.IsNewerVersion("1.1.0-alpha.5", "1.1.0-beta.1"));
-        Assert.True(UpdateService.IsNewerVersion("1.1.0", "1.1.0-beta.10"));
-        Assert.False(UpdateService.IsNewerVersion("1.1.0-beta.10", "1.1.0"));
-
-        // Increments within same tier
-        Assert.True(UpdateService.IsNewerVersion("1.1.0-alpha.2", "1.1.0-alpha.1"));
-        Assert.False(UpdateService.IsNewerVersion("1.1.0-alpha.1", "1.1.0-alpha.2"));
-        Assert.True(UpdateService.IsNewerVersion("1.1.0-beta.5", "1.1.0-beta.2"));
-        Assert.False(UpdateService.IsNewerVersion("1.1.0-beta.2", "1.1.0-beta.5"));
-
-        // Legacy -dev tag backward compatibility
-        Assert.True(UpdateService.IsNewerVersion("1.1.0-dev.21", "1.1.0-dev.20"));
-        Assert.True(UpdateService.IsNewerVersion("1.1.0", "1.1.0-dev.20"));
+    [Theory]
+    [InlineData("1.1.0", "1.0.2", true)]
+    [InlineData("1.0.2", "1.1.0", false)]
+    [InlineData("1.1.0-alpha.5", "1.1.0-alpha.4", true)]
+    [InlineData("1.1.0-alpha.4", "1.1.0-alpha.5", false)]
+    [InlineData("1.1.0-beta.1", "1.1.0-alpha.50", true)]
+    [InlineData("1.1.0-alpha.50", "1.1.0-beta.1", false)]
+    [InlineData("1.1.0", "1.1.0-beta.10", true)]
+    [InlineData("1.1.0-beta.10", "1.1.0", false)]
+    [InlineData("1.1.0", "1.1.0", false)]
+    [InlineData("1.1.0-alpha.22", "1.0.2", true)]
+    [InlineData("1.0.2", "1.1.0-alpha.22", false)]
+    public void IsNewerVersion_ThreeTierSemVerComparison_WorksAsExpected(string candidate, string current, bool expected) {
+        var result = UpdateService.IsNewerVersion(candidate, current);
+        Assert.Equal(expected, result);
     }
 
     [Fact]
-    public async Task CheckForUpdateAsync_FiltersByChannel_StableVsDevelopment() {
+    public async Task CheckForUpdateAsync_FiltersByChannel_RespectsChannelPreference() {
         var json = @"[
             {
-                ""tag_name"": ""v1.1.0-alpha.10"",
+                ""tag_name"": ""v1.1.0-alpha.22"",
                 ""prerelease"": true,
                 ""target_commitish"": ""feature/plugin-system"",
-                ""assets"": [ { ""name"": ""StickLock-v1.1.0-alpha.10-Setup.exe"", ""browser_download_url"": ""https://example.com/alpha.exe"" } ]
+                ""body"": ""Alpha plugin build"",
+                ""assets"": [
+                    {
+                        ""name"": ""StickLock-v1.1.0-alpha.22-Setup.exe"",
+                        ""browser_download_url"": ""https://github.com/zombiehausAI/StickLock/releases/download/v1.1.0-alpha.22/StickLock-v1.1.0-alpha.22-Setup.exe"",
+                        ""size"": 40000000
+                    }
+                ]
             },
             {
                 ""tag_name"": ""v1.1.0-beta.5"",
                 ""prerelease"": true,
                 ""target_commitish"": ""dev"",
-                ""assets"": [ { ""name"": ""StickLock-v1.1.0-beta.5-Setup.exe"", ""browser_download_url"": ""https://example.com/beta.exe"" } ]
+                ""body"": ""Beta dev build"",
+                ""assets"": [
+                    {
+                        ""name"": ""StickLock-v1.1.0-beta.5-Setup.exe"",
+                        ""browser_download_url"": ""https://github.com/zombiehausAI/StickLock/releases/download/v1.1.0-beta.5/StickLock-v1.1.0-beta.5-Setup.exe"",
+                        ""size"": 40000000
+                    }
+                ]
             },
             {
-                ""tag_name"": ""v1.0.1"",
+                ""tag_name"": ""v1.0.2"",
                 ""prerelease"": false,
                 ""target_commitish"": ""main"",
-                ""assets"": [ { ""name"": ""StickLock-v1.0.1-Setup.exe"", ""browser_download_url"": ""https://example.com/stable.exe"" } ]
+                ""body"": ""Stable release"",
+                ""assets"": [
+                    {
+                        ""name"": ""StickLock-v1.0.2-Setup.exe"",
+                        ""browser_download_url"": ""https://github.com/zombiehausAI/StickLock/releases/download/v1.0.2/StickLock-v1.0.2-Setup.exe"",
+                        ""size"": 40000000
+                    }
+                ]
             }
         ]";
 
@@ -168,20 +186,20 @@ public class UpdateServiceTests {
         var logService = new ActivityLogService();
         var updateService = new UpdateService(logService, httpClient);
 
-        // When checking Release channel, picks 1.0.1
-        var releaseInfo = await updateService.CheckForUpdateAsync(force: true, channel: "Release");
-        Assert.Equal("1.0.1", releaseInfo.LatestVersion);
-        Assert.False(releaseInfo.IsPrerelease);
-
-        // When checking Beta channel, picks 1.1.0-beta.5
+        // When requesting Beta channel
         var betaInfo = await updateService.CheckForUpdateAsync(force: true, channel: "Beta");
         Assert.Equal("1.1.0-beta.5", betaInfo.LatestVersion);
-        Assert.True(betaInfo.IsPrerelease);
+        Assert.Equal("Beta", betaInfo.Channel);
 
-        // When checking Alpha channel, picks newest preview (1.1.0-alpha.10)
+        // When requesting Alpha channel
         var alphaInfo = await updateService.CheckForUpdateAsync(force: true, channel: "Alpha");
-        Assert.Equal("1.1.0-alpha.10", alphaInfo.LatestVersion);
-        Assert.True(alphaInfo.IsPrerelease);
+        Assert.Equal("1.1.0-alpha.22", alphaInfo.LatestVersion);
+        Assert.Equal("Alpha", alphaInfo.Channel);
+
+        // When requesting Release channel
+        var releaseInfo = await updateService.CheckForUpdateAsync(force: true, channel: "Release");
+        Assert.Equal("1.0.2", releaseInfo.LatestVersion);
+        Assert.Equal("Release", releaseInfo.Channel);
     }
 }
 

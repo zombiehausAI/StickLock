@@ -22,6 +22,6 @@ public class AppConfig {
     public FlightAxisMode FlightAxisMode { get; set; } = FlightAxisMode.SpaceSim;
     public bool AutoEnsureFlightAxes { get; set; } = true;
     public int MaxBackupsToKeep { get; set; } = 10;
-    public string UpdateChannel { get; set; } = "Stable";
+    public string UpdateChannel { get; set; } = "Release";
 }
 

@@ -44,6 +44,8 @@ jobs:
           --runtime win-x64
           --self-contained true
           -p:GitBranch=main
+          -p:Version=${{ steps.version.outputs.version }}
+          -p:InformationalVersion=${{ steps.version.outputs.version }}
           -o artifacts/staging/StickLock
 
       - name: Install Inno Setup

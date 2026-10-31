@@ -49,7 +49,7 @@ public class UpdateService : IUpdateService {
     }
 
     public async Task SetUpdateChannelAsync(string channel) {
-        var normalized = string.IsNullOrWhiteSpace(channel) ? "Stable" : channel.Trim();
+        var normalized = string.IsNullOrWhiteSpace(channel) ? "Release" : channel.Trim();
         if (_configService != null) {
             await _configService.SetUpdateChannelAsync(normalized);
         }
@@ -108,8 +108,9 @@ public class UpdateService : IUpdateService {
                 }
 
                 var isPrerelease = release.TryGetProperty("prerelease", out var preProp) && preProp.GetBoolean();
-                var targetBranch = release.TryGetProperty("target_commitish", out var branchProp) ? branchProp.GetString() : "";
+                var targetBranch = release.TryGetProperty("target_commitish", out var branchProp) ? branchProp.GetString() ?? "" : "";
                 var tagName = release.TryGetProperty("tag_name", out var tagProp) ? tagProp.GetString() ?? "" : "";
+                var relName = release.TryGetProperty("name", out var rNameProp) ? rNameProp.GetString() ?? "" : "";
 
                 if (string.Equals(activeChannel, "Release", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(activeChannel, "Stable", StringComparison.OrdinalIgnoreCase)) {

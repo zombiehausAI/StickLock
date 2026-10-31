@@ -161,7 +161,7 @@ public class AppConfigService : IAppConfigService {
     }
 
     public async Task SetUpdateChannelAsync(string channel) {
-        _config.UpdateChannel = string.IsNullOrWhiteSpace(channel) ? "Stable" : channel;
+        _config.UpdateChannel = string.IsNullOrWhiteSpace(channel) ? "Release" : channel;
         await SaveConfigAsync();
     }
 
