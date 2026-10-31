@@ -56,15 +56,16 @@
                         Switch between official stable releases and development / preview pre-releases.
                     </div>
                 </div>
-                <div style="min-width: 170px;">
+                <div style="min-width: 220px;">
                     <MudSelect T="string"
                                Value="@UpdateService.CurrentChannel"
                                ValueChanged="OnChannelChangedAsync"
                                Dense="true"
                                Margin="Margin.Dense"
                                Variant="Variant.Outlined">
-                        <MudSelectItem Value="@("Stable")">Stable (main)</MudSelectItem>
-                        <MudSelectItem Value="@("Development")">Development (dev)</MudSelectItem>
+                        <MudSelectItem Value="@("Release")">Release (Stable - main)</MudSelectItem>
+                        <MudSelectItem Value="@("Beta")">Beta (Development - dev)</MudSelectItem>
+                        <MudSelectItem Value="@("Alpha")">Alpha (Feature Previews)</MudSelectItem>
                     </MudSelect>
                 </div>
             </MudPaper>

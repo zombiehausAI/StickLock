@@ -91,7 +91,8 @@ if (-not $appVersion) {
                     $appVersion = "$($vJson.major).$($vJson.minor).$($vJson.patch)"
                 } else {
                     $devNum = if ($null -ne $vJson.devBuild) { $vJson.devBuild } else { 0 }
-                    $appVersion = "$($vJson.major).$($vJson.minor).$($vJson.patch)-dev.$devNum"
+                    $tier = if ($branch -eq "dev") { "beta" } else { "alpha" }
+                    $appVersion = "$($vJson.major).$($vJson.minor).$($vJson.patch)-$tier.$devNum"
                 }
             } elseif ($vJson.version) {
                 $appVersion = $vJson.version

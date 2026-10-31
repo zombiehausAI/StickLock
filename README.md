@@ -108,16 +108,29 @@ StickLock includes an automated pipeline script modelled after modern release or
 .\Build-And-Package.ps1 -SkipTests
 ```
 
-### Branching & CI/CD Pipeline
+### Branching & Release Pipeline (Alpha -> Beta -> Release)
 
-- **Branching Structure**:
-  - `dev`: Active development branch. Every commit on `dev` or `feature/*` automatically increments the build number (`devBuild` in `version.json`, producing versions like `1.0.0-dev.6`).
-  - `feature/*`: Dedicated feature branches for large architectural changes (such as `feature/plugin-system`).
-  - `main`: Production release branch. Releases produce clean semantic versions (e.g. `1.0.0`).
+StickLock follows a strict three-tier progression model:
+
+```
+[ feature/* ] ────────► [ dev ] ────────► [ main ]
+   (Alpha)                (Beta)             (Release)
+v1.1.0-alpha.X         v1.1.0-beta.X          v1.1.0
+```
+
+- **Feature Branches (`feature/*` - Alpha)**:
+  - Cutting-edge, work-in-progress implementations (e.g. `feature/plugin-system`).
+  - Compiled and published automatically as **Alpha** pre-releases (e.g. `1.1.0-alpha.21`).
+- **Development Branch (`dev` - Beta)**:
+  - Consolidated and validated feature sets undergoing end-to-end integration testing.
+  - Compiled and published automatically as **Beta** pre-releases (e.g. `1.1.0-beta.1`).
+- **Main Branch (`main` - Release)**:
+  - Production-ready, fully validated software.
+  - Automatically tagged and published as official stable releases (e.g. `1.1.0`).
 - **Auto-Increment Hook**: Managed via `.githooks/pre-commit` and `scripts/increment-dev-version.ps1` (`git config core.hooksPath .githooks`).
 - **GitHub Actions CI/CD**:
-  - `.github/workflows/release.yml`: Triggers on pushes to `main`, running automated tests, publishing self-contained `win-x64` binaries, compiling the Inno Setup installer (`StickLock-v<version>-Setup.exe`), and creating official GitHub Releases.
-  - `.github/workflows/dev-build.yml`: Triggers automatically on pushes to `dev` and all `feature/**` branches, executing full unit test suites, publishing binaries, and packaging installer artifacts.
+  - `.github/workflows/release.yml`: Triggers on pushes to `main`, running automated tests, publishing self-contained `win-x64` binaries, compiling the Inno Setup installer (`StickLock-v<version>-Setup.exe`), and creating official stable GitHub Releases.
+  - `.github/workflows/dev-build.yml`: Triggers on `feature/*` and `dev`, building Alpha and Beta pre-releases and attaching installers for immediate testing.
 
 ### Build Artifacts Output
 Artifacts are generated in the `artifacts/` folder:

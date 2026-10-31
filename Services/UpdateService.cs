@@ -21,10 +21,14 @@ public class UpdateService : IUpdateService {
             if (_configService != null && !string.IsNullOrWhiteSpace(_configService.Config.UpdateChannel)) {
                 return _configService.Config.UpdateChannel;
             }
-            // Auto-detect: if running dev build, default to Development channel
-            return GetCurrentAppVersion().Contains("-dev", StringComparison.OrdinalIgnoreCase)
-                ? "Development"
-                : "Stable";
+            var ver = GetCurrentAppVersion();
+            if (ver.Contains("-alpha", StringComparison.OrdinalIgnoreCase)) {
+                return "Alpha";
+            }
+            if (ver.Contains("-beta", StringComparison.OrdinalIgnoreCase) || ver.Contains("-dev", StringComparison.OrdinalIgnoreCase)) {
+                return "Beta";
+            }
+            return "Release";
         }
     }
 
@@ -107,20 +111,32 @@ public class UpdateService : IUpdateService {
                 var targetBranch = release.TryGetProperty("target_commitish", out var branchProp) ? branchProp.GetString() : "";
                 var tagName = release.TryGetProperty("tag_name", out var tagProp) ? tagProp.GetString() ?? "" : "";
 
-                if (string.Equals(activeChannel, "Stable", StringComparison.OrdinalIgnoreCase)) {
-                    // Stable channel: only official non-prereleases
+                if (string.Equals(activeChannel, "Release", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(activeChannel, "Stable", StringComparison.OrdinalIgnoreCase)) {
+                    // Stable / Release channel: only official non-prereleases
                     if (!isPrerelease) {
                         matchedRelease = release;
                         break;
                     }
-                } else if (string.Equals(activeChannel, "Development", StringComparison.OrdinalIgnoreCase)) {
-                    // Development channel: prefer prereleases or latest release
-                    if (isPrerelease || matchedRelease == null) {
+                } else if (string.Equals(activeChannel, "Beta", StringComparison.OrdinalIgnoreCase)) {
+                    // Beta channel: dev branch builds (-beta or -dev) or official release
+                    var isBetaOrDev = tagName.Contains("-beta", StringComparison.OrdinalIgnoreCase)
+                        || tagName.Contains("-dev", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(targetBranch, "dev", StringComparison.OrdinalIgnoreCase);
+
+                    if (isPrerelease && isBetaOrDev) {
+                        matchedRelease = release;
+                        break;
+                    }
+                } else if (string.Equals(activeChannel, "Alpha", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(activeChannel, "Development", StringComparison.OrdinalIgnoreCase)) {
+                    // Alpha channel: any feature preview or dev build (prerelease)
+                    if (isPrerelease) {
                         matchedRelease = release;
                         break;
                     }
                 } else {
-                    // Specific branch channel (e.g. "feature/plugin-system" or "dev")
+                    // Specific branch channel (e.g. "feature/plugin-system")
                     var matchesBranch = string.Equals(targetBranch, activeChannel, StringComparison.OrdinalIgnoreCase)
                         || tagName.Contains(activeChannel, StringComparison.OrdinalIgnoreCase);
 
@@ -131,9 +147,9 @@ public class UpdateService : IUpdateService {
                 }
             }
 
-            // Fallback: if no specific match found and user wanted dev, take newest release
-            if (matchedRelease == null && root.GetArrayLength() > 0) {
-                matchedRelease = root[0];
+            // Fallback: if no specific match found, take the newest release available
+            if (matchedRelease == null && releasesList.Count > 0) {
+                matchedRelease = releasesList[0];
             }
 
             if (matchedRelease == null) {
@@ -271,21 +287,20 @@ public class UpdateService : IUpdateService {
             }
 
             // Both base versions are equal (e.g. 1.1.0 vs 1.1.0)
-            bool candidateIsDev = candidateVerStr.Contains("-dev", StringComparison.OrdinalIgnoreCase);
-            bool currentIsDev = currentVerStr.Contains("-dev", StringComparison.OrdinalIgnoreCase);
+            int candidateRank = GetTierRank(candidateVerStr);
+            int currentRank = GetTierRank(currentVerStr);
 
-            // Official release beats dev build with same base version (1.1.0 > 1.1.0-dev.20)
-            if (!candidateIsDev && currentIsDev) {
+            if (candidateRank > currentRank) {
                 return true;
             }
-            if (candidateIsDev && !currentIsDev) {
+            if (candidateRank < currentRank) {
                 return false;
             }
 
-            // Both are dev builds: compare dev build numbers
-            if (candidateIsDev && currentIsDev) {
-                int candidateBuild = ExtractDevBuildNumber(candidateVerStr);
-                int currentBuild = ExtractDevBuildNumber(currentVerStr);
+            // Both have identical tier rank (e.g. both alpha or both beta)
+            if (candidateRank < 3) {
+                int candidateBuild = ExtractBuildNumber(candidateVerStr);
+                int currentBuild = ExtractBuildNumber(currentVerStr);
                 return candidateBuild > currentBuild;
             }
         }
@@ -293,9 +308,19 @@ public class UpdateService : IUpdateService {
         return false;
     }
 
-    private static int ExtractDevBuildNumber(string verStr) {
-        var match = Regex.Match(verStr, @"-dev\.?(\d+)");
-        if (match.Success && int.TryParse(match.Groups[1].Value, out var num)) {
+    private static int GetTierRank(string verStr) {
+        if (verStr.Contains("-alpha", StringComparison.OrdinalIgnoreCase)) {
+            return 1;
+        }
+        if (verStr.Contains("-beta", StringComparison.OrdinalIgnoreCase) || verStr.Contains("-dev", StringComparison.OrdinalIgnoreCase)) {
+            return 2;
+        }
+        return 3; // Official release
+    }
+
+    private static int ExtractBuildNumber(string verStr) {
+        var match = Regex.Match(verStr, @"-(alpha|beta|dev)\.?(\d+)");
+        if (match.Success && int.TryParse(match.Groups[2].Value, out var num)) {
             return num;
         }
         return 0;

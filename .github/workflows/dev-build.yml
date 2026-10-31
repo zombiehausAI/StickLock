@@ -34,9 +34,12 @@ jobs:
         shell: pwsh
         run: |
           $json = Get-Content version.json -Raw | ConvertFrom-Json
-          $ver = "$($json.major).$($json.minor).$($json.patch)-dev.$($json.devBuild)"
-          Write-Host "Building Version: $ver"
+          $branch = $env:GITHUB_REF_NAME
+          $tier = if ($branch -eq 'dev') { 'beta' } else { 'alpha' }
+          $ver = "$($json.major).$($json.minor).$($json.patch)-$tier.$($json.devBuild)"
+          Write-Host "Building Version: $ver (Tier: $tier, Branch: $branch)"
           "version=$ver" >> $env:GITHUB_OUTPUT
+          "tier=$tier" >> $env:GITHUB_OUTPUT
 
       - name: Publish Self-Contained App
         shell: pwsh
@@ -105,7 +108,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: StickLock v${{ steps.version.outputs.version }}
+          name: StickLock v${{ steps.version.outputs.version }} (${{ steps.version.outputs.tier }})
           draft: false
           prerelease: true
           generate_release_notes: true

@@ -19,7 +19,8 @@ if ($branch -eq "dev" -or $branch.StartsWith("feature/")) {
     $jsonStr = $content | ConvertTo-Json -Depth 4
     [System.IO.File]::WriteAllText($versionFile, $jsonStr + [System.Environment]::NewLine, [System.Text.Encoding]::UTF8)
 
-    Write-Host "Incremented devBuild from $oldBuild to $newBuild on branch '$branch'."
+    $tier = if ($branch -eq "dev") { "beta" } else { "alpha" }
+    Write-Host "Incremented build from $oldBuild to $newBuild ($($content.major).$($content.minor).$($content.patch)-$tier.$newBuild) on branch '$branch'."
     git -C $repoRoot add "$versionFile"
 } else {
     Write-Host "Branch is '$branch' (not dev/feature). Skipping version auto-increment."
