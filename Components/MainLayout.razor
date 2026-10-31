@@ -19,7 +19,7 @@
         <img src="icon.png" alt="StickLock" style="width: 38px; height: 38px; border-radius: 8px; filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.35));" class="mr-3" />
         <div>
             <MudText Typo="Typo.h6" Class="mfd-title glow-cyan" Style="color: #00E5FF; line-height: 1.1;">STICKLOCK</MudText>
-            <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8; letter-spacing: 1px;">@(PluginManager.ActivePlugin.Name.ToUpperInvariant()) CONTROLLER SYNC</MudText>
+            <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8; letter-spacing: 1px;">UNIVERSAL FLIGHT CONTROLLER SYNC</MudText>
         </div>
 
         <!-- Game Profile Switcher -->
@@ -55,6 +55,55 @@
         </MudMenu>
 
         <MudSpacer />
+
+        <!-- Update Track Switcher -->
+        <MudMenu Dense="true" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="mr-3">
+            <ActivatorContent>
+                <MudButton Variant="Variant.Outlined"
+                           Size="Size.Small"
+                           EndIcon="@Icons.Material.Filled.ArrowDropDown"
+                           Class="mfd-title"
+                           Style="@GetChannelButtonStyle()">
+                    <MudIcon Icon="@Icons.Material.Filled.AltRoute" Size="Size.Small" Class="mr-1" />
+                    TRACK: @(UpdateService.CurrentChannel.ToUpperInvariant())
+                </MudButton>
+            </ActivatorContent>
+            <ChildContent>
+                <MudMenuItem OnClick="@(() => OnChannelSelectedAsync("Release"))">
+                    <div class="d-flex align-center justify-space-between" style="min-width: 200px;">
+                        <div>
+                            <div class="font-weight-bold" style="color: #10B981;">Release (Stable)</div>
+                            <div style="font-size: 0.75rem; color: #94A3B8;">Production releases (main)</div>
+                        </div>
+                        @if (UpdateService.CurrentChannel.Equals("Release", StringComparison.OrdinalIgnoreCase)) {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                        }
+                    </div>
+                </MudMenuItem>
+                <MudMenuItem OnClick="@(() => OnChannelSelectedAsync("Beta"))">
+                    <div class="d-flex align-center justify-space-between" style="min-width: 200px;">
+                        <div>
+                            <div class="font-weight-bold" style="color: #F59E0B;">Beta (Development)</div>
+                            <div style="font-size: 0.75rem; color: #94A3B8;">Integration builds (dev)</div>
+                        </div>
+                        @if (UpdateService.CurrentChannel.Equals("Beta", StringComparison.OrdinalIgnoreCase)) {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Warning" Size="Size.Small" />
+                        }
+                    </div>
+                </MudMenuItem>
+                <MudMenuItem OnClick="@(() => OnChannelSelectedAsync("Alpha"))">
+                    <div class="d-flex align-center justify-space-between" style="min-width: 200px;">
+                        <div>
+                            <div class="font-weight-bold" style="color: #EC4899;">Alpha (Previews)</div>
+                            <div style="font-size: 0.75rem; color: #94A3B8;">Feature preview builds</div>
+                        </div>
+                        @if (UpdateService.CurrentChannel.Equals("Alpha", StringComparison.OrdinalIgnoreCase)) {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Secondary" Size="Size.Small" />
+                        }
+                    </div>
+                </MudMenuItem>
+            </ChildContent>
+        </MudMenu>
 
         <!-- Update Available Banner Button -->
         @if (_updateInfo?.IsUpdateAvailable == true) {
@@ -216,10 +265,32 @@
         SyncStatus.Aligned => "ALIGNED",
         SyncStatus.NeedsSync => "ORDER FLIPPED - NEEDS SYNC",
         SyncStatus.SticksDisconnected => "STICKS DISCONNECTED",
-        SyncStatus.StarCitizenActive => "STAR CITIZEN ACTIVE",
-        SyncStatus.FileNotFound => "XML NOT FOUND",
+        SyncStatus.StarCitizenActive => $"{PluginManager.ActivePlugin.Name.ToUpperInvariant()} ACTIVE",
+        SyncStatus.FileNotFound => "BINDINGS NOT FOUND",
         _ => "SETUP REQUIRED"
     };
+
+    private async Task OnChannelSelectedAsync(string channel) {
+        await UpdateService.SetUpdateChannelAsync(channel);
+        Snackbar.Add($"Switched update track to {channel}.", Severity.Info);
+        _updateInfo = await UpdateService.CheckForUpdateAsync(force: true);
+        StateHasChanged();
+        if (_updateInfo?.IsUpdateAvailable == true) {
+            await OpenUpdateDialogAsync();
+        } else {
+            Snackbar.Add($"You are on the latest {channel} build.", Severity.Success);
+        }
+    }
+
+    private string GetChannelButtonStyle() {
+        if (UpdateService.CurrentChannel.Equals("Alpha", StringComparison.OrdinalIgnoreCase)) {
+            return "color: #EC4899; border-color: rgba(236, 72, 153, 0.5); background: rgba(236, 72, 153, 0.08); font-weight: 700;";
+        }
+        if (UpdateService.CurrentChannel.Equals("Beta", StringComparison.OrdinalIgnoreCase)) {
+            return "color: #F59E0B; border-color: rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.08); font-weight: 700;";
+        }
+        return "color: #10B981; border-color: rgba(16, 185, 129, 0.5); background: rgba(16, 185, 129, 0.08); font-weight: 700;";
+    }
 
     private void OpenKofi() {
         BrowserService.OpenUrl("https://ko-fi.com/zombiehaus");

@@ -37,7 +37,17 @@ public class MainForm : Form {
         _startMinimized = launchMinimized || _configService.Config.StartMinimizedToTray;
         _hasShownTrayTip = _configService.Config.HasShownTrayMinimizeTip;
 
-        Text = "StickLock - Star Citizen Flight Controller Sync";
+        var pluginManager = _serviceProvider.GetService(typeof(StickLock.Plugins.IGamePluginManager)) as StickLock.Plugins.IGamePluginManager;
+        UpdateWindowTitle(pluginManager);
+        if (pluginManager != null) {
+            pluginManager.ActivePluginChanged += _ => {
+                if (InvokeRequired) {
+                    Invoke(() => UpdateWindowTitle(pluginManager));
+                } else {
+                    UpdateWindowTitle(pluginManager);
+                }
+            };
+        }
         Size = new Size(1100, 780);
         MinimumSize = new Size(880, 600);
         StartPosition = FormStartPosition.CenterScreen;
@@ -270,5 +280,12 @@ public class MainForm : Form {
             _blazorWebView.Dispose();
         }
         base.Dispose(disposing);
+    }
+
+    private void UpdateWindowTitle(StickLock.Plugins.IGamePluginManager? pluginManager) {
+        var gameName = pluginManager?.ActivePlugin?.Name;
+        Text = string.IsNullOrWhiteSpace(gameName)
+            ? "StickLock - Universal Flight Controller Sync"
+            : $"StickLock - Universal Flight Controller Sync ({gameName})";
     }
 }

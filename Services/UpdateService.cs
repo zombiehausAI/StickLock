@@ -100,6 +100,7 @@ public class UpdateService : IUpdateService {
             }
 
             JsonElement? matchedRelease = null;
+            string matchedVersion = "";
 
             foreach (var release in releasesList) {
                 var isDraft = release.TryGetProperty("draft", out var draftProp) && draftProp.GetBoolean();
@@ -110,40 +111,36 @@ public class UpdateService : IUpdateService {
                 var isPrerelease = release.TryGetProperty("prerelease", out var preProp) && preProp.GetBoolean();
                 var targetBranch = release.TryGetProperty("target_commitish", out var branchProp) ? branchProp.GetString() ?? "" : "";
                 var tagName = release.TryGetProperty("tag_name", out var tagProp) ? tagProp.GetString() ?? "" : "";
-                var relName = release.TryGetProperty("name", out var rNameProp) ? rNameProp.GetString() ?? "" : "";
+                var cleanCandidate = tagName.TrimStart('v', 'V');
+
+                bool isCandidate = false;
 
                 if (string.Equals(activeChannel, "Release", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(activeChannel, "Stable", StringComparison.OrdinalIgnoreCase)) {
                     // Stable / Release channel: only official non-prereleases
-                    if (!isPrerelease) {
-                        matchedRelease = release;
-                        break;
-                    }
+                    isCandidate = !isPrerelease;
                 } else if (string.Equals(activeChannel, "Beta", StringComparison.OrdinalIgnoreCase)) {
-                    // Beta channel: dev branch builds (-beta or -dev) or official release
-                    var isBetaOrDev = tagName.Contains("-beta", StringComparison.OrdinalIgnoreCase)
+                    // Beta channel: dev branch builds (-beta or -dev)
+                    var isBeta = (tagName.Contains("-beta", StringComparison.OrdinalIgnoreCase)
                         || tagName.Contains("-dev", StringComparison.OrdinalIgnoreCase)
-                        || string.Equals(targetBranch, "dev", StringComparison.OrdinalIgnoreCase);
+                        || string.Equals(targetBranch, "dev", StringComparison.OrdinalIgnoreCase))
+                        && !tagName.Contains("-alpha", StringComparison.OrdinalIgnoreCase);
 
-                    if (isPrerelease && isBetaOrDev) {
-                        matchedRelease = release;
-                        break;
-                    }
+                    isCandidate = isPrerelease && isBeta;
                 } else if (string.Equals(activeChannel, "Alpha", StringComparison.OrdinalIgnoreCase) ||
                            string.Equals(activeChannel, "Development", StringComparison.OrdinalIgnoreCase)) {
-                    // Alpha channel: any feature preview or dev build (prerelease)
-                    if (isPrerelease) {
-                        matchedRelease = release;
-                        break;
-                    }
+                    // Alpha channel: preview builds (-alpha)
+                    isCandidate = isPrerelease && tagName.Contains("-alpha", StringComparison.OrdinalIgnoreCase);
                 } else {
                     // Specific branch channel (e.g. "feature/plugin-system")
-                    var matchesBranch = string.Equals(targetBranch, activeChannel, StringComparison.OrdinalIgnoreCase)
+                    isCandidate = string.Equals(targetBranch, activeChannel, StringComparison.OrdinalIgnoreCase)
                         || tagName.Contains(activeChannel, StringComparison.OrdinalIgnoreCase);
+                }
 
-                    if (matchesBranch) {
+                if (isCandidate) {
+                    if (matchedRelease == null || IsNewerVersion(cleanCandidate, matchedVersion)) {
                         matchedRelease = release;
-                        break;
+                        matchedVersion = cleanCandidate;
                     }
                 }
             }
@@ -247,6 +244,7 @@ public class UpdateService : IUpdateService {
         _logService.LogInfo("Launching update installer and terminating active StickLock instance...");
         var psi = new ProcessStartInfo {
             FileName = installerPath,
+            Arguments = "/CLOSEAPPLICATIONS /RESTARTAPPLICATIONS",
             UseShellExecute = true
         };
 

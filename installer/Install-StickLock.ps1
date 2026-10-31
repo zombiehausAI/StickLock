@@ -332,7 +332,7 @@ if ($CreateDesktopShortcut) {
         $sc.TargetPath = $targetExe
         $sc.WorkingDirectory = $InstallPath
         $sc.IconLocation = "$targetExe,0"
-        $sc.Description = "StickLock - Star Citizen Flight Controller Sync"
+        $sc.Description = "StickLock - Universal Flight Controller Sync"
         $sc.Save()
         Write-Host "  > Desktop shortcut created: $shortcutPath" -ForegroundColor Green
     } catch {
@@ -353,7 +353,7 @@ if ($CreateStartMenuShortcut) {
         $sc.TargetPath = $targetExe
         $sc.WorkingDirectory = $InstallPath
         $sc.IconLocation = "$targetExe,0"
-        $sc.Description = "StickLock - Star Citizen Flight Controller Sync"
+        $sc.Description = "StickLock - Universal Flight Controller Sync"
         $sc.Save()
         Write-Host "  > Start Menu shortcut created: $menuShortcutPath" -ForegroundColor Green
     } catch {

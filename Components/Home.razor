@@ -1,4 +1,5 @@
 @page "/"
+@implements IDisposable
 @inject IAppConfigService ConfigService
 @inject IDirectInputService DirectInputService
 @inject IActionMapsXmlService XmlService
@@ -9,6 +10,8 @@
 @inject IDialogService DialogService
 @inject IJSRuntime JSRuntime
 @inject IBrowserService BrowserService
+@inject StickLock.Plugins.IGamePluginManager PluginManager
+@inject IUpdateService UpdateService
 
 <div class="d-flex flex-column gap-3">
     <!-- Flight Controller Alignment Alert Banner -->
@@ -27,15 +30,15 @@
                             </MudChip>
                             @if (_alignmentCheck.IsGameRunning) {
                                 <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Outlined" Class="font-weight-bold">
-                                    Star Citizen Active
+                                    @(PluginManager.ActivePlugin.Name) Active
                                 </MudChip>
                             }
                         </div>
                         <MudText Typo="Typo.body2" Class="mt-1" Style="color: #E2E8F0;">
-                            Windows DirectInput slot enumeration does not match Star Citizen's <span class="mfd-code" style="color: #00E5FF;">actionmaps.xml</span>.
+                            Windows DirectInput slot enumeration does not match @(PluginManager.ActivePlugin.Name)'s controller bindings.
                         </MudText>
                         <MudText Typo="Typo.caption" Style="color: #94A3B8; display: block; margin-top: 2px;">
-                            A connected device (such as a keyboard with virtual gamepad endpoints) or USB sleep/wake shifted your controller slot. Star Citizen reads the live Windows order at launch.
+                            A connected device (such as a keyboard with virtual gamepad endpoints) or USB sleep/wake shifted your controller slot. The game reads the live Windows order at launch.
                         </MudText>
 
                         @if (_alignmentCheck.Mismatches.Any(m => m.IsFlipped)) {
@@ -43,7 +46,7 @@
                                 @foreach (var m in _alignmentCheck.Mismatches.Where(m => m.IsFlipped)) {
                                     <div class="pa-1 px-2 rounded d-flex align-center gap-2" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(239, 68, 68, 0.45); font-size: 0.8rem;">
                                         <span style="color: #F1F5F9; font-weight: 600;">@m.DeviceName:</span>
-                                        <span class="mfd-code" style="color: #94A3B8;">XML:</span>
+                                        <span class="mfd-code" style="color: #94A3B8;">Config:</span>
                                         <span class="mfd-code font-weight-bold" style="color: #FFAB00;">js@(m.XmlInstance)</span>
                                         <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" Style="color: #EF4444;" />
                                         <span class="mfd-code" style="color: #94A3B8;">Windows:</span>
@@ -91,14 +94,16 @@
                                    Style="font-weight: 800; color: #0B0F19; width: 100%;">
                             FORCE SYNC &amp; DEPLOY
                         </MudButton>
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Secondary"
-                                   Size="Size.Small"
-                                   StartIcon="@Icons.Material.Filled.ContentCopy"
-                                   OnClick="CopyConsoleCommandAsync"
-                                   Style="width: 100%;">
-                            Copy In-Game Cmd
-                        </MudButton>
+                        @if (PluginManager.ActivePlugin.Id == "starcitizen") {
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Secondary"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.ContentCopy"
+                                       OnClick="CopyConsoleCommandAsync"
+                                       Style="width: 100%;">
+                                Copy In-Game Cmd
+                            </MudButton>
+                        }
                     }
                 </div>
             </div>
@@ -118,7 +123,7 @@
         <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true" Class="mfd-card">
             <div class="d-flex flex-wrap align-center justify-space-between gap-2">
                 <div>
-                    <span class="font-weight-bold" style="color: #38BDF8;">DETECTED STAR CITIZEN JOYSTICKS: </span>
+                    <span class="font-weight-bold" style="color: #38BDF8;">DETECTED FLIGHT CONTROLLERS: </span>
                     <span class="mfd-code" style="color: #CBD5E1;">
                         @string.Join(", ", _alignmentCheck.ExistingXmlDevices.Select(d => $"js{d.Instance} ({d.ProductName})"))
                     </span>
@@ -129,105 +134,166 @@
                            StartIcon="@Icons.Material.Filled.AutoFixHigh"
                            OnClick="AutoLockFromStarCitizenXmlAsync"
                            Style="color: #0B0F19; font-weight: 700;">
-                    Auto-Lock from XML
+                    Auto-Lock from Config
                 </MudButton>
             </div>
         </MudAlert>
     }
 
-    <!-- Compact Star Citizen Root & Multi-Install Bar -->
-    <MudPaper Class="mfd-card pa-3">
-        <div class="d-flex flex-column gap-3">
-            <!-- Row 1: Star Citizen Folder Input & Browse Actions -->
-            <div class="d-flex flex-wrap align-center justify-space-between gap-2">
-                <div class="flex-grow-1" style="min-width: 300px;">
-                    <MudTextField Value="@GetDisplayedScFolder()"
-                                  ValueChanged="@((string val) => OnScRootFolderInputChangedAsync(val))"
-                                  Label="Star Citizen Installation Folder (Root containing LIVE, PTU, EPTU, TECH-PREVIEW)"
-                                  Placeholder="e.g. C:\Program Files\Roberts Space Industries\StarCitizen"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.FolderSpecial"
-                                  AdornmentColor="Color.Primary"
-                                  Class="mfd-code" />
-                </div>
+    <!-- Game Configuration Bar (Dynamic per Active Game Plugin) -->
+    @if (PluginManager.ActivePlugin.Id == "starcitizen") {
+        <!-- Star Citizen Root & Multi-Install Bar -->
+        <MudPaper Class="mfd-card pa-3">
+            <div class="d-flex flex-column gap-3">
+                <!-- Row 1: Star Citizen Folder Input & Browse Actions -->
+                <div class="d-flex flex-wrap align-center justify-space-between gap-2">
+                    <div class="flex-grow-1" style="min-width: 300px;">
+                        <MudTextField Value="@GetDisplayedScFolder()"
+                                      ValueChanged="@((string val) => OnScRootFolderInputChangedAsync(val))"
+                                      Label="Star Citizen Installation Folder (Root containing LIVE, PTU, EPTU, TECH-PREVIEW)"
+                                      Placeholder="e.g. C:\Program Files\Roberts Space Industries\StarCitizen"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.FolderSpecial"
+                                      AdornmentColor="Color.Primary"
+                                      Class="mfd-code" />
+                    </div>
 
-                <div class="d-flex align-center gap-2">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.FolderOpen"
-                               OnClick="BrowseGameFolderAsync"
-                               Class="mfd-title"
-                               Style="color: #0B0F19; font-weight: 700;">
-                        Set SC Folder
-                    </MudButton>
-                    <MudTooltip Text="Auto-detect Star Citizen installation folder across drives">
-                        <MudButton Variant="Variant.Outlined"
+                    <div class="d-flex align-center gap-2">
+                        <MudButton Variant="Variant.Filled"
                                    Color="Color.Primary"
                                    Size="Size.Small"
-                                   StartIcon="@Icons.Material.Filled.TravelExplore"
-                                   OnClick="AutoDetectScFolderAsync"
-                                   Class="mfd-title">
-                            Auto-Detect
+                                   StartIcon="@Icons.Material.Filled.FolderOpen"
+                                   OnClick="BrowseGameFolderAsync"
+                                   Class="mfd-title"
+                                   Style="color: #0B0F19; font-weight: 700;">
+                            Set SC Folder
                         </MudButton>
-                    </MudTooltip>
-                    <MudTooltip Text="Select a custom actionmaps.xml file directly">
-                        <MudIconButton Icon="@Icons.Material.Filled.InsertDriveFile"
-                                       Color="Color.Default"
-                                       Size="Size.Small"
-                                       OnClick="BrowseXmlFileAsync" />
-                    </MudTooltip>
-                </div>
-            </div>
-
-            <MudDivider Style="border-color: rgba(0, 229, 255, 0.1);" />
-
-            <!-- Row 2: Detected Environments Pills & Multi-Install Sync -->
-            <div class="d-flex flex-wrap align-center justify-space-between gap-2">
-                <div class="d-flex flex-wrap align-center gap-2">
-                    <span class="mfd-title mr-1" style="color: #94A3B8; font-size: 0.75rem;">INSTALLS:</span>
-                    @foreach (var install in _detectedInstalls) {
-                        var isSelected = ConfigService.Config.SelectedEnvironment == install.Environment;
-                        var pillClass = $"env-pill {(isSelected ? "active" : "")} {(!install.IsDirectoryPresent ? "missing" : "")}";
-                        var dotClass = install.HasActionMapsXml ? "status-dot detected" : (install.IsDirectoryPresent ? "status-dot folder-only" : "status-dot none");
-                        var tooltip = install.HasActionMapsXml
-                            ? $"{install.ChannelName}: actionmaps.xml detected ({install.ActionMapsPath})"
-                            : (install.IsDirectoryPresent ? $"{install.ChannelName}: Folder found, no actionmaps.xml yet" : $"{install.ChannelName}: Not installed");
-
-                        <MudTooltip Text="@tooltip">
-                            <div class="@pillClass" @onclick="@(() => OnEnvironmentSelected(install.Environment))">
-                                <span class="@dotClass"></span>
-                                <span>@install.ChannelName</span>
-                            </div>
-                        </MudTooltip>
-                    }
-                </div>
-
-                <div class="d-flex align-center gap-3">
-                    <MudSwitch Value="ConfigService.Config.SyncAllDetectedInstalls"
-                               ValueChanged="@((bool val) => OnSyncAllInstallsChanged(val))"
-                               Color="Color.Primary"
-                               Size="Size.Small"
-                               Label="Sync All Detected Installs" />
-
-                    @if (_detectedInstalls.Count(i => i.IsDirectoryPresent) > 1) {
-                        <MudTooltip Text="Copy & align active mappings across all detected installs (LIVE, PTU, EPTU, TECH-PREVIEW)">
+                        <MudTooltip Text="Auto-detect Star Citizen installation folder across drives">
                             <MudButton Variant="Variant.Outlined"
-                                       Color="Color.Secondary"
+                                       Color="Color.Primary"
                                        Size="Size.Small"
-                                       StartIcon="@Icons.Material.Filled.SyncAlt"
-                                       OnClick="PropagateAcrossAllInstallsAsync"
+                                       StartIcon="@Icons.Material.Filled.TravelExplore"
+                                       OnClick="AutoDetectScFolderAsync"
                                        Class="mfd-title">
-                                Propagate to All
+                                Auto-Detect
                             </MudButton>
                         </MudTooltip>
-                    }
+                        <MudTooltip Text="Select a custom actionmaps.xml file directly">
+                            <MudIconButton Icon="@Icons.Material.Filled.InsertDriveFile"
+                                           Color="Color.Default"
+                                           Size="Size.Small"
+                                           OnClick="BrowseXmlFileAsync" />
+                        </MudTooltip>
+                    </div>
+                </div>
+
+                <MudDivider Style="border-color: rgba(0, 229, 255, 0.1);" />
+
+                <!-- Row 2: Detected Environments Pills & Multi-Install Sync -->
+                <div class="d-flex flex-wrap align-center justify-space-between gap-2">
+                    <div class="d-flex flex-wrap align-center gap-2">
+                        <span class="mfd-title mr-1" style="color: #94A3B8; font-size: 0.75rem;">INSTALLS:</span>
+                        @foreach (var install in _detectedInstalls) {
+                            var isSelected = ConfigService.Config.SelectedEnvironment == install.Environment;
+                            var pillClass = $"env-pill {(isSelected ? "active" : "")} {(!install.IsDirectoryPresent ? "missing" : "")}";
+                            var dotClass = install.HasActionMapsXml ? "status-dot detected" : (install.IsDirectoryPresent ? "status-dot folder-only" : "status-dot none");
+                            var tooltip = install.HasActionMapsXml
+                                ? $"{install.ChannelName}: actionmaps.xml detected ({install.ActionMapsPath})"
+                                : (install.IsDirectoryPresent ? $"{install.ChannelName}: Folder found, no actionmaps.xml yet" : $"{install.ChannelName}: Not installed");
+
+                            <MudTooltip Text="@tooltip">
+                                <div class="@pillClass" @onclick="@(() => OnEnvironmentSelected(install.Environment))">
+                                    <span class="@dotClass"></span>
+                                    <span>@install.ChannelName</span>
+                                </div>
+                            </MudTooltip>
+                        }
+                    </div>
+
+                    <div class="d-flex align-center gap-3">
+                        <MudSwitch Value="ConfigService.Config.SyncAllDetectedInstalls"
+                                   ValueChanged="@((bool val) => OnSyncAllInstallsChanged(val))"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   Label="Sync All Detected Installs" />
+
+                        @if (_detectedInstalls.Count(i => i.IsDirectoryPresent) > 1) {
+                            <MudTooltip Text="Copy & align active mappings across all detected installs (LIVE, PTU, EPTU, TECH-PREVIEW)">
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Secondary"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.SyncAlt"
+                                           OnClick="PropagateAcrossAllInstallsAsync"
+                                           Class="mfd-title">
+                                    Propagate to All
+                                </MudButton>
+                            </MudTooltip>
+                        }
+                    </div>
                 </div>
             </div>
-        </div>
-    </MudPaper>
+        </MudPaper>
+    } else if (PluginManager.ActivePlugin.Id == "elitedangerous") {
+        <!-- Elite Dangerous Bindings Bar -->
+        <MudPaper Class="mfd-card pa-3">
+            <div class="d-flex flex-column gap-3">
+                <div class="d-flex flex-wrap align-center justify-space-between gap-2">
+                    <div class="flex-grow-1" style="min-width: 300px;">
+                        <MudTextField Value="@GetDisplayedEdFolder()"
+                                      ValueChanged="@((string val) => OnEdBindingsFolderInputChangedAsync(val))"
+                                      Label="Elite Dangerous Options\Bindings Folder"
+                                      Placeholder="e.g. %LOCALAPPDATA%\Frontier Developments\Elite Dangerous\Options\Bindings"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.FolderSpecial"
+                                      AdornmentColor="Color.Primary"
+                                      Class="mfd-code" />
+                    </div>
+                    <div class="d-flex align-center gap-2">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.FolderOpen"
+                                   OnClick="BrowseEdFolderAsync"
+                                   Class="mfd-title"
+                                   Style="color: #0B0F19; font-weight: 700;">
+                            Set Bindings Folder
+                        </MudButton>
+                        <MudTooltip Text="Auto-detect Elite Dangerous bindings folder">
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.TravelExplore"
+                                       OnClick="AutoDetectEdFolderAsync"
+                                       Class="mfd-title">
+                                Auto-Detect
+                            </MudButton>
+                        </MudTooltip>
+                    </div>
+                </div>
+            </div>
+        </MudPaper>
+    } else {
+        <!-- Generic / Third-Party Game Plugin Bar -->
+        <MudPaper Class="mfd-card pa-3">
+            <div class="d-flex flex-wrap align-center justify-space-between gap-2">
+                <div>
+                    <MudText Typo="Typo.subtitle2" Class="mfd-title glow-cyan" Style="color: #00E5FF;">
+                        @(PluginManager.ActivePlugin.Name.ToUpperInvariant())
+                    </MudText>
+                    <MudText Typo="Typo.body2" Style="color: #94A3B8;">
+                        @(PluginManager.ActivePlugin.Description)
+                    </MudText>
+                </div>
+                <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Outlined">
+                    Plugin ID: @PluginManager.ActivePlugin.Id
+                </MudChip>
+            </div>
+        </MudPaper>
+    }
 
     <!-- Focused MFD Workspace Tabs -->
     <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" Class="mfd-card" TabPanelsClass="pa-3">
@@ -564,14 +630,16 @@
                                    ValueChanged="@((bool val) => OnAutoSyncChanged(val))"
                                    Color="Color.Primary"
                                    Label="Auto-Sync when USB controllers change" />
-                        <MudSwitch Value="ConfigService.Config.AutoDeployToMappingsFolder"
-                                   ValueChanged="@((bool val) => OnAutoDeployToMappingsFolderChanged(val))"
-                                   Color="Color.Secondary"
-                                   Label="Auto-Deploy layout_StickLock_Active.xml to Controls\Mappings" />
+                        @if (PluginManager.ActivePlugin.Id == "starcitizen") {
+                            <MudSwitch Value="ConfigService.Config.AutoDeployToMappingsFolder"
+                                       ValueChanged="@((bool val) => OnAutoDeployToMappingsFolderChanged(val))"
+                                       Color="Color.Secondary"
+                                       Label="Auto-Deploy layout_StickLock_Active.xml to Controls\Mappings" />
+                        }
                         <MudSwitch Value="ConfigService.Config.AllowSyncWhileGameRunning"
                                    ValueChanged="@((bool val) => OnAllowSyncWhileGameRunningChanged(val))"
                                    Color="Color.Warning"
-                                   Label="Allow Force Sync while Star Citizen is running" />
+                                   Label="@($"Allow Force Sync while {PluginManager.ActivePlugin.Name} is running")" />
                         <MudSwitch Value="ConfigService.Config.StartMinimizedToTray"
                                    ValueChanged="@((bool val) => OnStartMinimizedChanged(val))"
                                    Color="Color.Primary"
@@ -583,26 +651,52 @@
 
                         <MudDivider Class="my-2" Style="border-color: rgba(0, 229, 255, 0.1);" />
 
+                        <!-- Update Track / Channel Selector -->
                         <div class="d-flex flex-column gap-1">
                             <div class="d-flex align-center justify-space-between">
-                                <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #38BDF8;">Right Stick Primary Axes</MudText>
-                                <MudTooltip Text="When Star Citizen defaults omit pitch/yaw/roll from XML, StickLock auto-ensures your flight stick stays functional">
+                                <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #38BDF8;">Update Track / Channel</MudText>
+                                <MudTooltip Text="Select your update track: Release (Stable - main), Beta (Development - dev), or Alpha (Feature Previews)">
                                     <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Default" />
                                 </MudTooltip>
                             </div>
-                            <MudSelect T="FlightAxisMode"
-                                       Value="ConfigService.Config.FlightAxisMode"
-                                       ValueChanged="@((FlightAxisMode val) => OnFlightAxisModeChangedAsync(val))"
+                            <MudSelect T="string"
+                                       Value="@ConfigService.Config.UpdateChannel"
+                                       ValueChanged="@((string val) => OnUpdateChannelChangedAsync(val))"
                                        Margin="Margin.Dense"
                                        Variant="Variant.Outlined"
                                        Dense="true"
                                        Class="mfd-code"
                                        Style="font-size: 0.8rem;">
-                                <MudSelectItem Value="FlightAxisMode.SpaceSim">Space Sim (Pitch=Y, Yaw=X, Roll=Twist)</MudSelectItem>
-                                <MudSelectItem Value="FlightAxisMode.Atmospheric">Atmospheric (Pitch=Y, Roll=X, Yaw=Twist)</MudSelectItem>
-                                <MudSelectItem Value="FlightAxisMode.PreserveOnly">Preserve XML Only (No Auto-Fill)</MudSelectItem>
+                                <MudSelectItem Value="@("Release")">Release (Stable - main)</MudSelectItem>
+                                <MudSelectItem Value="@("Beta")">Beta (Development - dev)</MudSelectItem>
+                                <MudSelectItem Value="@("Alpha")">Alpha (Feature Previews)</MudSelectItem>
                             </MudSelect>
                         </div>
+
+                        @if (PluginManager.ActivePlugin.SupportsFlightAxisMode || PluginManager.ActivePlugin.Id == "starcitizen") {
+                            <MudDivider Class="my-2" Style="border-color: rgba(0, 229, 255, 0.1);" />
+
+                            <div class="d-flex flex-column gap-1">
+                                <div class="d-flex align-center justify-space-between">
+                                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #38BDF8;">Right Stick Primary Axes</MudText>
+                                    <MudTooltip Text="When game defaults omit pitch/yaw/roll from config, StickLock auto-ensures your flight stick stays functional">
+                                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Default" />
+                                    </MudTooltip>
+                                </div>
+                                <MudSelect T="FlightAxisMode"
+                                           Value="ConfigService.Config.FlightAxisMode"
+                                           ValueChanged="@((FlightAxisMode val) => OnFlightAxisModeChangedAsync(val))"
+                                           Margin="Margin.Dense"
+                                           Variant="Variant.Outlined"
+                                           Dense="true"
+                                           Class="mfd-code"
+                                           Style="font-size: 0.8rem;">
+                                    <MudSelectItem Value="FlightAxisMode.SpaceSim">Space Sim (Pitch=Y, Yaw=X, Roll=Twist)</MudSelectItem>
+                                    <MudSelectItem Value="FlightAxisMode.Atmospheric">Atmospheric (Pitch=Y, Roll=X, Yaw=Twist)</MudSelectItem>
+                                    <MudSelectItem Value="FlightAxisMode.PreserveOnly">Preserve XML Only (No Auto-Fill)</MudSelectItem>
+                                </MudSelect>
+                            </div>
+                        }
 
                         <MudDivider Class="my-2" Style="border-color: rgba(0, 229, 255, 0.1);" />
 
@@ -698,6 +792,7 @@
     protected override async Task OnInitializedAsync() {
         DirectInputService.DevicesRefreshed += OnDevicesChanged;
         ConfigService.ConfigChanged += OnConfigChanged;
+        PluginManager.ActivePluginChanged += OnActivePluginChanged;
         LogService.EntryAdded += _ => InvokeAsync(StateHasChanged);
 
         _liveDevices = DirectInputService.CurrentDevices;
@@ -705,6 +800,18 @@
         await RefreshAlignmentCheckAsync();
         await ReloadXmlMappingsAsync();
         await ReloadSavedProfilesAsync();
+    }
+
+    private void OnActivePluginChanged(StickLock.Plugins.IGamePlugin plugin) {
+        _ = InvokeAsync(async () => {
+            await RefreshAlignmentCheckAsync();
+            if (plugin.Id == "starcitizen") {
+                _detectedInstalls = ConfigService.GetDetectedInstalls();
+                await ReloadXmlMappingsAsync();
+                await ReloadSavedProfilesAsync();
+            }
+            StateHasChanged();
+        });
     }
 
     private void OnDevicesChanged(IReadOnlyList<DirectInputDevice> devices) {
@@ -727,9 +834,11 @@
 
     private async Task RefreshAlignmentCheckAsync() {
         try {
-            _alignmentCheck = await XmlService.CheckAlignmentAsync();
+            _alignmentCheck = await PluginManager.ActivePlugin.CheckAlignmentAsync();
             _status = _alignmentCheck.Status;
-            _dynamicResortCommand = await XmlService.GetConsoleResortCommandAsync();
+            if (PluginManager.ActivePlugin.Id == "starcitizen") {
+                _dynamicResortCommand = await XmlService.GetConsoleResortCommandAsync();
+            }
         } catch {
             _alignmentCheck = new MappingAlignmentCheck();
             _status = SyncStatus.Unknown;
@@ -758,15 +867,15 @@
             return;
         }
 
-        if (GameDetector.IsGameRunning() && !force && !ConfigService.Config.AllowSyncWhileGameRunning) {
-            Snackbar.Add("Star Citizen is currently running. Use Force Sync or the in-game console command.", Severity.Warning);
+        if (_alignmentCheck.IsGameRunning && !force && !ConfigService.Config.AllowSyncWhileGameRunning) {
+            Snackbar.Add($"{PluginManager.ActivePlugin.Name} is currently running. Use Force Sync or close the game.", Severity.Warning);
             return;
         }
 
         _isSyncing = true;
         StateHasChanged();
         try {
-            var result = await XmlService.FixAndSyncAsync(force);
+            var result = await PluginManager.ActivePlugin.FixAndSyncAsync(force);
             if (result.Success) {
                 _lastFixedBackupPath = result.BackupPath;
                 Snackbar.Add(result.Message, Severity.Success);
@@ -774,8 +883,10 @@
                 Snackbar.Add(result.Message, Severity.Error);
             }
             await RefreshAlignmentCheckAsync();
-            await ReloadXmlMappingsAsync();
-            await ReloadSavedProfilesAsync();
+            if (PluginManager.ActivePlugin.Id == "starcitizen") {
+                await ReloadXmlMappingsAsync();
+                await ReloadSavedProfilesAsync();
+            }
         } finally {
             _isSyncing = false;
             StateHasChanged();
@@ -1015,12 +1126,19 @@
     }
 
     private async Task RestoreBackupAsync() {
-        var result = await XmlService.RestoreLatestBackupAsync();
-        if (result.Success) {
-            Snackbar.Add(result.Message, Severity.Success);
-            await ReloadXmlMappingsAsync();
-        } else {
-            Snackbar.Add(result.Message, Severity.Warning);
+        try {
+            var result = await PluginManager.ActivePlugin.RestoreLatestBackupAsync();
+            if (result.Success) {
+                Snackbar.Add(result.Message, Severity.Success);
+                await RefreshAlignmentCheckAsync();
+                if (PluginManager.ActivePlugin.Id == "starcitizen") {
+                    await ReloadXmlMappingsAsync();
+                }
+            } else {
+                Snackbar.Add(result.Message, Severity.Warning);
+            }
+        } catch (Exception ex) {
+            Snackbar.Add($"Restore failed: {ex.Message}", Severity.Error);
         }
     }
 
@@ -1279,8 +1397,48 @@
         _ => Color.Info
     };
 
+    private string GetDisplayedEdFolder() {
+        return !string.IsNullOrWhiteSpace(ConfigService.Config.EliteDangerousBindingsPath)
+            ? ConfigService.Config.EliteDangerousBindingsPath
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Frontier Developments", "Elite Dangerous", "Options", "Bindings");
+    }
+
+    private async Task OnEdBindingsFolderInputChangedAsync(string val) {
+        if (!string.IsNullOrWhiteSpace(val)) {
+            await ConfigService.SetEliteDangerousBindingsPathAsync(val);
+            await RefreshAlignmentCheckAsync();
+        }
+    }
+
+    private async Task BrowseEdFolderAsync() {
+        var selected = await FileDialog.PickStarCitizenFolderAsync(GetDisplayedEdFolder());
+        if (!string.IsNullOrWhiteSpace(selected)) {
+            await ConfigService.SetEliteDangerousBindingsPathAsync(selected);
+            await RefreshAlignmentCheckAsync();
+            Snackbar.Add($"Elite Dangerous bindings folder set to {selected}", Severity.Success);
+        }
+    }
+
+    private async Task AutoDetectEdFolderAsync() {
+        var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Frontier Developments", "Elite Dangerous", "Options", "Bindings");
+        if (Directory.Exists(defaultPath)) {
+            await ConfigService.SetEliteDangerousBindingsPathAsync(defaultPath);
+            await RefreshAlignmentCheckAsync();
+            Snackbar.Add($"Detected Elite Dangerous bindings at {defaultPath}", Severity.Success);
+        } else {
+            Snackbar.Add("Elite Dangerous bindings folder not found in default location.", Severity.Warning);
+        }
+    }
+
+    private async Task OnUpdateChannelChangedAsync(string newChannel) {
+        await UpdateService.SetUpdateChannelAsync(newChannel);
+        Snackbar.Add($"Switched update track to {newChannel}.", Severity.Info);
+        StateHasChanged();
+    }
+
     public void Dispose() {
         DirectInputService.DevicesRefreshed -= OnDevicesChanged;
         ConfigService.ConfigChanged -= OnConfigChanged;
+        PluginManager.ActivePluginChanged -= OnActivePluginChanged;
     }
 }
