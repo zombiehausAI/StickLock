@@ -1,4 +1,8 @@
+@using StickLock.Plugins
+@using StickLock.Services
 @inject IActionMapsXmlService XmlService
+@inject IGamePluginManager PluginManager
+@inject IAppConfigService ConfigService
 @inject ISnackbar Snackbar
 
 <MudDialog>
@@ -11,8 +15,8 @@
     <DialogContent>
         <div class="d-flex flex-column gap-3 pt-2">
             <MudText Typo="Typo.body2" Style="color: #94A3B8;">
-                Save your current active <span class="mfd-code" style="color: #00E5FF;">actionmaps.xml</span> bindings to your persistent
-                <span class="mfd-code" style="color: #FFAB00;">.sticklock/mappings</span> library so they are never lost when Star Citizen is re-installed or the USER folder is deleted.
+                Save your current active bindings to your persistent
+                <span class="mfd-code" style="color: #FFAB00;">.sticklock/mappings/@(PluginManager.ActivePlugin.Id)/</span> library so they are never lost.
             </MudText>
 
             <MudTextField @bind-Value="_profileName"
@@ -26,9 +30,11 @@
                           AutoFocus="true"
                           Class="mfd-code" />
 
-            <MudSwitch @bind-Value="_copyToStarCitizen"
-                       Color="Color.Secondary"
-                       Label="Also deploy / copy into Star Citizen Controls\Mappings folder" />
+            @if (PluginManager.ActivePlugin.Id == "starcitizen") {
+                <MudSwitch @bind-Value="_copyToStarCitizen"
+                           Color="Color.Secondary"
+                           Label="Also deploy / copy into Star Citizen Controls\Mappings folder" />
+            }
         </div>
     </DialogContent>
     <DialogActions>

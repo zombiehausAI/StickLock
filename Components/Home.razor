@@ -485,7 +485,7 @@
                 <div>
                     <MudText Typo="Typo.subtitle2" Class="mfd-title" Style="color: #00E5FF;">PERSISTENT MAPPINGS LIBRARY</MudText>
                     <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8;">
-                        Stored in <span style="color: #FFAB00;">~/.sticklock/mappings/</span>@(PluginManager.ActivePlugin.Id == "starcitizen" ? $" — deploys across {(ConfigService.Config.SyncAllDetectedInstalls ? "all detected SC installs" : ConfigService.Config.SelectedEnvironment.ToString())}" : "")
+                        Stored in <span style="color: #FFAB00;">~/.sticklock/mappings/@(PluginManager.ActivePlugin.Id)/</span>@(PluginManager.ActivePlugin.Id == "starcitizen" ? $" — deploys across {(ConfigService.Config.SyncAllDetectedInstalls ? "all detected SC installs" : ConfigService.Config.SelectedEnvironment.ToString())}" : "")
                     </MudText>
                 </div>
                 <div class="d-flex flex-wrap align-center gap-2">
@@ -818,8 +818,10 @@
             if (plugin.Id == "starcitizen") {
                 _detectedInstalls = ConfigService.GetDetectedInstalls();
                 await ReloadXmlMappingsAsync();
-                await ReloadSavedProfilesAsync();
+            } else {
+                _xmlMappings = Array.Empty<XmlStickMapping>();
             }
+            await ReloadSavedProfilesAsync();
             StateHasChanged();
         });
     }

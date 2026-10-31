@@ -111,6 +111,33 @@ public class PluginSystemTests : IDisposable {
         Assert.Equal("starcitizen", manager.ActivePlugin.Id);
     }
 
+    [Fact]
+    public async Task MappingsDirectory_IsPartitionedByGamePlugin_AndMigratesLegacyFiles() {
+        var baseDir = Path.Combine(_tempDir, "mappings_migration_test");
+        var legacyMappingsDir = Path.Combine(baseDir, "mappings");
+        Directory.CreateDirectory(legacyMappingsDir);
+
+        // Place a legacy profile directly in ~/.sticklock/mappings/
+        var legacyFile = Path.Combine(legacyMappingsDir, "layout_Legacy_Profile.xml");
+        await File.WriteAllTextAsync(legacyFile, "<ActionMaps></ActionMaps>");
+
+        var configFilePath = Path.Combine(baseDir, "config.json");
+        var configService = new AppConfigService(configFilePath);
+
+        // Check active defaults to starcitizen
+        Assert.EndsWith(Path.Combine("mappings", "starcitizen"), configService.MappingsDirectory);
+
+        // Check migration: legacy file moved into mappings/starcitizen/
+        var migratedFile = Path.Combine(configService.MappingsDirectory, "layout_Legacy_Profile.xml");
+        Assert.True(File.Exists(migratedFile));
+        Assert.False(File.Exists(legacyFile));
+
+        // Switch to Elite Dangerous
+        await configService.SetActiveGamePluginIdAsync("elitedangerous");
+        Assert.EndsWith(Path.Combine("mappings", "elitedangerous"), configService.MappingsDirectory);
+        Assert.True(Directory.Exists(configService.MappingsDirectory));
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {

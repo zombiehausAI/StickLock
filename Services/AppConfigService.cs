@@ -15,8 +15,37 @@ public class AppConfigService : IAppConfigService {
 
     public AppConfig Config => _config;
     public string BaseDirectory => _baseDirectory;
-    public string MappingsDirectory => _mappingsDirectory;
+    public string MappingsDirectory => GetMappingsDirectory();
     public event Action? ConfigChanged;
+
+    public string GetMappingsDirectory(string? pluginId = null) {
+        var targetPlugin = string.IsNullOrWhiteSpace(pluginId)
+            ? (!string.IsNullOrWhiteSpace(_config.ActiveGamePluginId) ? _config.ActiveGamePluginId : "starcitizen")
+            : pluginId;
+        var dir = Path.Combine(_baseDirectory, "mappings", targetPlugin);
+        try {
+            Directory.CreateDirectory(dir);
+        } catch { }
+        return dir;
+    }
+
+    private void MigrateLegacyMappings() {
+        try {
+            var rootMappings = Path.Combine(_baseDirectory, "mappings");
+            var scMappings = Path.Combine(rootMappings, "starcitizen");
+            Directory.CreateDirectory(scMappings);
+
+            if (Directory.Exists(rootMappings)) {
+                var files = Directory.GetFiles(rootMappings, "*.xml", SearchOption.TopDirectoryOnly);
+                foreach (var file in files) {
+                    var dest = Path.Combine(scMappings, Path.GetFileName(file));
+                    if (!File.Exists(dest)) {
+                        File.Move(file, dest);
+                    }
+                }
+            }
+        } catch { }
+    }
 
     public AppConfigService(string? customConfigFilePath = null) {
         if (!string.IsNullOrWhiteSpace(customConfigFilePath)) {
@@ -32,6 +61,7 @@ public class AppConfigService : IAppConfigService {
         _mappingsDirectory = Path.Combine(_baseDirectory, "mappings");
         Directory.CreateDirectory(_baseDirectory);
         Directory.CreateDirectory(_mappingsDirectory);
+        MigrateLegacyMappings();
         Directory.CreateDirectory(Path.Combine(_baseDirectory, "settings_backups"));
         Directory.CreateDirectory(Path.Combine(_baseDirectory, "backups"));
         Directory.CreateDirectory(Path.Combine(_baseDirectory, "exports"));

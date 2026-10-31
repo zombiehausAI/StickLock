@@ -6,6 +6,7 @@ public interface IAppConfigService {
     AppConfig Config { get; }
     string BaseDirectory { get; }
     string MappingsDirectory { get; }
+    string GetMappingsDirectory(string? pluginId = null);
     event Action? ConfigChanged;
     Task LoadConfigAsync();
     Task SaveConfigAsync();
