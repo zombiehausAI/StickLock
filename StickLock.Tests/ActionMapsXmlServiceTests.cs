@@ -642,6 +642,48 @@ public class ActionMapsXmlServiceTests : IDisposable {
         Assert.Equal("js3_rotz", (string?)yawA?.Attribute("input"));
     }
 
+    [Fact]
+    public async Task AutoLockAndAlign_SupportsVirpilThrustmasterLogitechAndGenericSticks() {
+        var guidVirpilR = Guid.NewGuid();
+        var guidVirpilL = Guid.NewGuid();
+
+        var xmlContent = $@"<ActionMaps>
+            <options type=""joystick"" instance=""1"" Product=""VPC Stick MT-50 [R]   {{{guidVirpilR}}}""/>
+            <options type=""joystick"" instance=""2"" Product=""VPC MongoosT-50CM3 Throttle   {{{guidVirpilL}}}""/>
+            <actionmap name=""spaceship_movement"">
+                <action name=""v_pitch""><rebind input=""js1_y""/></action>
+                <action name=""v_yaw""><rebind input=""js1_x""/></action>
+                <action name=""v_roll""><rebind input=""js1_rotz""/></action>
+                <action name=""v_throttle""><rebind input=""js2_z""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(_xmlPath, xmlContent);
+
+        var customConfigPath = Path.Combine(_tempDir, ".sticklock", "config.json");
+        var configService = new AppConfigService(customConfigPath);
+        await configService.SetStarCitizenPathAsync(_xmlPath);
+
+        var diService = new TestDirectInputService();
+        diService.SetDevices(new List<DirectInputDevice> {
+            new() { SlotIndex = 1, ProductName = "VPC Stick MT-50 [R]", InstanceGuid = guidVirpilR, ProductGuid = guidVirpilR },
+            new() { SlotIndex = 2, ProductName = "VPC MongoosT-50CM3 Throttle", InstanceGuid = guidVirpilL, ProductGuid = guidVirpilL }
+        });
+
+        var detector = new TestStarCitizenDetector();
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        var result = await xmlService.AutoLockAndAlignFromXmlAsync();
+        Assert.True(result.Success);
+        Assert.Equal(2, configService.Config.CanonicalSticks.Count);
+
+        var rightStick = configService.Config.CanonicalSticks.First(s => s.RoleSlot == 1);
+        var leftStick = configService.Config.CanonicalSticks.First(s => s.RoleSlot == 2);
+
+        Assert.Contains("Right Stick", rightStick.FriendlyRoleName);
+        Assert.Contains("Left Stick", leftStick.FriendlyRoleName);
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {

@@ -1269,7 +1269,11 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         if (string.IsNullOrWhiteSpace(productName)) {
             return false;
         }
-        var tokens = productName.Split(new[] { ' ', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+        if (productName.Contains("Throttle", StringComparison.OrdinalIgnoreCase) ||
+            productName.Contains("TWCS", StringComparison.OrdinalIgnoreCase)) {
+            return false;
+        }
+        var tokens = productName.Split(new[] { ' ', '_', '-', '[', ']', '(', ')', '.' }, StringSplitOptions.RemoveEmptyEntries);
         return tokens.Any(t => string.Equals(t, "R", StringComparison.OrdinalIgnoreCase) ||
                                string.Equals(t, "Right", StringComparison.OrdinalIgnoreCase));
     }
@@ -1278,7 +1282,13 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         if (string.IsNullOrWhiteSpace(productName)) {
             return false;
         }
-        var tokens = productName.Split(new[] { ' ', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+        if (productName.Contains("Throttle", StringComparison.OrdinalIgnoreCase) ||
+            productName.Contains("TWCS", StringComparison.OrdinalIgnoreCase) ||
+            productName.Contains("Quadrant", StringComparison.OrdinalIgnoreCase) ||
+            productName.Contains("TCS", StringComparison.OrdinalIgnoreCase)) {
+            return true;
+        }
+        var tokens = productName.Split(new[] { ' ', '_', '-', '[', ']', '(', ')', '.' }, StringSplitOptions.RemoveEmptyEntries);
         return tokens.Any(t => string.Equals(t, "L", StringComparison.OrdinalIgnoreCase) ||
                                string.Equals(t, "Left", StringComparison.OrdinalIgnoreCase) ||
                                string.Equals(t, "Omni", StringComparison.OrdinalIgnoreCase));
