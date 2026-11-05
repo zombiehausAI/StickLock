@@ -27,6 +27,8 @@ public interface IActionMapsXmlService {
     Task<SyncResult> ApplyFlightAxisModeAsync(FlightAxisMode mode, bool force = false);
     Task<int> DetectFlightStickSlotFromXmlAsync(string? xmlPath = null);
     Task<IReadOnlyList<ControllerMappingItem>> GetDetailedMappingsAsync(string? filePath = null);
+    Task<SyncResult> RebindActionAsync(string actionMapName, string actionName, int stickSlot, string inputCode);
+    Task<SyncResult> ClearRebindActionAsync(string actionMapName, string actionName);
     string? GetStarCitizenMappingsDirectory();
     IReadOnlyList<string> GetStarCitizenCustomMappings();
 }

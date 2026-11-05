@@ -807,6 +807,40 @@ public class ActionMapsXmlServiceTests : IDisposable {
         Assert.Equal(2, configService.Config.CanonicalSticks.Count);
     }
 
+    [Fact]
+    public async Task RebindActionAsync_UpdatesActionMapping_AndPersistsToXml() {
+        var xmlContent = @"<ActionMaps>
+            <actionmap name=""spaceship_movement"">
+                <action name=""v_pitch""><rebind input=""js1_y""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(_xmlPath, xmlContent);
+
+        var customConfigPath = Path.Combine(_tempDir, ".sticklock", "config.json");
+        var configService = new AppConfigService(customConfigPath);
+        await configService.SetStarCitizenPathAsync(_xmlPath);
+
+        var diService = new TestDirectInputService();
+        var detector = new TestStarCitizenDetector();
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        // 1. Rebind existing action to stick 2, button 4
+        var rebindResult = await xmlService.RebindActionAsync("spaceship_movement", "v_pitch", 2, "button4");
+        Assert.True(rebindResult.Success);
+        Assert.True(rebindResult.ChangesMade);
+
+        var updatedXml = await File.ReadAllTextAsync(_xmlPath);
+        Assert.Contains(@"<rebind input=""js2_button4""", updatedXml);
+
+        // 2. Clear binding
+        var clearResult = await xmlService.ClearRebindActionAsync("spaceship_movement", "v_pitch");
+        Assert.True(clearResult.Success);
+
+        var clearedXml = await File.ReadAllTextAsync(_xmlPath);
+        Assert.DoesNotContain("js2_button4", clearedXml);
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {

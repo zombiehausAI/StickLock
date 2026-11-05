@@ -46,6 +46,7 @@ static class Program {
         services.AddSingleton<IFileDialogService, FileDialogService>();
         services.AddSingleton<IBrowserService, BrowserService>();
         services.AddSingleton<IUpdateService, UpdateService>();
+        services.AddSingleton<IControllerLayoutService, ControllerLayoutService>();
 
         // Game Plugins
         services.AddSingleton<StickLock.Plugins.GamePluginLoader>();

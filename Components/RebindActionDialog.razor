@@ -1,0 +1,211 @@
+@using StickLock.Models
+@using StickLock.Services
+@inject IActionMapsXmlService XmlService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center">
+            <MudIcon Icon="@Icons.Material.Filled.SportsEsports" Color="Color.Primary" Class="mr-2" />
+            <MudText Typo="Typo.h6" Class="mfd-title glow-cyan" Style="color: #00E5FF;">
+                @(string.IsNullOrWhiteSpace(ExistingInput) ? "MAP ACTION" : "REBIND ACTION")
+            </MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <div class="d-flex flex-column gap-3 pt-2">
+            <!-- Action Info Card -->
+            <div class="pa-3 rounded" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(0, 229, 255, 0.15);">
+                <MudText Typo="Typo.caption" Style="color: #94A3B8;">TARGET ACTION</MudText>
+                <div class="d-flex align-center justify-space-between mt-1">
+                    <MudText Typo="Typo.subtitle1" Class="mfd-title" Style="color: #F8FAFC; font-weight: 700;">
+                        @DisplayAction
+                    </MudText>
+                    <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Outlined">
+                        @DisplayCategory
+                    </MudChip>
+                </div>
+                <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #64748B;">
+                    @ActionMap &gt; @ActionName
+                </MudText>
+            </div>
+
+            <!-- Controller Selection -->
+            <MudSelect T="int"
+                       @bind-Value="_selectedStick"
+                       Label="Target Controller"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Class="mfd-code">
+                @if (AvailableSticks.Count == 0) {
+                    <MudSelectItem Value="1">Stick 1 (Primary)</MudSelectItem>
+                    <MudSelectItem Value="2">Stick 2 (Secondary)</MudSelectItem>
+                } else {
+                    @foreach (var stick in AvailableSticks) {
+                        <MudSelectItem Value="@stick.Slot">Stick @stick.Slot: @stick.Name</MudSelectItem>
+                    }
+                }
+            </MudSelect>
+
+            <!-- Input Selection -->
+            <div class="d-flex flex-column gap-1">
+                <MudSelect T="string"
+                           @bind-Value="_selectedInputCode"
+                           Label="Select Input"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Class="mfd-code">
+                    <MudSelectItem Value="@("")">-- Select Common Input --</MudSelectItem>
+                    <MudSelectItem Value="@("button1")">Primary Trigger (Button 1)</MudSelectItem>
+                    <MudSelectItem Value="@("button2")">Secondary Trigger / Stage 2 (Button 2)</MudSelectItem>
+                    <MudSelectItem Value="@("button3")">Rapid Fire Pull (Button 3)</MudSelectItem>
+                    <MudSelectItem Value="@("button4")">Rapid Fire Push (Button 4)</MudSelectItem>
+                    <MudSelectItem Value="@("button5")">Red Button (Button 5)</MudSelectItem>
+                    <MudSelectItem Value="@("button10")">A1 Center Hat Click (Button 10)</MudSelectItem>
+                    <MudSelectItem Value="@("hat1_up")">A1 Hat Up (hat1_up)</MudSelectItem>
+                    <MudSelectItem Value="@("hat1_down")">A1 Hat Down (hat1_down)</MudSelectItem>
+                    <MudSelectItem Value="@("hat1_left")">A1 Hat Left (hat1_left)</MudSelectItem>
+                    <MudSelectItem Value="@("hat1_right")">A1 Hat Right (hat1_right)</MudSelectItem>
+                    <MudSelectItem Value="@("button14")">A4 Hat Click (Button 14)</MudSelectItem>
+                    <MudSelectItem Value="@("hat2_up")">A4 Hat Up (hat2_up)</MudSelectItem>
+                    <MudSelectItem Value="@("hat2_down")">A4 Hat Down (hat2_down)</MudSelectItem>
+                    <MudSelectItem Value="@("hat2_left")">A4 Hat Left (hat2_left)</MudSelectItem>
+                    <MudSelectItem Value="@("hat2_right")">A4 Hat Right (hat2_right)</MudSelectItem>
+                    <MudSelectItem Value="@("button22")">Pinky Button (Button 22)</MudSelectItem>
+                    <MudSelectItem Value="@("button25")">Base Button B1 (Button 25)</MudSelectItem>
+                    <MudSelectItem Value="@("button26")">Base Button B2 (Button 26)</MudSelectItem>
+                    <MudSelectItem Value="@("button27")">Base Button B3 (Button 27)</MudSelectItem>
+                    <MudSelectItem Value="@("button33")">SEM Landing Gear UP (Button 33)</MudSelectItem>
+                    <MudSelectItem Value="@("button34")">SEM Landing Gear DOWN (Button 34)</MudSelectItem>
+                    <MudSelectItem Value="@("button35")">SEM Flaps UP (Button 35)</MudSelectItem>
+                    <MudSelectItem Value="@("button36")">SEM Flaps MID (Button 36)</MudSelectItem>
+                    <MudSelectItem Value="@("button37")">SEM Flaps DOWN (Button 37)</MudSelectItem>
+                    <MudSelectItem Value="@("button38")">SEM Mode START (Button 38)</MudSelectItem>
+                    <MudSelectItem Value="@("button51")">FSM-GA Autopilot AP (Button 51)</MudSelectItem>
+                    <MudSelectItem Value="@("button55")">FSM-GA Strobe Light (Button 55)</MudSelectItem>
+                    <MudSelectItem Value="@("y")">Pitch Axis (y)</MudSelectItem>
+                    <MudSelectItem Value="@("x")">Roll / Yaw Axis (x)</MudSelectItem>
+                    <MudSelectItem Value="@("rotz")">Z Twist Axis (rotz)</MudSelectItem>
+                    <MudSelectItem Value="@("slider1")">Slider / Throttle Axis (slider1)</MudSelectItem>
+                </MudSelect>
+
+                <MudTextField @bind-Value="_selectedInputCode"
+                              Label="Or Enter Direct Input Code"
+                              Placeholder="e.g. button1, button33, y, rotz, hat1_up"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Class="mfd-code" />
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(ExistingInput)) {
+                <MudText Typo="Typo.caption" Style="color: #94A3B8;">
+                    Current input: <span class="mfd-code" style="color: #38BDF8;">@ExistingInput</span>
+                </MudText>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        @if (!string.IsNullOrWhiteSpace(ExistingInput)) {
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="ClearBindingAsync" Disabled="_isSaving">
+                Clear Binding
+            </MudButton>
+        }
+        <MudSpacer />
+        <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="Cancel">
+            Cancel
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Disabled="@(string.IsNullOrWhiteSpace(_selectedInputCode) || _isSaving)"
+                   OnClick="SaveRebindAsync"
+                   Style="color: #0B0F19; font-weight: 700;">
+            @if (_isSaving) {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>SAVING...</span>
+            } else {
+                <span>SAVE BINDING</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    [Parameter]
+    public string ActionMap { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ActionName { get; set; } = string.Empty;
+
+    [Parameter]
+    public string DisplayAction { get; set; } = string.Empty;
+
+    [Parameter]
+    public string DisplayCategory { get; set; } = string.Empty;
+
+    [Parameter]
+    public int StickSlot { get; set; } = 1;
+
+    [Parameter]
+    public string ExistingInput { get; set; } = string.Empty;
+
+    [Parameter]
+    public IReadOnlyList<(int Slot, string Name)> AvailableSticks { get; set; } = Array.Empty<(int, string)>();
+
+    private int _selectedStick = 1;
+    private string _selectedInputCode = string.Empty;
+    private bool _isSaving = false;
+
+    protected override void OnInitialized() {
+        _selectedStick = StickSlot > 0 ? StickSlot : 1;
+        _selectedInputCode = ExistingInput;
+        if (_selectedInputCode.StartsWith("js", StringComparison.OrdinalIgnoreCase) && _selectedInputCode.Contains('_')) {
+            var underscoreIdx = _selectedInputCode.IndexOf('_');
+            _selectedInputCode = _selectedInputCode[(underscoreIdx + 1)..];
+        }
+    }
+
+    private void Cancel() {
+        MudDialog?.Cancel();
+    }
+
+    private async Task SaveRebindAsync() {
+        if (string.IsNullOrWhiteSpace(_selectedInputCode)) {
+            return;
+        }
+
+        _isSaving = true;
+        try {
+            var result = await XmlService.RebindActionAsync(ActionMap, ActionName, _selectedStick, _selectedInputCode);
+            if (result.Success) {
+                Snackbar.Add($"Rebound {DisplayAction} to Stick {_selectedStick} ({_selectedInputCode})", Severity.Success);
+                MudDialog?.Close(DialogResult.Ok(true));
+            } else {
+                Snackbar.Add(result.Message, Severity.Error);
+            }
+        } catch (Exception ex) {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        } finally {
+            _isSaving = false;
+        }
+    }
+
+    private async Task ClearBindingAsync() {
+        _isSaving = true;
+        try {
+            var result = await XmlService.ClearRebindActionAsync(ActionMap, ActionName);
+            if (result.Success) {
+                Snackbar.Add($"Cleared binding for {DisplayAction}", Severity.Success);
+                MudDialog?.Close(DialogResult.Ok(true));
+            } else {
+                Snackbar.Add(result.Message, Severity.Error);
+            }
+        } catch (Exception ex) {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        } finally {
+            _isSaving = false;
+        }
+    }
+}

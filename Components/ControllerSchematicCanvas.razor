@@ -1,0 +1,194 @@
+@using StickLock.Models
+
+<div class="schematic-container pa-4 rounded" style="background: radial-gradient(circle at 50% 30%, rgba(15, 23, 42, 0.95) 0%, rgba(7, 10, 19, 0.98) 100%); border: 1.5px solid rgba(0, 229, 255, 0.2); position: relative; overflow-x: auto;">
+    <!-- Schematic Header info -->
+    <div class="d-flex flex-wrap align-center justify-space-between gap-2 mb-3">
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Memory" Color="Color.Primary" Size="Size.Small" />
+            <MudText Typo="Typo.subtitle1" Class="mfd-title glow-cyan" Style="color: #00E5FF; font-weight: 700;">
+                @Layout.Name.ToUpperInvariant()
+            </MudText>
+            <MudChip T="string" Color="Color.Secondary" Size="Size.Small" Variant="Variant.Outlined">
+                Slot js@StickSlot
+            </MudChip>
+        </div>
+
+        <div class="d-flex align-center gap-1">
+            @foreach (var mod in Layout.AttachedModules) {
+                <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Filled" Style="font-size: 0.7rem; height: 20px;">
+                    + @mod
+                </MudChip>
+            }
+        </div>
+    </div>
+
+    <!-- Interactive SVG / Visual Canvas -->
+    <div style="position: relative; width: 100%; max-width: 900px; height: 560px; margin: 0 auto; background: rgba(11, 15, 25, 0.6); border: 1px solid rgba(0, 229, 255, 0.1); border-radius: 8px;">
+        <svg viewBox="0 0 900 560" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;">
+            <defs>
+                <linearGradient id="grid-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.12" />
+                    <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.04" />
+                </linearGradient>
+            </defs>
+
+            <!-- Background Grid -->
+            <rect width="900" height="560" fill="url(#grid-glow)" rx="8" />
+
+            @if (Layout.AttachedModules.Contains("GNX-SEM")) {
+                <!-- GNX-SEM Module Outline (Left Box) -->
+                <rect x="30" y="40" width="240" height="470" rx="10" fill="rgba(15, 23, 42, 0.8)" stroke="#00E5FF" stroke-width="1.5" stroke-dasharray="4,4" />
+                <!-- Gear Lever Slot -->
+                <rect x="50" y="110" width="30" height="150" rx="15" fill="#1E293B" stroke="#64748B" stroke-width="1" />
+                <!-- Flaps Lever Slot -->
+                <rect x="190" y="110" width="30" height="150" rx="15" fill="#1E293B" stroke="#64748B" stroke-width="1" />
+                <!-- Rotary dials outline -->
+                <circle cx="90" cy="380" r="30" fill="#1E293B" stroke="#00E5FF" stroke-width="1" />
+                <circle cx="190" cy="380" r="30" fill="#1E293B" stroke="#00E5FF" stroke-width="1" />
+            }
+
+            <!-- Center: Gladiator Base & SCG Grip -->
+            <!-- Base Plate -->
+            <rect x="330" y="360" width="240" height="160" rx="12" fill="rgba(15, 23, 42, 0.9)" stroke="#00E5FF" stroke-width="2" />
+            <!-- Throttle wheel -->
+            <rect x="425" y="450" width="50" height="20" rx="4" fill="#334155" stroke="#00E5FF" stroke-width="1" />
+
+            <!-- Stick Grip Silhouette -->
+            <path d="M 430 360 C 430 300, 420 220, 410 180 C 400 140, 420 80, 450 80 C 480 80, 500 140, 490 180 C 480 220, 470 300, 470 360 Z"
+                  fill="rgba(30, 41, 59, 0.85)" stroke="#38BDF8" stroke-width="2" />
+
+            <!-- Head of Stick -->
+            <ellipse cx="450" cy="115" rx="45" ry="35" fill="rgba(15, 23, 42, 0.9)" stroke="#00E5FF" stroke-width="2" />
+
+            @if (Layout.AttachedModules.Contains("GNX-FSM-GA")) {
+                <!-- GNX-FSM-GA Module Outline (Right Box) -->
+                <rect x="630" y="40" width="240" height="470" rx="10" fill="rgba(15, 23, 42, 0.8)" stroke="#FFAB00" stroke-width="1.5" stroke-dasharray="4,4" />
+                <!-- HDG & ALT Dials -->
+                <circle cx="690" cy="140" r="28" fill="#1E293B" stroke="#FFAB00" stroke-width="1.5" />
+                <circle cx="810" cy="140" r="28" fill="#1E293B" stroke="#FFAB00" stroke-width="1.5" />
+                <!-- Autopilot Buttons -->
+                <rect x="655" y="240" width="190" height="60" rx="6" fill="#1E293B" stroke="#64748B" stroke-width="1" />
+                <!-- Light Toggles -->
+                <rect x="655" y="350" width="190" height="60" rx="6" fill="#1E293B" stroke="#64748B" stroke-width="1" />
+            }
+        </svg>
+
+        <!-- HTML Module Badges -->
+        @if (Layout.AttachedModules.Contains("GNX-SEM")) {
+            <div style="position: absolute; left: 45px; top: 50px; color: #38BDF8; font-weight: 700; font-size: 0.75rem; letter-spacing: 1px;">
+                GNX-SEM MODULE
+            </div>
+        }
+        <div style="position: absolute; left: 410px; top: 370px; color: #94A3B8; font-weight: 700; font-size: 0.75rem; letter-spacing: 1px;">
+            EVO BASE
+        </div>
+        @if (Layout.AttachedModules.Contains("GNX-FSM-GA")) {
+            <div style="position: absolute; left: 650px; top: 50px; color: #FFAB00; font-weight: 700; font-size: 0.75rem; letter-spacing: 1px;">
+                GNX-FSM-GA MODULE
+            </div>
+        }
+
+        <!-- Hotspot interactive overlay pins -->
+        @foreach (var spot in Layout.Hotspots) {
+            var boundItem = FindBoundItem(spot.InputCode);
+            var isBound = boundItem != null;
+
+            <div style="position: absolute; left: calc(@spot.X% - 14px); top: calc(@spot.Y% - 14px); z-index: 10;">
+                <MudTooltip Text="@GetTooltipText(spot, boundItem)" Placement="Placement.Top">
+                    <button class="hotspot-pin @(isBound ? "bound" : "unbound")"
+                            @onclick="() => OnPinClicked(spot, boundItem)">
+                        @if (isBound) {
+                            <span class="hotspot-dot bound-dot"></span>
+                        } else {
+                            <span class="hotspot-dot unbound-dot"></span>
+                        }
+                    </button>
+                </MudTooltip>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .schematic-container {
+        user-select: none;
+    }
+    .hotspot-pin {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: rgba(15, 23, 42, 0.9);
+        border: 2px solid #00E5FF;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 0;
+        outline: none;
+        box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+    }
+    .hotspot-pin:hover {
+        transform: scale(1.3);
+        border-color: #38BDF8;
+        box-shadow: 0 0 16px rgba(0, 229, 255, 0.8);
+        z-index: 20;
+    }
+    .hotspot-pin.bound {
+        border-color: #10B981;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    }
+    .hotspot-pin.bound:hover {
+        border-color: #34D399;
+        box-shadow: 0 0 18px rgba(16, 185, 129, 0.9);
+    }
+    .hotspot-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+    .hotspot-dot.unbound-dot {
+        background: #00E5FF;
+    }
+    .hotspot-dot.bound-dot {
+        background: #10B981;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public ControllerLayoutDefinition Layout { get; set; } = new();
+
+    [Parameter]
+    public IReadOnlyList<ControllerMappingItem> Mappings { get; set; } = Array.Empty<ControllerMappingItem>();
+
+    [Parameter]
+    public int StickSlot { get; set; } = 1;
+
+    [Parameter]
+    public EventCallback<(ControllerHotspot Hotspot, ControllerMappingItem? BoundItem)> OnHotspotSelected { get; set; }
+
+    private ControllerMappingItem? FindBoundItem(string inputCode) {
+        if (Mappings.Count == 0 || string.IsNullOrWhiteSpace(inputCode)) {
+            return null;
+        }
+
+        var cleanInput = inputCode.Trim().ToLowerInvariant();
+        return Mappings.FirstOrDefault(m =>
+            m.StickInstance == StickSlot &&
+            string.Equals(m.InputCode.ToLowerInvariant(), cleanInput, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string GetTooltipText(ControllerHotspot spot, ControllerMappingItem? boundItem) {
+        if (boundItem != null) {
+            return $"{spot.Label} ({spot.InputCode})\n→ BOUND TO: {boundItem.DisplayCategory} > {boundItem.DisplayAction}";
+        }
+        return $"{spot.Label} ({spot.InputCode})\n[Unmapped - Click to Assign]";
+    }
+
+    private async Task OnPinClicked(ControllerHotspot spot, ControllerMappingItem? boundItem) {
+        if (OnHotspotSelected.HasDelegate) {
+            await OnHotspotSelected.InvokeAsync((spot, boundItem));
+        }
+    }
+}

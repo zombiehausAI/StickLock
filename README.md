@@ -47,7 +47,11 @@ StickLock runs quietly in the Windows System Tray, monitors USB hardware changes
   - Reads and synchronizes `actionmaps.xml` across single or all detected environments simultaneously.
   - Automatically identifies Right Stick (Flight Stick) vs Left Stick (Strafe Stick) and configures primary flight axis profiles (**Space Sim** vs **Atmospheric**).
   - Explicit **Right Stick & Left Stick Targets**: User-selectable dropdowns with smart non-flight filtering (automatically excluding Hall-Effect keyboards like Keychron, mice, and virtual devices).
-  - **Button & Axis Mapping Inspector**: Real-time breakdown of all active controller inputs (Buttons, Hats, Axes), mapped game actions, categories, and inversion modifiers grouped and searchable per stick.
+  - **Button & Axis Mapping Suite (Table & Visual Schematics)**:
+    - Real-time breakdown of all active controller inputs (Buttons, Hats, Axes), mapped game actions, categories, and inversion modifiers grouped and searchable per stick.
+    - **Visual Controller Schematic Canvas**: Interactive vector schematics of your physical controllers with glowing status pins showing mapped vs unmapped inputs.
+    - **Modular Hardware Detection**: Auto-detects composite setups like **VKB Gladiator EVO R** with attached **GNX-SEM** (Side Extension Module) and **GNX-FSM-GA** (Front Side Module), as well as **Omni Throttle** left-hand sticks.
+    - **In-App Rebinding**: Rebind or clear any game action directly to your hardware with auto-backup protection. See [docs/BUTTON_MAPPING.md](docs/BUTTON_MAPPING.md) for full details.
   - Dynamically calculates in-game console resort commands (e.g. `pp_resortdevices joystick 1 4`) with 1-click clipboard copy for live in-game resorting.
   - Auto-deploys synchronized profiles into `USER\Client\0\Controls\Mappings\layout_StickLock_Active.xml` for zero-restart reloading via in-game Control Profiles.
 - **Elite Dangerous**:

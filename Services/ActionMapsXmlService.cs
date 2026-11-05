@@ -830,6 +830,143 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         }
     }
 
+    public async Task<SyncResult> RebindActionAsync(string actionMapName, string actionName, int stickSlot, string inputCode) {
+        if (string.IsNullOrWhiteSpace(actionMapName) || string.IsNullOrWhiteSpace(actionName)) {
+            return SyncResult.Fail("Action map and action name are required.");
+        }
+
+        var xmlPath = _configService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
+            return SyncResult.Fail("Star Citizen actionmaps.xml not found.");
+        }
+
+        await _syncLock.WaitAsync();
+        try {
+            CreateBackup(xmlPath);
+
+            var doc = await Task.Run(() => XDocument.Load(xmlPath));
+            var root = doc.Element("ActionMaps");
+            if (root == null) {
+                return SyncResult.Fail("Invalid actionmaps.xml: Missing root <ActionMaps> element.");
+            }
+
+            var map = root.Elements("actionmap")
+                .FirstOrDefault(m => string.Equals((string?)m.Attribute("name"), actionMapName, StringComparison.OrdinalIgnoreCase));
+
+            if (map == null) {
+                map = new XElement("actionmap", new XAttribute("name", actionMapName));
+                root.Add(map);
+            }
+
+            var action = map.Elements("action")
+                .FirstOrDefault(a => string.Equals((string?)a.Attribute("name"), actionName, StringComparison.OrdinalIgnoreCase));
+
+            if (action == null) {
+                action = new XElement("action", new XAttribute("name", actionName));
+                map.Add(action);
+            }
+
+            // Normalize input string: e.g. "button1" -> "js1_button1"
+            var cleanInput = inputCode.Trim();
+            if (cleanInput.StartsWith("js", StringComparison.OrdinalIgnoreCase) && cleanInput.Contains('_')) {
+                var underscoreIdx = cleanInput.IndexOf('_');
+                cleanInput = cleanInput[(underscoreIdx + 1)..];
+            }
+            var fullInputStr = $"js{stickSlot}_{cleanInput}";
+
+            // Find existing joystick rebind on this action, or add new
+            var existingRebind = action.Elements("rebind")
+                .FirstOrDefault(r => ((string?)r.Attribute("input") ?? "").StartsWith("js", StringComparison.OrdinalIgnoreCase));
+
+            if (existingRebind != null) {
+                existingRebind.SetAttributeValue("input", fullInputStr);
+            } else {
+                action.Add(new XElement("rebind", new XAttribute("input", fullInputStr)));
+            }
+
+            await Task.Run(() => doc.Save(xmlPath));
+
+            // Also mirror to active layout if auto deploy enabled
+            if (_configService.Config.AutoDeployToMappingsFolder) {
+                var mappingsDir = GetStarCitizenMappingsDirectory();
+                if (!string.IsNullOrWhiteSpace(mappingsDir)) {
+                    Directory.CreateDirectory(mappingsDir);
+                    File.Copy(xmlPath, Path.Combine(mappingsDir, "layout_StickLock_Active.xml"), overwrite: true);
+                }
+            }
+
+            _logService.LogSuccess($"Rebound [{actionName}] -> {fullInputStr}");
+            return SyncResult.Ok($"Rebound {actionName} to Stick {stickSlot} ({cleanInput})", changesMade: true, status: SyncStatus.Aligned);
+        } catch (Exception ex) {
+            _logService.LogError($"Failed to rebind action {actionName}: {ex.Message}");
+            return SyncResult.Fail($"Failed to rebind action: {ex.Message}");
+        } finally {
+            _syncLock.Release();
+        }
+    }
+
+    public async Task<SyncResult> ClearRebindActionAsync(string actionMapName, string actionName) {
+        if (string.IsNullOrWhiteSpace(actionMapName) || string.IsNullOrWhiteSpace(actionName)) {
+            return SyncResult.Fail("Action map and action name are required.");
+        }
+
+        var xmlPath = _configService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
+            return SyncResult.Fail("Star Citizen actionmaps.xml not found.");
+        }
+
+        await _syncLock.WaitAsync();
+        try {
+            CreateBackup(xmlPath);
+
+            var doc = await Task.Run(() => XDocument.Load(xmlPath));
+            var root = doc.Element("ActionMaps");
+            if (root == null) {
+                return SyncResult.Fail("Invalid actionmaps.xml: Missing root <ActionMaps> element.");
+            }
+
+            var map = root.Elements("actionmap")
+                .FirstOrDefault(m => string.Equals((string?)m.Attribute("name"), actionMapName, StringComparison.OrdinalIgnoreCase));
+
+            if (map != null) {
+                var action = map.Elements("action")
+                    .FirstOrDefault(a => string.Equals((string?)a.Attribute("name"), actionName, StringComparison.OrdinalIgnoreCase));
+
+                if (action != null) {
+                    var jsRebinds = action.Elements("rebind")
+                        .Where(r => ((string?)r.Attribute("input") ?? "").StartsWith("js", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+
+                    foreach (var r in jsRebinds) {
+                        r.Remove();
+                    }
+
+                    if (!action.HasElements && !action.HasAttributes) {
+                        action.Remove();
+                    }
+                }
+            }
+
+            await Task.Run(() => doc.Save(xmlPath));
+
+            if (_configService.Config.AutoDeployToMappingsFolder) {
+                var mappingsDir = GetStarCitizenMappingsDirectory();
+                if (!string.IsNullOrWhiteSpace(mappingsDir)) {
+                    Directory.CreateDirectory(mappingsDir);
+                    File.Copy(xmlPath, Path.Combine(mappingsDir, "layout_StickLock_Active.xml"), overwrite: true);
+                }
+            }
+
+            _logService.LogSuccess($"Cleared binding for [{actionName}]");
+            return SyncResult.Ok($"Cleared binding for {actionName}", changesMade: true, status: SyncStatus.Aligned);
+        } catch (Exception ex) {
+            _logService.LogError($"Failed to clear binding for {actionName}: {ex.Message}");
+            return SyncResult.Fail($"Failed to clear binding: {ex.Message}");
+        } finally {
+            _syncLock.Release();
+        }
+    }
+
     private static (string Type, string Display) FormatInputTypeAndDisplay(string rawInput) {
         var lower = rawInput.ToLowerInvariant();
         if (lower.StartsWith("button")) {
