@@ -19,6 +19,8 @@ public interface IAppConfigService {
     Task SetAutoDeployToMappingsFolderAsync(bool enable);
     Task SetFlightAxisModeAsync(FlightAxisMode mode);
     Task SetAutoEnsureFlightAxesAsync(bool enable);
+    Task SetDesignatedRightStickGuidAsync(string? guid);
+    Task SetDesignatedLeftStickGuidAsync(string? guid);
     Task SetSyncAllDetectedInstallsAsync(bool enable);
     Task SetStarCitizenPathAsync(string path);
     Task SetStarCitizenRootFolderAsync(string folderPath);

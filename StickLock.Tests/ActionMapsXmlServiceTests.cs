@@ -684,6 +684,94 @@ public class ActionMapsXmlServiceTests : IDisposable {
         Assert.Contains("Left Stick", leftStick.FriendlyRoleName);
     }
 
+    [Fact]
+    public async Task ApplyFlightAxisMode_IgnoresKeychronKeyboardEvenIfPitchWasMappedToJs1_AndUsesRightStick() {
+        var guidK8 = Guid.Parse("0e803434-0000-0000-0000-504944564944");
+        var guidRight = Guid.Parse("0224231d-0000-0000-0000-504944564944");
+        var guidLeft = Guid.Parse("3201231d-0000-0000-0000-504944564944");
+
+        // Pitch was erroneously mapped to Keychron js1_y
+        var xmlContent = $@"<ActionMaps>
+            <options type=""joystick"" instance=""1"" Product=""Keychron K8 HE  {{{guidK8}}}""/>
+            <options type=""joystick"" instance=""2"" Product="" VKBsim Gladiator EVO R SEM FSM.GA   {{{guidRight}}}""/>
+            <options type=""joystick"" instance=""3"" Product="" VKBsim Gladiator EVO OT L    {{{guidLeft}}}""/>
+            <actionmap name=""spaceship_movement"">
+                <action name=""v_pitch""><rebind input=""js1_y""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(_xmlPath, xmlContent);
+
+        var customConfigPath = Path.Combine(_tempDir, ".sticklock", "config.json");
+        var configService = new AppConfigService(customConfigPath);
+        await configService.SetStarCitizenPathAsync(_xmlPath);
+
+        var diService = new TestDirectInputService();
+        var detector = new TestStarCitizenDetector();
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        // Detect slot: should ignore Keychron at instance 1 and find VKB Right at instance 2!
+        var detectedSlot = await xmlService.DetectFlightStickSlotFromXmlAsync();
+        Assert.Equal(2, detectedSlot);
+
+        // Explicit user designation test
+        await configService.SetDesignatedRightStickGuidAsync(guidRight.ToString());
+        var designatedSlot = await xmlService.DetectFlightStickSlotFromXmlAsync();
+        Assert.Equal(2, detectedSlot);
+
+        // Apply axes: must map to js2, NEVER js1
+        var result = await xmlService.ApplyFlightAxisModeAsync(FlightAxisMode.SpaceSim);
+        Assert.True(result.Success);
+
+        var doc = XDocument.Load(_xmlPath);
+        var pitch = doc.Descendants("action").First(a => (string?)a.Attribute("name") == "v_pitch").Element("rebind");
+        Assert.Equal("js2_y", (string?)pitch?.Attribute("input"));
+    }
+
+    [Fact]
+    public async Task GetDetailedMappingsAsync_ParsesAllButtonsAndAxes_GroupedByStick() {
+        var guidRight = Guid.Parse("0224231d-0000-0000-0000-504944564944");
+        var guidLeft = Guid.Parse("3201231d-0000-0000-0000-504944564944");
+
+        var xmlContent = $@"<ActionMaps>
+            <options type=""joystick"" instance=""1"" Product="" VKBsim Gladiator EVO R   {{{guidRight}}}""/>
+            <options type=""joystick"" instance=""2"" Product="" VKBsim Gladiator EVO OT L   {{{guidLeft}}}""/>
+            <actionmap name=""spaceship_movement"">
+                <action name=""v_pitch""><rebind input=""js1_y""/></action>
+                <action name=""v_yaw""><rebind input=""js1_x""/></action>
+                <action name=""v_space_brake""><rebind input=""js2_button3""/></action>
+            </actionmap>
+            <actionmap name=""spaceship_weapons"">
+                <action name=""v_attack1_group1""><rebind input=""js1_button1""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(_xmlPath, xmlContent);
+
+        var customConfigPath = Path.Combine(_tempDir, ".sticklock", "config.json");
+        var configService = new AppConfigService(customConfigPath);
+        await configService.SetStarCitizenPathAsync(_xmlPath);
+
+        var diService = new TestDirectInputService();
+        var detector = new TestStarCitizenDetector();
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        var mappings = await xmlService.GetDetailedMappingsAsync();
+        Assert.Equal(4, mappings.Count);
+
+        // Check stick 1 has pitch, yaw, weapons
+        var stick1Binds = mappings.Where(m => m.StickInstance == 1).ToList();
+        Assert.Equal(3, stick1Binds.Count);
+        Assert.Contains(stick1Binds, b => b.DisplayInput == "Y Axis" && b.DisplayAction == "Pitch");
+        Assert.Contains(stick1Binds, b => b.DisplayInput == "Button 1" && b.DisplayAction == "Attack1 Group1");
+
+        // Check stick 2 has space brake
+        var stick2Binds = mappings.Where(m => m.StickInstance == 2).ToList();
+        Assert.Single(stick2Binds);
+        Assert.Equal("Button 3", stick2Binds[0].DisplayInput);
+        Assert.Equal("Space Brake", stick2Binds[0].DisplayAction);
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {

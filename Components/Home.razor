@@ -625,7 +625,119 @@
             }
         </MudTabPanel>
 
-        <!-- TAB 3: SETTINGS & ACTIVITY LOG -->
+        <!-- TAB 3: CONTROLLER BUTTON MAPPINGS -->
+        <MudTabPanel Text="@($"BUTTON MAPPINGS ({_detailedMappings.Count})")" Icon="@Icons.Material.Filled.Gamepad">
+            <div class="d-flex flex-wrap align-center justify-space-between gap-2 mb-3">
+                <div>
+                    <MudText Typo="Typo.subtitle2" Class="mfd-title" Style="color: #00E5FF;">CONTROLLER BUTTON &amp; AXIS MAPPINGS</MudText>
+                    <MudText Typo="Typo.caption" Class="mfd-code" Style="color: #94A3B8;">
+                        Active bindings from <span style="color: #00E5FF;">actionmaps.xml</span> categorized by stick and function
+                    </MudText>
+                </div>
+                <div class="d-flex flex-wrap align-center gap-2">
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Refresh"
+                               OnClick="ReloadDetailedMappingsAsync"
+                               Class="mfd-title">
+                        Reload Binds
+                    </MudButton>
+                </div>
+            </div>
+
+            <!-- Filter Bar: Stick Selector & Search Text -->
+            <div class="d-flex flex-wrap align-center gap-3 mb-3 pa-2 rounded" style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(0, 229, 255, 0.1);">
+                <div style="min-width: 220px;">
+                    <MudSelect T="int"
+                               Value="_selectedStickFilter"
+                               ValueChanged="OnSelectedStickFilterChanged"
+                               Label="Filter by Controller"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Dense="true"
+                               Class="mfd-code"
+                               Style="font-size: 0.8rem;">
+                        <MudSelectItem Value="0">All Controllers (@_detailedMappings.Count)</MudSelectItem>
+                        @foreach (var group in _detailedMappings.GroupBy(m => m.StickInstance).OrderBy(g => g.Key)) {
+                            var devName = group.First().DeviceName;
+                            <MudSelectItem Value="group.Key">js@(group.Key): @devName (@group.Count())</MudSelectItem>
+                        }
+                    </MudSelect>
+                </div>
+
+                <div class="flex-grow-1" style="min-width: 260px;">
+                    <MudTextField @bind-Value="_mappingSearchTerm"
+                                  Placeholder="Search input or action (e.g. button1, fire, pitch, quantum, strafe)..."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  AdornmentColor="Color.Primary"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Immediate="true"
+                                  Clearable="true"
+                                  Class="mfd-code" />
+                </div>
+            </div>
+
+            <!-- Mappings Table -->
+            @if (FilteredDetailedMappings.Count == 0) {
+                <div class="pa-8 text-center rounded" style="background: rgba(15, 23, 42, 0.4); border: 1px dashed rgba(148, 163, 184, 0.2);">
+                    <MudIcon Icon="@Icons.Material.Filled.Gamepad" Size="Size.Large" Color="Color.Default" Class="mb-2" />
+                    <MudText Typo="Typo.body2" Style="color: #94A3B8;">No Controller Bindings Found</MudText>
+                    <MudText Typo="Typo.caption" Style="color: #64748B;">Verify that your game bindings are detected or clear your search filter.</MudText>
+                </div>
+            } else {
+                <MudTable Items="FilteredDetailedMappings" Dense="true" Hover="true" Breakpoint="Breakpoint.None" Elevation="0" Style="background: transparent;">
+                    <HeaderContent>
+                        <MudTh Style="color: #00E5FF; font-weight: 700;">CONTROLLER</MudTh>
+                        <MudTh Style="color: #00E5FF; font-weight: 700;">INPUT</MudTh>
+                        <MudTh Style="color: #00E5FF; font-weight: 700;">CATEGORY</MudTh>
+                        <MudTh Style="color: #00E5FF; font-weight: 700;">ACTION</MudTh>
+                        <MudTh Style="color: #00E5FF; font-weight: 700;">PROPERTIES</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Outlined" Class="mfd-code py-0">
+                                js@(context.StickInstance): @context.DeviceName
+                            </MudChip>
+                        </MudTd>
+                        <MudTd>
+                            <div class="d-flex align-center gap-1">
+                                @if (context.InputType == "Axis") {
+                                    <MudIcon Icon="@Icons.Material.Filled.AllInclusive" Size="Size.Small" Color="Color.Secondary" Style="font-size: 0.9rem;" />
+                                } else if (context.InputType == "Hat") {
+                                    <MudIcon Icon="@Icons.Material.Filled.Navigation" Size="Size.Small" Color="Color.Info" Style="font-size: 0.9rem;" />
+                                } else {
+                                    <MudIcon Icon="@Icons.Material.Filled.RadioButtonChecked" Size="Size.Small" Color="Color.Success" Style="font-size: 0.9rem;" />
+                                }
+                                <span class="mfd-code font-weight-bold" style="color: #38BDF8;">@context.DisplayInput</span>
+                            </div>
+                        </MudTd>
+                        <MudTd>
+                            <span style="color: #94A3B8; font-size: 0.8rem;">@context.DisplayCategory</span>
+                        </MudTd>
+                        <MudTd>
+                            <span style="color: #CBD5E1; font-weight: 600;">@context.DisplayAction</span>
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsInverted) {
+                                <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Filled" Style="font-size: 0.65rem; height: 18px;" Class="mr-1">
+                                    INVERTED
+                                </MudChip>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(context.MultiTap)) {
+                                <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Filled" Style="font-size: 0.65rem; height: 18px;">
+                                    @context.MultiTap.ToUpperInvariant()
+                                </MudChip>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudTabPanel>
+
+        <!-- TAB 4: SETTINGS & ACTIVITY LOG -->
         <MudTabPanel Text="SETTINGS & LOGS" Icon="@Icons.Material.Filled.Tune">
             <MudGrid Spacing="3">
                 <!-- Left: Daemon & Sync Preferences -->
@@ -704,6 +816,50 @@
                                     <MudSelectItem Value="FlightAxisMode.SpaceSim">Space Sim (Pitch=Y, Yaw=X, Roll=Twist)</MudSelectItem>
                                     <MudSelectItem Value="FlightAxisMode.Atmospheric">Atmospheric (Pitch=Y, Roll=X, Yaw=Twist)</MudSelectItem>
                                     <MudSelectItem Value="FlightAxisMode.PreserveOnly">Preserve XML Only (No Auto-Fill)</MudSelectItem>
+                                </MudSelect>
+                            </div>
+
+                            <div class="d-flex flex-column gap-1 mt-2">
+                                <div class="d-flex align-center justify-space-between">
+                                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #38BDF8;">Right Stick (Flight Stick Target)</MudText>
+                                    <MudTooltip Text="Designate which physical controller is your Right Stick for pitch, yaw, and roll mapping">
+                                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Default" />
+                                    </MudTooltip>
+                                </div>
+                                <MudSelect T="string"
+                                           Value="@(ConfigService.Config.DesignatedRightStickGuid ?? "")"
+                                           ValueChanged="@((string val) => OnDesignatedRightStickChangedAsync(val))"
+                                           Margin="Margin.Dense"
+                                           Variant="Variant.Outlined"
+                                           Dense="true"
+                                           Class="mfd-code"
+                                           Style="font-size: 0.8rem;">
+                                    <MudSelectItem Value="@("")">Auto-Detect (Smart Joystick Filter)</MudSelectItem>
+                                    @foreach (var dev in GetConfigurableDevices()) {
+                                        <MudSelectItem Value="@dev.Guid">@dev.DisplayName</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </div>
+
+                            <div class="d-flex flex-column gap-1 mt-2">
+                                <div class="d-flex align-center justify-space-between">
+                                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #38BDF8;">Left Stick (Strafe Stick / Throttle Target)</MudText>
+                                    <MudTooltip Text="Designate which physical controller is your Left Stick for strafe and throttle mapping">
+                                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Default" />
+                                    </MudTooltip>
+                                </div>
+                                <MudSelect T="string"
+                                           Value="@(ConfigService.Config.DesignatedLeftStickGuid ?? "")"
+                                           ValueChanged="@((string val) => OnDesignatedLeftStickChangedAsync(val))"
+                                           Margin="Margin.Dense"
+                                           Variant="Variant.Outlined"
+                                           Dense="true"
+                                           Class="mfd-code"
+                                           Style="font-size: 0.8rem;">
+                                    <MudSelectItem Value="@("")">Auto-Detect (Smart Joystick Filter)</MudSelectItem>
+                                    @foreach (var dev in GetConfigurableDevices()) {
+                                        <MudSelectItem Value="@dev.Guid">@dev.DisplayName</MudSelectItem>
+                                    }
                                 </MudSelect>
                             </div>
                         }
@@ -792,12 +948,86 @@
     private IReadOnlyList<XmlStickMapping> _xmlMappings = Array.Empty<XmlStickMapping>();
     private IReadOnlyList<SavedMappingProfile> _savedProfiles = Array.Empty<SavedMappingProfile>();
     private IReadOnlyList<DetectedScInstall> _detectedInstalls = Array.Empty<DetectedScInstall>();
+    private IReadOnlyList<ControllerMappingItem> _detailedMappings = Array.Empty<ControllerMappingItem>();
+    private int _selectedStickFilter = 0;
+    private string _mappingSearchTerm = string.Empty;
     private MappingAlignmentCheck _alignmentCheck = new();
     private string? _lastFixedBackupPath = null;
     private SyncStatus _status = SyncStatus.Unknown;
     private string _dynamicResortCommand = "pp_resortdevices joystick 1 2";
     private bool _isSyncing = false;
     private bool _isRefreshingDevices = false;
+
+    private IReadOnlyList<ControllerMappingItem> FilteredDetailedMappings {
+        get {
+            var items = (IEnumerable<ControllerMappingItem>)_detailedMappings;
+            if (_selectedStickFilter > 0) {
+                items = items.Where(m => m.StickInstance == _selectedStickFilter);
+            }
+            if (!string.IsNullOrWhiteSpace(_mappingSearchTerm)) {
+                var term = _mappingSearchTerm.Trim();
+                items = items.Where(m =>
+                    m.DisplayInput.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    m.InputCode.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    m.DisplayAction.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    m.ActionName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    m.DisplayCategory.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    m.DeviceName.Contains(term, StringComparison.OrdinalIgnoreCase));
+            }
+            return items.ToList();
+        }
+    }
+
+    private void OnSelectedStickFilterChanged(int val) {
+        _selectedStickFilter = val;
+    }
+
+    private async Task ReloadDetailedMappingsAsync() {
+        try {
+            _detailedMappings = await XmlService.GetDetailedMappingsAsync();
+        } catch {
+            _detailedMappings = Array.Empty<ControllerMappingItem>();
+        }
+    }
+
+    private record DeviceOption(string Guid, string DisplayName);
+
+    private IReadOnlyList<DeviceOption> GetConfigurableDevices() {
+        var list = new List<DeviceOption>();
+        var seenGuids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var d in _liveDevices) {
+            var g = d.InstanceGuid.ToString();
+            if (!string.IsNullOrWhiteSpace(g) && seenGuids.Add(g)) {
+                list.Add(new DeviceOption(g, $"{d.ProductName} (DirectInput #{d.SlotIndex})"));
+            }
+        }
+
+        foreach (var x in _alignmentCheck.ExistingXmlDevices) {
+            var g = x.ExtractedGuid.ToString();
+            if (!string.IsNullOrWhiteSpace(g) && seenGuids.Add(g)) {
+                list.Add(new DeviceOption(g, $"{x.ProductName} (XML js{x.Instance})"));
+            }
+        }
+
+        return list;
+    }
+
+    private async Task OnDesignatedRightStickChangedAsync(string? guid) {
+        await ConfigService.SetDesignatedRightStickGuidAsync(guid);
+        Snackbar.Add(string.IsNullOrWhiteSpace(guid)
+            ? "Right Stick set to Auto-Detect."
+            : "Right Stick target locked.", Severity.Info);
+        await RefreshAlignmentCheckAsync();
+    }
+
+    private async Task OnDesignatedLeftStickChangedAsync(string? guid) {
+        await ConfigService.SetDesignatedLeftStickGuidAsync(guid);
+        Snackbar.Add(string.IsNullOrWhiteSpace(guid)
+            ? "Left Stick set to Auto-Detect."
+            : "Left Stick target locked.", Severity.Info);
+        await RefreshAlignmentCheckAsync();
+    }
 
     protected override async Task OnInitializedAsync() {
         DirectInputService.DevicesRefreshed += OnDevicesChanged;
@@ -810,6 +1040,7 @@
         await RefreshAlignmentCheckAsync();
         await ReloadXmlMappingsAsync();
         await ReloadSavedProfilesAsync();
+        await ReloadDetailedMappingsAsync();
     }
 
     private void OnActivePluginChanged(StickLock.Plugins.IGamePlugin plugin) {
@@ -822,6 +1053,7 @@
                 _xmlMappings = Array.Empty<XmlStickMapping>();
             }
             await ReloadSavedProfilesAsync();
+            await ReloadDetailedMappingsAsync();
             StateHasChanged();
         });
     }

@@ -210,6 +210,16 @@ public class AppConfigService : IAppConfigService {
         await SaveConfigAsync();
     }
 
+    public async Task SetDesignatedRightStickGuidAsync(string? guid) {
+        _config.DesignatedRightStickGuid = guid?.Trim() ?? string.Empty;
+        await SaveConfigAsync();
+    }
+
+    public async Task SetDesignatedLeftStickGuidAsync(string? guid) {
+        _config.DesignatedLeftStickGuid = guid?.Trim() ?? string.Empty;
+        await SaveConfigAsync();
+    }
+
     public async Task SetStarCitizenPathAsync(string path) {
         _config.StarCitizenPath = path.Trim();
         var inferredRoot = ExtractStarCitizenRoot(_config.StarCitizenPath);

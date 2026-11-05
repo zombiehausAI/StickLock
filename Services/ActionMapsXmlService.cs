@@ -736,6 +736,147 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         }
     }
 
+    public async Task<IReadOnlyList<ControllerMappingItem>> GetDetailedMappingsAsync(string? filePath = null) {
+        filePath ??= _configService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) {
+            return Array.Empty<ControllerMappingItem>();
+        }
+
+        try {
+            return await Task.Run(async () => {
+                await using var stream = File.OpenRead(filePath);
+                var doc = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
+
+                var deviceLookup = new Dictionary<int, (string Name, string Guid)>();
+                foreach (var opt in doc.Descendants("options").Where(o => (string?)o.Attribute("type") == "joystick")) {
+                    var instStr = (string?)opt.Attribute("instance") ?? "";
+                    if (int.TryParse(instStr, out var inst)) {
+                        var prod = (string?)opt.Attribute("Product") ?? $"Joystick {inst}";
+                        var guid = string.Empty;
+                        var guidMatch = GuidRegex.Match(prod);
+                        if (guidMatch.Success) {
+                            guid = guidMatch.Value.Trim('{', '}');
+                            prod = prod.Replace(guidMatch.Value, "").Trim();
+                        }
+                        deviceLookup[inst] = (prod.Trim(), guid);
+                    }
+                }
+
+                var items = new List<ControllerMappingItem>();
+                var jsInputRegex = new Regex(@"^js(\d+)_(.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+                foreach (var map in doc.Descendants("actionmap")) {
+                    var mapName = (string?)map.Attribute("name") ?? "general";
+                    var displayCategory = FormatActionMapCategory(mapName);
+
+                    foreach (var action in map.Elements("action")) {
+                        var actionName = (string?)action.Attribute("name") ?? "";
+                        var displayAction = FormatActionName(actionName);
+
+                        foreach (var rebind in action.Elements("rebind")) {
+                            var input = (string?)rebind.Attribute("input") ?? "";
+                            if (string.IsNullOrWhiteSpace(input)) {
+                                continue;
+                            }
+
+                            var match = jsInputRegex.Match(input);
+                            if (match.Success && int.TryParse(match.Groups[1].Value, out var stickInst)) {
+                                var rawInput = match.Groups[2].Value;
+                                var (inputType, displayInput) = FormatInputTypeAndDisplay(rawInput);
+
+                                var devName = deviceLookup.TryGetValue(stickInst, out var devInfo)
+                                    ? devInfo.Name
+                                    : $"Joystick #{stickInst}";
+                                var devGuid = devInfo.Guid ?? string.Empty;
+
+                                items.Add(new ControllerMappingItem {
+                                    StickInstance = stickInst,
+                                    DeviceName = devName,
+                                    DeviceGuid = devGuid,
+                                    InputCode = input,
+                                    InputType = inputType,
+                                    DisplayInput = displayInput,
+                                    ActionMap = mapName,
+                                    ActionName = actionName,
+                                    DisplayCategory = displayCategory,
+                                    DisplayAction = displayAction,
+                                    IsInverted = (string?)rebind.Attribute("invert") == "1",
+                                    MultiTap = (string?)rebind.Attribute("multiTap") == "2" ? "Double Tap" : ""
+                                });
+                            }
+                        }
+                    }
+                }
+
+                return (IReadOnlyList<ControllerMappingItem>)items
+                    .OrderBy(i => i.StickInstance)
+                    .ThenBy(i => i.DisplayCategory)
+                    .ThenBy(i => i.DisplayAction)
+                    .ToList();
+            });
+        } catch (Exception ex) {
+            _logService.LogError($"Failed to parse detailed mappings from {filePath}: {ex.Message}");
+            return Array.Empty<ControllerMappingItem>();
+        }
+    }
+
+    private static (string Type, string Display) FormatInputTypeAndDisplay(string rawInput) {
+        var lower = rawInput.ToLowerInvariant();
+        if (lower.StartsWith("button")) {
+            var num = lower.Replace("button", "").Trim();
+            return ("Button", $"Button {num}");
+        }
+        if (lower.StartsWith("hat")) {
+            var parts = lower.Split('_');
+            var hatNum = parts[0].Replace("hat", "");
+            var dir = parts.Length > 1 ? char.ToUpper(parts[1][0]) + parts[1][1..] : "Press";
+            return ("Hat", $"Hat {hatNum} {dir}");
+        }
+        if (lower == "x") return ("Axis", "X Axis");
+        if (lower == "y") return ("Axis", "Y Axis");
+        if (lower == "z") return ("Axis", "Z Axis");
+        if (lower == "rotx") return ("Axis", "RotX Axis");
+        if (lower == "roty") return ("Axis", "RotY Axis");
+        if (lower == "rotz") return ("Axis", "Twist (RotZ)");
+        if (lower == "throttle") return ("Axis", "Throttle Axis");
+        if (lower.StartsWith("slider")) return ("Axis", $"Slider {lower.Replace("slider", "")}");
+
+        return ("Input", rawInput);
+    }
+
+    private static string FormatActionMapCategory(string rawMap) {
+        return rawMap.ToLowerInvariant() switch {
+            "spaceship_movement" => "Flight Movement",
+            "spaceship_weapons" => "Flight Weapons",
+            "spaceship_missiles" => "Flight Missiles",
+            "spaceship_targeting" => "Flight Targeting",
+            "spaceship_general" => "Flight General",
+            "spaceship_view" => "Flight View & Camera",
+            "spaceship_power" => "Power & Shields",
+            "spaceship_quantum" => "Quantum Travel",
+            "spaceship_radar" => "Radar & Ping",
+            "spaceship_mining" => "Mining & Salvage",
+            "vehicle_driver" => "Ground Vehicles: Driving",
+            "vehicle_general" => "Ground Vehicles: General",
+            "seat_general" => "Cockpit & Seat",
+            "lights_power" => "Systems & Lights",
+            _ => CapitalizeWords(rawMap.Replace("_", " "))
+        };
+    }
+
+    private static string FormatActionName(string rawAction) {
+        if (rawAction.StartsWith("v_")) {
+            rawAction = rawAction[2..];
+        }
+        return CapitalizeWords(rawAction.Replace("_", " "));
+    }
+
+    private static string CapitalizeWords(string text) {
+        if (string.IsNullOrWhiteSpace(text)) return text;
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Join(" ", words.Select(w => char.ToUpper(w[0]) + (w.Length > 1 ? w[1..] : "")));
+    }
+
     public string? GetStarCitizenMappingsDirectory() {
         var xmlPath = _configService.Config.StarCitizenPath;
         if (string.IsNullOrWhiteSpace(xmlPath)) {
@@ -1224,7 +1365,39 @@ public class ActionMapsXmlService : IActionMapsXmlService {
     }
 
     private int DetectFlightStickSlotFromDoc(XDocument doc) {
-        // 1. Check spaceship_movement for existing v_pitch, v_yaw, or v_roll rebind
+        // 0. Explicit user designation from settings dropdown
+        var designatedGuid = _configService.Config.DesignatedRightStickGuid;
+        if (!string.IsNullOrWhiteSpace(designatedGuid) && !designatedGuid.Equals("auto", StringComparison.OrdinalIgnoreCase)) {
+            var slot = FindInstanceByGuid(doc, designatedGuid);
+            if (slot > 0) {
+                return slot;
+            }
+        }
+
+        // 1. Check options for products matching Right / R in name, excluding non-flight hardware (keyboards, mice, vJoy)
+        foreach (var opt in doc.Descendants("options").Where(o => (string?)o.Attribute("type") == "joystick")) {
+            var prod = (string?)opt.Attribute("Product") ?? "";
+            var instStr = (string?)opt.Attribute("instance") ?? "";
+            if (int.TryParse(instStr, out var inst)) {
+                if (IsRightStickName(prod) && !IsNonFlightDevice(prod)) {
+                    return inst;
+                }
+            }
+        }
+
+        // 2. Check canonical sticks for right/flight designation
+        var rightCanonical = _configService.Config.CanonicalSticks
+            .FirstOrDefault(s => s.FriendlyRoleName.Contains("Right", StringComparison.OrdinalIgnoreCase) ||
+                                 s.FriendlyRoleName.Contains("Flight", StringComparison.OrdinalIgnoreCase));
+        if (rightCanonical != null) {
+            var slot = FindInstanceByGuid(doc, rightCanonical.InstanceGuid.ToString());
+            if (slot > 0) {
+                return slot;
+            }
+            return rightCanonical.RoleSlot;
+        }
+
+        // 3. Check spaceship_movement for existing v_pitch, v_yaw, or v_roll on a GENUINE flight stick (not a keyboard!)
         var movementMap = doc.Descendants("actionmap")
             .FirstOrDefault(e => string.Equals((string?)e.Attribute("name"), "spaceship_movement", StringComparison.OrdinalIgnoreCase));
         var jsRegex = new Regex(@"\bjs(\d+)_", RegexOptions.Compiled);
@@ -1238,35 +1411,65 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                 if (!string.IsNullOrWhiteSpace(input)) {
                     var match = jsRegex.Match(input);
                     if (match.Success && int.TryParse(match.Groups[1].Value, out var slot) && slot > 0) {
-                        return slot;
+                        var opt = doc.Descendants("options").FirstOrDefault(o => (string?)o.Attribute("instance") == slot.ToString());
+                        var prod = (string?)opt?.Attribute("Product") ?? "";
+                        if (!IsNonFlightDevice(prod)) {
+                            return slot;
+                        }
                     }
                 }
             }
         }
 
-        // 2. Check options for products with Right / R in name
+        // 4. Fallback: Find the first genuine flight stick in options
         foreach (var opt in doc.Descendants("options").Where(o => (string?)o.Attribute("type") == "joystick")) {
             var prod = (string?)opt.Attribute("Product") ?? "";
             var instStr = (string?)opt.Attribute("instance") ?? "";
             if (int.TryParse(instStr, out var inst)) {
-                if (IsRightStickName(prod)) {
+                if (!IsNonFlightDevice(prod)) {
                     return inst;
                 }
             }
         }
 
-        // 3. Check canonical sticks
-        var rightCanonical = _configService.Config.CanonicalSticks
-            .FirstOrDefault(s => s.FriendlyRoleName.Contains("Right", StringComparison.OrdinalIgnoreCase));
-        if (rightCanonical != null) {
-            return rightCanonical.RoleSlot;
-        }
-
         return 1;
     }
 
-    private static bool IsRightStickName(string productName) {
+    private static int FindInstanceByGuid(XDocument doc, string guid) {
+        if (string.IsNullOrWhiteSpace(guid)) {
+            return 0;
+        }
+        var cleanGuid = guid.Replace("{", "").Replace("}", "").Trim();
+        foreach (var opt in doc.Descendants("options").Where(o => (string?)o.Attribute("type") == "joystick")) {
+            var prod = (string?)opt.Attribute("Product") ?? "";
+            var instStr = (string?)opt.Attribute("instance") ?? "";
+            if (prod.Contains(cleanGuid, StringComparison.OrdinalIgnoreCase) && int.TryParse(instStr, out var inst)) {
+                return inst;
+            }
+        }
+        return 0;
+    }
+
+    private static bool IsNonFlightDevice(string productName) {
         if (string.IsNullOrWhiteSpace(productName)) {
+            return false;
+        }
+        var p = productName.ToLowerInvariant();
+        return p.Contains("keychron") ||
+               p.Contains("keyboard") ||
+               p.Contains("tartarus") ||
+               p.Contains("wooting") ||
+               p.Contains("azeron") ||
+               p.Contains("mouse") ||
+               p.Contains("vjoy") ||
+               p.Contains("headtracker") ||
+               p.Contains("tobii") ||
+               p.Contains("trackir") ||
+               p.Contains("link");
+    }
+
+    private static bool IsRightStickName(string productName) {
+        if (string.IsNullOrWhiteSpace(productName) || IsNonFlightDevice(productName)) {
             return false;
         }
         if (productName.Contains("Throttle", StringComparison.OrdinalIgnoreCase) ||
@@ -1279,7 +1482,7 @@ public class ActionMapsXmlService : IActionMapsXmlService {
     }
 
     private static bool IsLeftStickName(string productName) {
-        if (string.IsNullOrWhiteSpace(productName)) {
+        if (string.IsNullOrWhiteSpace(productName) || IsNonFlightDevice(productName)) {
             return false;
         }
         if (productName.Contains("Throttle", StringComparison.OrdinalIgnoreCase) ||
