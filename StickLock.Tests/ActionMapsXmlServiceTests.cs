@@ -772,6 +772,41 @@ public class ActionMapsXmlServiceTests : IDisposable {
         Assert.Equal("Space Brake", stick2Binds[0].DisplayAction);
     }
 
+    [Fact]
+    public async Task SyncAsync_WhenCanonicalSticksEmpty_AutoLocksFromXmlAndSyncs() {
+        var guidRight = Guid.Parse("0224231d-0000-0000-0000-504944564944");
+        var guidLeft = Guid.Parse("3201231d-0000-0000-0000-504944564944");
+
+        var xmlContent = $@"<ActionMaps>
+            <options type=""joystick"" instance=""1"" Product="" VKBsim Gladiator EVO R   {{{guidRight}}}""/>
+            <options type=""joystick"" instance=""2"" Product="" VKBsim Gladiator EVO OT L   {{{guidLeft}}}""/>
+            <actionmap name=""spaceship_movement"">
+                <action name=""v_pitch""><rebind input=""js1_y""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(_xmlPath, xmlContent);
+
+        var customConfigPath = Path.Combine(_tempDir, ".sticklock", "config.json");
+        var configService = new AppConfigService(customConfigPath);
+        await configService.SetStarCitizenPathAsync(_xmlPath);
+        Assert.Empty(configService.Config.CanonicalSticks);
+
+        var diService = new TestDirectInputService();
+        diService.SetDevices(new List<DirectInputDevice> {
+            new() { SlotIndex = 1, ProductName = "VKBsim Gladiator EVO R", InstanceGuid = guidRight, ProductGuid = guidRight },
+            new() { SlotIndex = 2, ProductName = "VKBsim Gladiator EVO OT L", InstanceGuid = guidLeft, ProductGuid = guidLeft }
+        });
+
+        var detector = new TestStarCitizenDetector { Running = false };
+        var logService = new ActivityLogService();
+        var xmlService = new ActionMapsXmlService(configService, diService, detector, logService);
+
+        var syncResult = await xmlService.SyncAsync();
+        Assert.True(syncResult.Success);
+        // Canonical sticks should now be auto-locked!
+        Assert.Equal(2, configService.Config.CanonicalSticks.Count);
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {

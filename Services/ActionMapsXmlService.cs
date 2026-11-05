@@ -268,27 +268,37 @@ public class ActionMapsXmlService : IActionMapsXmlService {
     }
 
     public async Task<SyncResult> SyncAsync(bool force = false) {
+        var isGameRunning = _starCitizenDetector.IsGameRunning();
+        if (isGameRunning && !force && !_configService.Config.AllowSyncWhileGameRunning) {
+            var resortCmd = await GetConsoleResortCommandAsync();
+            _logService.LogWarning(
+                "Star Citizen is running. Auto-sync skipped to avoid file lock conflict.",
+                $"Use game console (~) command: {resortCmd}");
+            return SyncResult.Fail("Star Citizen is currently running. Use in-game console resort command or enable Force Sync.", SyncStatus.StarCitizenActive);
+        }
+
+        var xmlPath = _configService.Config.StarCitizenPath;
+        if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
+            _logService.LogError("actionmaps.xml not found at specified path.", xmlPath ?? "Empty path");
+            return SyncResult.Fail($"File not found: {xmlPath}", SyncStatus.FileNotFound);
+        }
+
+        if (_configService.Config.CanonicalSticks.Count < 2) {
+            var xmlMappings = await GetXmlMappingsAsync();
+            if (xmlMappings.Count >= 2) {
+                _logService.LogInfo("Fewer than 2 canonical sticks configured; auto-locking sticks from detected game configuration...");
+                return await AutoLockAndAlignFromXmlAsync(force);
+            }
+
+            _logService.LogInfo("Need at least 2 canonical sticks configured to evaluate sync.", $"Configured: {_configService.Config.CanonicalSticks.Count}");
+            return SyncResult.Ok("Less than 2 flight sticks detected. Please connect your sticks or lock slots in Controllers & Slots.", changesMade: false, status: SyncStatus.Aligned);
+        }
+
         await _syncLock.WaitAsync();
         try {
-            var isGameRunning = _starCitizenDetector.IsGameRunning();
-            if (isGameRunning && !force && !_configService.Config.AllowSyncWhileGameRunning) {
-                var resortCmd = await GetConsoleResortCommandAsync();
-                _logService.LogWarning(
-                    "Star Citizen is running. Auto-sync skipped to avoid file lock conflict.",
-                    $"Use game console (~) command: {resortCmd}");
-                return SyncResult.Fail("Star Citizen is currently running. Use in-game console resort command or enable Force Sync.", SyncStatus.StarCitizenActive);
-            }
-
-            var xmlPath = _configService.Config.StarCitizenPath;
-            if (string.IsNullOrWhiteSpace(xmlPath) || !File.Exists(xmlPath)) {
-                _logService.LogError("actionmaps.xml not found at specified path.", xmlPath ?? "Empty path");
-                return SyncResult.Fail($"File not found: {xmlPath}", SyncStatus.FileNotFound);
-            }
-
             var canonical = _configService.Config.CanonicalSticks;
             if (canonical.Count < 2) {
-                _logService.LogInfo("Need at least 2 canonical sticks configured to evaluate sync.", $"Configured: {canonical.Count}");
-                return SyncResult.Ok("Less than 2 sticks configured. Nothing to sync.", changesMade: false, status: SyncStatus.Aligned);
+                return SyncResult.Ok("Less than 2 flight sticks configured. Nothing to sync.", changesMade: false, status: SyncStatus.Aligned);
             }
 
             var liveDevices = await _directInputService.RefreshDevicesAsync();
