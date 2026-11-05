@@ -201,5 +201,59 @@ public class UpdateServiceTests {
         Assert.Equal("1.0.2", releaseInfo.LatestVersion);
         Assert.Equal("Release", releaseInfo.Channel);
     }
+
+    [Fact]
+    public async Task CheckForUpdateAsync_AllowsSwitchingFromReleaseToAlphaTrack() {
+        var json = @"[
+            {
+                ""tag_name"": ""v1.1.0-alpha.99"",
+                ""prerelease"": true,
+                ""target_commitish"": ""feature/button-mapping"",
+                ""assets"": [
+                    {
+                        ""name"": ""StickLock-v1.1.0-alpha.99-Setup.exe"",
+                        ""browser_download_url"": ""https://github.com/zombiehausAI/StickLock/releases/download/v1.1.0-alpha.99/StickLock-v1.1.0-alpha.99-Setup.exe"",
+                        ""size"": 41000000
+                    }
+                ]
+            },
+            {
+                ""tag_name"": ""v1.1.0"",
+                ""prerelease"": false,
+                ""target_commitish"": ""main"",
+                ""assets"": [
+                    {
+                        ""name"": ""StickLock-v1.1.0-Setup.exe"",
+                        ""browser_download_url"": ""https://github.com/zombiehausAI/StickLock/releases/download/v1.1.0/StickLock-v1.1.0-Setup.exe"",
+                        ""size"": 41000000
+                    }
+                ]
+            }
+        ]";
+
+        var mockHandler = new MockHttpMessageHandler(req => new HttpResponseMessage(HttpStatusCode.OK) {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        });
+
+        var httpClient = new HttpClient(mockHandler);
+        var logService = new ActivityLogService();
+        var updateService = new UpdateService(logService, httpClient);
+
+        // When switching track to Alpha
+        var alphaInfo = await updateService.CheckForUpdateAsync(force: true, channel: "Alpha");
+        Assert.Equal("1.1.0-alpha.99", alphaInfo.LatestVersion);
+        Assert.True(alphaInfo.IsUpdateAvailable);
+        Assert.Equal("StickLock-v1.1.0-alpha.99-Setup.exe", alphaInfo.InstallerFileName);
+
+        // Verify BelongsToChannel helper
+        Assert.True(UpdateService.BelongsToChannel("1.1.0-alpha.31", "Alpha"));
+        Assert.False(UpdateService.BelongsToChannel("1.1.0", "Alpha"));
+        Assert.True(UpdateService.BelongsToChannel("1.1.0", "Release"));
+        Assert.False(UpdateService.BelongsToChannel("1.1.0-alpha.31", "Release"));
+
+        // Verify version comparison across channels and within channel
+        Assert.True(UpdateService.IsNewerVersion("1.1.0-alpha.31", "1.1.0-alpha.30"));
+        Assert.False(UpdateService.IsNewerVersion("1.1.0-alpha.30", "1.1.0-alpha.31"));
+    }
 }
 

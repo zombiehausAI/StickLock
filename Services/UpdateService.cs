@@ -185,7 +185,15 @@ public class UpdateService : IUpdateService {
                 }
             }
 
-            info.IsUpdateAvailable = IsNewerVersion(cleanTag, currentVerStr);
+            var isCrossChannelSwitch = !BelongsToChannel(currentVerStr, activeChannel);
+            if (isCrossChannelSwitch) {
+                // User intentionally switched channel track (e.g. Release -> Alpha or Alpha -> Release)
+                info.IsUpdateAvailable = !string.Equals(cleanTag, currentVerStr, StringComparison.OrdinalIgnoreCase);
+            } else {
+                // Same channel: check if candidate is higher version / build
+                info.IsUpdateAvailable = IsNewerVersion(cleanTag, currentVerStr);
+            }
+
             if (info.IsUpdateAvailable) {
                 _logService.LogSuccess($"New StickLock version available on [{activeChannel}]: v{info.LatestVersion} (Current: v{info.CurrentVersion})");
             } else {
@@ -315,6 +323,32 @@ public class UpdateService : IUpdateService {
             return 2;
         }
         return 3; // Official release
+    }
+
+    public static bool BelongsToChannel(string verStr, string channel) {
+        if (string.IsNullOrWhiteSpace(verStr)) {
+            return false;
+        }
+
+        var isAlpha = verStr.Contains("-alpha", StringComparison.OrdinalIgnoreCase);
+        var isBeta = verStr.Contains("-beta", StringComparison.OrdinalIgnoreCase) || verStr.Contains("-dev", StringComparison.OrdinalIgnoreCase);
+        var isRelease = !isAlpha && !isBeta;
+
+        if (string.Equals(channel, "Alpha", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(channel, "Development", StringComparison.OrdinalIgnoreCase)) {
+            return isAlpha;
+        }
+
+        if (string.Equals(channel, "Beta", StringComparison.OrdinalIgnoreCase)) {
+            return isBeta;
+        }
+
+        if (string.Equals(channel, "Release", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(channel, "Stable", StringComparison.OrdinalIgnoreCase)) {
+            return isRelease;
+        }
+
+        return false;
     }
 
     private static int ExtractBuildNumber(string verStr) {
