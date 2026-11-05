@@ -14,3 +14,4 @@ public class ControllerMappingItem {
     public bool IsInverted { get; set; }
     public string MultiTap { get; set; } = string.Empty;
 }
+
