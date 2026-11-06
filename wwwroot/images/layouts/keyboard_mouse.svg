@@ -1,145 +1,251 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650" width="1000" height="650">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 480" width="1320" height="480">
   <defs>
-    <linearGradient id="chassis-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#1E293B"/>
+    <linearGradient id="kb-chassis" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1A2234"/>
       <stop offset="100%" stop-color="#0B0F19"/>
     </linearGradient>
     <linearGradient id="mouse-grad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#334155"/>
       <stop offset="100%" stop-color="#0F172A"/>
     </linearGradient>
-    <filter id="cyan-glow">
-      <feGaussianBlur stdDeviation="6" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
+    <linearGradient id="key-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#243048"/>
+      <stop offset="100%" stop-color="#141C2E"/>
+    </linearGradient>
+    <linearGradient id="accent-key-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#0369A1"/>
+    </linearGradient>
   </defs>
 
-  <!-- Keyboard Chassis (Left Side) -->
-  <rect x="40" y="80" width="580" height="490" rx="14" fill="url(#chassis-grad)" stroke="#00E5FF" stroke-width="2"/>
-  <rect x="55" y="95" width="550" height="460" rx="10" fill="#090D16" stroke="#334155" stroke-width="1"/>
+  <!-- Keyboard Shell -->
+  <rect x="30" y="30" width="1030" height="420" rx="14" fill="url(#kb-chassis)" stroke="#00E5FF" stroke-width="2"/>
+  <rect x="42" y="42" width="1006" height="396" rx="10" fill="#080C14" stroke="#1E293B" stroke-width="1"/>
 
-  <!-- Key Rows Visual Placeholder / Clusters -->
-  <!-- Top Row (Esc, 1-6) -->
-  <g fill="#1E293B" stroke="#38BDF8" stroke-width="1.5" rx="6">
-    <rect x="75" y="115" width="55" height="45" rx="6"/>
-    <rect x="150" y="115" width="55" height="45" rx="6"/>
-    <rect x="220" y="115" width="55" height="45" rx="6"/>
-    <rect x="290" y="115" width="55" height="45" rx="6"/>
-    <rect x="360" y="115" width="55" height="45" rx="6"/>
-    <rect x="430" y="115" width="55" height="45" rx="6"/>
-    <rect x="500" y="115" width="55" height="45" rx="6"/>
-  </g>
-  <g fill="#94A3B8" font-size="14" font-weight="700" font-family="system-ui, sans-serif" text-anchor="middle">
-    <text x="102" y="143">ESC</text>
-    <text x="177" y="143">1</text>
-    <text x="247" y="143">2</text>
-    <text x="317" y="143">3</text>
-    <text x="387" y="143">4</text>
-    <text x="457" y="143">5</text>
-    <text x="527" y="143">6</text>
+  <!-- ================= KEYBOARD KEYS ================= -->
+  <g fill="url(#key-grad)" stroke="#38BDF8" stroke-width="1.2" rx="4">
+    <!-- Function Row (Y=56, H=32) -->
+    <rect x="52" y="56" width="38" height="32" rx="4"/> <!-- ESC -->
+    <rect x="135" y="56" width="36" height="32" rx="4"/> <!-- F1 -->
+    <rect x="175" y="56" width="36" height="32" rx="4"/> <!-- F2 -->
+    <rect x="215" y="56" width="36" height="32" rx="4"/> <!-- F3 -->
+    <rect x="255" y="56" width="36" height="32" rx="4"/> <!-- F4 -->
+    <rect x="320" y="56" width="36" height="32" rx="4"/> <!-- F5 -->
+    <rect x="360" y="56" width="36" height="32" rx="4"/> <!-- F6 -->
+    <rect x="400" y="56" width="36" height="32" rx="4"/> <!-- F7 -->
+    <rect x="440" y="56" width="36" height="32" rx="4"/> <!-- F8 -->
+    <rect x="505" y="56" width="36" height="32" rx="4"/> <!-- F9 -->
+    <rect x="545" y="56" width="36" height="32" rx="4"/> <!-- F10 -->
+    <rect x="585" y="56" width="36" height="32" rx="4"/> <!-- F11 -->
+    <rect x="625" y="56" width="36" height="32" rx="4"/> <!-- F12 -->
+
+    <!-- Nav Row 0 (PrtSc, ScrLk, Pause) -->
+    <rect x="710" y="56" width="40" height="32" rx="4"/>
+    <rect x="755" y="56" width="40" height="32" rx="4"/>
+    <rect x="800" y="56" width="40" height="32" rx="4"/>
+
+    <!-- Row 1: Number Row (Y=100, H=38) -->
+    <rect x="52" y="100" width="38" height="38" rx="4"/> <!-- ~ -->
+    <rect x="94" y="100" width="40" height="38" rx="4"/> <!-- 1 -->
+    <rect x="138" y="100" width="40" height="38" rx="4"/> <!-- 2 -->
+    <rect x="182" y="100" width="40" height="38" rx="4"/> <!-- 3 -->
+    <rect x="226" y="100" width="40" height="38" rx="4"/> <!-- 4 -->
+    <rect x="270" y="100" width="40" height="38" rx="4"/> <!-- 5 -->
+    <rect x="314" y="100" width="40" height="38" rx="4"/> <!-- 6 -->
+    <rect x="358" y="100" width="40" height="38" rx="4"/> <!-- 7 -->
+    <rect x="402" y="100" width="40" height="38" rx="4"/> <!-- 8 -->
+    <rect x="446" y="100" width="40" height="38" rx="4"/> <!-- 9 -->
+    <rect x="490" y="100" width="40" height="38" rx="4"/> <!-- 0 -->
+    <rect x="534" y="100" width="40" height="38" rx="4"/> <!-- - -->
+    <rect x="578" y="100" width="40" height="38" rx="4"/> <!-- = -->
+    <rect x="622" y="100" width="68" height="38" rx="4"/> <!-- Backspace -->
+
+    <!-- Nav Row 1 (Ins, Home, PgUp) -->
+    <rect x="710" y="100" width="40" height="38" rx="4"/>
+    <rect x="755" y="100" width="40" height="38" rx="4"/>
+    <rect x="800" y="100" width="40" height="38" rx="4"/>
+
+    <!-- Numpad Row 1 (NumLock, /, *, -) -->
+    <rect x="860" y="100" width="40" height="38" rx="4"/>
+    <rect x="905" y="100" width="40" height="38" rx="4"/>
+    <rect x="950" y="100" width="40" height="38" rx="4"/>
+    <rect x="995" y="100" width="40" height="38" rx="4"/>
+
+    <!-- Row 2: QWERTY Row (Y=144, H=38) -->
+    <rect x="52" y="144" width="56" height="38" rx="4"/> <!-- Tab -->
+    <rect x="112" y="144" width="40" height="38" rx="4"/> <!-- Q -->
+    <rect x="156" y="144" width="40" height="38" rx="4" fill="url(#accent-key-grad)"/> <!-- W (Strafe/Pitch) -->
+    <rect x="200" y="144" width="40" height="38" rx="4"/> <!-- E -->
+    <rect x="244" y="144" width="40" height="38" rx="4"/> <!-- R -->
+    <rect x="288" y="144" width="40" height="38" rx="4"/> <!-- T -->
+    <rect x="332" y="144" width="40" height="38" rx="4"/> <!-- Y -->
+    <rect x="376" y="144" width="40" height="38" rx="4"/> <!-- U -->
+    <rect x="420" y="144" width="40" height="38" rx="4"/> <!-- I -->
+    <rect x="464" y="144" width="40" height="38" rx="4"/> <!-- O -->
+    <rect x="508" y="144" width="40" height="38" rx="4"/> <!-- P -->
+    <rect x="552" y="144" width="40" height="38" rx="4"/> <!-- [ -->
+    <rect x="596" y="144" width="40" height="38" rx="4"/> <!-- ] -->
+    <rect x="640" y="144" width="50" height="38" rx="4"/> <!-- \ -->
+
+    <!-- Nav Row 2 (Del, End, PgDn) -->
+    <rect x="710" y="144" width="40" height="38" rx="4"/>
+    <rect x="755" y="144" width="40" height="38" rx="4"/>
+    <rect x="800" y="144" width="40" height="38" rx="4"/>
+
+    <!-- Numpad Row 2 (7, 8, 9, +) -->
+    <rect x="860" y="144" width="40" height="38" rx="4"/>
+    <rect x="905" y="144" width="40" height="38" rx="4"/>
+    <rect x="950" y="144" width="40" height="38" rx="4"/>
+    <rect x="995" y="144" width="40" height="82" rx="4"/> <!-- Numpad + (tall) -->
+
+    <!-- Row 3: ASDF Row (Y=188, H=38) -->
+    <rect x="52" y="188" width="66" height="38" rx="4"/> <!-- CapsLock -->
+    <rect x="122" y="188" width="40" height="38" rx="4" fill="url(#accent-key-grad)"/> <!-- A -->
+    <rect x="166" y="188" width="40" height="38" rx="4" fill="url(#accent-key-grad)"/> <!-- S -->
+    <rect x="210" y="188" width="40" height="38" rx="4" fill="url(#accent-key-grad)"/> <!-- D -->
+    <rect x="254" y="188" width="40" height="38" rx="4"/> <!-- F -->
+    <rect x="298" y="188" width="40" height="38" rx="4"/> <!-- G -->
+    <rect x="342" y="188" width="40" height="38" rx="4"/> <!-- H -->
+    <rect x="386" y="188" width="40" height="38" rx="4"/> <!-- J -->
+    <rect x="430" y="188" width="40" height="38" rx="4"/> <!-- K -->
+    <rect x="474" y="188" width="40" height="38" rx="4"/> <!-- L -->
+    <rect x="518" y="188" width="40" height="38" rx="4"/> <!-- ; -->
+    <rect x="562" y="188" width="40" height="38" rx="4"/> <!-- ' -->
+    <rect x="606" y="188" width="84" height="38" rx="4"/> <!-- Enter -->
+
+    <!-- Numpad Row 3 (4, 5, 6) -->
+    <rect x="860" y="188" width="40" height="38" rx="4"/>
+    <rect x="905" y="188" width="40" height="38" rx="4"/>
+    <rect x="950" y="188" width="40" height="38" rx="4"/>
+
+    <!-- Row 4: ZXCV Row (Y=232, H=38) -->
+    <rect x="52" y="232" width="88" height="38" rx="4"/> <!-- LShift -->
+    <rect x="144" y="232" width="40" height="38" rx="4"/> <!-- Z -->
+    <rect x="188" y="232" width="40" height="38" rx="4"/> <!-- X -->
+    <rect x="232" y="232" width="40" height="38" rx="4"/> <!-- C -->
+    <rect x="276" y="232" width="40" height="38" rx="4"/> <!-- V -->
+    <rect x="320" y="232" width="40" height="38" rx="4"/> <!-- B -->
+    <rect x="364" y="232" width="40" height="38" rx="4"/> <!-- N -->
+    <rect x="408" y="232" width="40" height="38" rx="4"/> <!-- M -->
+    <rect x="452" y="232" width="40" height="38" rx="4"/> <!-- , -->
+    <rect x="496" y="232" width="40" height="38" rx="4"/> <!-- . -->
+    <rect x="540" y="232" width="40" height="38" rx="4"/> <!-- / -->
+    <rect x="584" y="232" width="106" height="38" rx="4"/> <!-- RShift -->
+
+    <!-- Arrow Up -->
+    <rect x="755" y="232" width="40" height="38" rx="4"/>
+
+    <!-- Numpad Row 4 (1, 2, 3, Enter) -->
+    <rect x="860" y="232" width="40" height="38" rx="4"/>
+    <rect x="905" y="232" width="40" height="38" rx="4"/>
+    <rect x="950" y="232" width="40" height="38" rx="4"/>
+    <rect x="995" y="232" width="40" height="82" rx="4"/> <!-- Numpad Enter (tall) -->
+
+    <!-- Row 5: Bottom Modifier Row (Y=276, H=38) -->
+    <rect x="52" y="276" width="55" height="38" rx="4"/> <!-- LCtrl -->
+    <rect x="111" y="276" width="45" height="38" rx="4"/> <!-- Win -->
+    <rect x="160" y="276" width="50" height="38" rx="4"/> <!-- LAlt -->
+    <rect x="214" y="276" width="260" height="38" rx="4" fill="url(#accent-key-grad)"/> <!-- Spacebar -->
+    <rect x="478" y="276" width="50" height="38" rx="4"/> <!-- RAlt -->
+    <rect x="532" y="276" width="45" height="38" rx="4"/> <!-- Win -->
+    <rect x="581" y="276" width="45" height="38" rx="4"/> <!-- Menu -->
+    <rect x="630" y="276" width="60" height="38" rx="4"/> <!-- RCtrl -->
+
+    <!-- Arrow Left, Down, Right -->
+    <rect x="710" y="276" width="40" height="38" rx="4"/>
+    <rect x="755" y="276" width="40" height="38" rx="4"/>
+    <rect x="800" y="276" width="40" height="38" rx="4"/>
+
+    <!-- Numpad Row 5 (0, .) -->
+    <rect x="860" y="276" width="85" height="38" rx="4"/> <!-- Numpad 0 (wide) -->
+    <rect x="950" y="276" width="40" height="38" rx="4"/> <!-- Numpad . -->
   </g>
 
-  <!-- Row 2: Tab, Q, W, E, R, T -->
-  <g fill="#1E293B" stroke="#38BDF8" stroke-width="1.5">
-    <rect x="75" y="180" width="70" height="50" rx="6"/>
-    <rect x="160" y="180" width="55" height="50" rx="6"/>
-    <rect x="230" y="180" width="55" height="50" rx="6" fill="#00E5FF" fill-opacity="0.15" stroke="#00E5FF" stroke-width="2"/>
-    <rect x="300" y="180" width="55" height="50" rx="6"/>
-    <rect x="370" y="180" width="55" height="50" rx="6"/>
-    <rect x="440" y="180" width="55" height="50" rx="6"/>
-    <rect x="510" y="180" width="55" height="50" rx="6"/>
-  </g>
-  <g fill="#94A3B8" font-size="15" font-weight="700" font-family="system-ui, sans-serif" text-anchor="middle">
-    <text x="110" y="211">TAB</text>
-    <text x="187" y="211">Q</text>
-    <text x="257" y="211" fill="#00E5FF">W</text>
-    <text x="327" y="211">E</text>
-    <text x="397" y="211">R</text>
-    <text x="467" y="211">T</text>
-    <text x="537" y="211">Y</text>
+  <!-- Key Labels -->
+  <g fill="#94A3B8" font-size="11" font-weight="700" font-family="system-ui, sans-serif" text-anchor="middle">
+    <!-- Function Row -->
+    <text x="71" y="77">ESC</text>
+    <text x="153" y="77">F1</text><text x="193" y="77">F2</text><text x="233" y="77">F3</text><text x="273" y="77">F4</text>
+    <text x="338" y="77">F5</text><text x="378" y="77">F6</text><text x="418" y="77">F7</text><text x="458" y="77">F8</text>
+    <text x="523" y="77">F9</text><text x="563" y="77">F10</text><text x="603" y="77">F11</text><text x="643" y="77">F12</text>
+    <text x="730" y="77">PRT</text><text x="775" y="77">SCR</text><text x="820" y="77">PAU</text>
+
+    <!-- Number Row -->
+    <text x="71" y="124">~</text>
+    <text x="114" y="124">1</text><text x="158" y="124">2</text><text x="202" y="124">3</text><text x="246" y="124">4</text>
+    <text x="290" y="124">5</text><text x="334" y="124">6</text><text x="378" y="124">7</text><text x="422" y="124">8</text>
+    <text x="466" y="124">9</text><text x="510" y="124">0</text><text x="554" y="124">-</text><text x="598" y="124">=</text>
+    <text x="656" y="124">BACKSPACE</text>
+    <text x="730" y="124">INS</text><text x="775" y="124">HM</text><text x="820" y="124">PGUP</text>
+    <text x="880" y="124">NUM</text><text x="925" y="124">/</text><text x="970" y="124">*</text><text x="1015" y="124">-</text>
+
+    <!-- QWERTY Row -->
+    <text x="80" y="168">TAB</text>
+    <text x="132" y="168">Q</text><text x="176" y="168" fill="#FFF">W</text><text x="220" y="168">E</text><text x="264" y="168">R</text>
+    <text x="308" y="168">T</text><text x="352" y="168">Y</text><text x="396" y="168">U</text><text x="440" y="168">I</text>
+    <text x="484" y="168">O</text><text x="528" y="168">P</text><text x="572" y="168">[</text><text x="616" y="168">]</text>
+    <text x="665" y="168">\</text>
+    <text x="730" y="168">DEL</text><text x="775" y="168">END</text><text x="820" y="168">PGDN</text>
+    <text x="880" y="168">7</text><text x="925" y="168">8</text><text x="970" y="168">9</text><text x="1015" y="190">+</text>
+
+    <!-- ASDF Row -->
+    <text x="85" y="212">CAPS</text>
+    <text x="142" y="212" fill="#FFF">A</text><text x="186" y="212" fill="#FFF">S</text><text x="230" y="212" fill="#FFF">D</text><text x="274" y="212">F</text>
+    <text x="318" y="212">G</text><text x="362" y="212">H</text><text x="406" y="212">J</text><text x="450" y="212">K</text>
+    <text x="494" y="212">L</text><text x="538" y="212">;</text><text x="582" y="212">'</text>
+    <text x="648" y="212">ENTER</text>
+    <text x="880" y="212">4</text><text x="925" y="212">5</text><text x="970" y="212">6</text>
+
+    <!-- ZXCV Row -->
+    <text x="96" y="256">SHIFT</text>
+    <text x="164" y="256">Z</text><text x="208" y="256">X</text><text x="252" y="256">C</text><text x="296" y="256">V</text>
+    <text x="340" y="256">B</text><text x="384" y="256">N</text><text x="428" y="256">M</text><text x="472" y="256">,</text>
+    <text x="516" y="256">.</text><text x="560" y="256">/</text>
+    <text x="637" y="256">SHIFT</text>
+    <text x="775" y="256">▲</text>
+    <text x="880" y="256">1</text><text x="925" y="256">2</text><text x="970" y="256">3</text><text x="1015" y="278">ENT</text>
+
+    <!-- Bottom Modifier Row -->
+    <text x="79" y="300">CTRL</text>
+    <text x="133" y="300">WIN</text>
+    <text x="185" y="300">ALT</text>
+    <text x="344" y="300" fill="#FFF">SPACEBAR</text>
+    <text x="503" y="300">ALT</text>
+    <text x="554" y="300">WIN</text>
+    <text x="603" y="300">APP</text>
+    <text x="660" y="300">CTRL</text>
+    <text x="730" y="300">◀</text><text x="775" y="300">▼</text><text x="820" y="300">▶</text>
+    <text x="902" y="300">0</text><text x="970" y="300">.</text>
   </g>
 
-  <!-- Row 3: Caps, A, S, D, F, G, H -->
-  <g fill="#1E293B" stroke="#38BDF8" stroke-width="1.5">
-    <rect x="75" y="245" width="80" height="50" rx="6"/>
-    <rect x="170" y="245" width="55" height="50" rx="6" fill="#00E5FF" fill-opacity="0.15" stroke="#00E5FF" stroke-width="2"/>
-    <rect x="240" y="245" width="55" height="50" rx="6" fill="#00E5FF" fill-opacity="0.15" stroke="#00E5FF" stroke-width="2"/>
-    <rect x="310" y="245" width="55" height="50" rx="6" fill="#00E5FF" fill-opacity="0.15" stroke="#00E5FF" stroke-width="2"/>
-    <rect x="380" y="245" width="55" height="50" rx="6"/>
-    <rect x="450" y="245" width="55" height="50" rx="6"/>
-    <rect x="520" y="245" width="55" height="50" rx="6"/>
-  </g>
-  <g fill="#94A3B8" font-size="15" font-weight="700" font-family="system-ui, sans-serif" text-anchor="middle">
-    <text x="115" y="276">CAPS</text>
-    <text x="197" y="276" fill="#00E5FF">A</text>
-    <text x="267" y="276" fill="#00E5FF">S</text>
-    <text x="337" y="276" fill="#00E5FF">D</text>
-    <text x="407" y="276">F</text>
-    <text x="477" y="276">G</text>
-    <text x="547" y="276">H</text>
-  </g>
-
-  <!-- Row 4: LShift, Z, X, C, V, B, N -->
-  <g fill="#1E293B" stroke="#38BDF8" stroke-width="1.5">
-    <rect x="75" y="310" width="100" height="50" rx="6"/>
-    <rect x="190" y="310" width="55" height="50" rx="6"/>
-    <rect x="260" y="310" width="55" height="50" rx="6"/>
-    <rect x="330" y="310" width="55" height="50" rx="6"/>
-    <rect x="400" y="310" width="55" height="50" rx="6"/>
-    <rect x="470" y="310" width="55" height="50" rx="6"/>
-    <rect x="540" y="310" width="55" height="50" rx="6"/>
-  </g>
-  <g fill="#94A3B8" font-size="14" font-weight="700" font-family="system-ui, sans-serif" text-anchor="middle">
-    <text x="125" y="341">SHIFT</text>
-    <text x="217" y="341">Z</text>
-    <text x="287" y="341">X</text>
-    <text x="357" y="341">C</text>
-    <text x="427" y="341">V</text>
-    <text x="497" y="341">B</text>
-    <text x="567" y="341">N</text>
-  </g>
-
-  <!-- Row 5: LCtrl, LAlt, Space, RAlt, RCtrl -->
-  <g fill="#1E293B" stroke="#38BDF8" stroke-width="1.5">
-    <rect x="75" y="375" width="70" height="50" rx="6"/>
-    <rect x="160" y="375" width="60" height="50" rx="6"/>
-    <rect x="235" y="375" width="240" height="50" rx="6" fill="#00E5FF" fill-opacity="0.15" stroke="#00E5FF" stroke-width="2"/>
-    <rect x="490" y="375" width="60" height="50" rx="6"/>
-  </g>
-  <g fill="#94A3B8" font-size="14" font-weight="700" font-family="system-ui, sans-serif" text-anchor="middle">
-    <text x="110" y="406">CTRL</text>
-    <text x="190" y="406">ALT</text>
-    <text x="355" y="406" fill="#00E5FF">SPACEBAR</text>
-    <text x="520" y="406">ALT</text>
-  </g>
-
-  <!-- Gaming Mouse (Right Side) -->
-  <g transform="translate(680, 80)">
-    <!-- Mouse Chassis -->
-    <path d="M 80,100 
-             C 100,50 200,50 220,100 
-             C 240,160 255,300 240,400 
-             C 225,480 180,510 150,510 
-             C 120,510 75,480 60,400 
-             C 45,300 60,160 80,100 Z" 
-          fill="url(#mouse-grad)" stroke="#00E5FF" stroke-width="2.5"/>
+  <!-- ================= GAMING MOUSE (RIGHT SIDE) ================= -->
+  <g transform="translate(1090, 50)">
+    <!-- Mouse Base / Chassis -->
+    <path d="M 60,80 
+             C 80,35 140,35 160,80 
+             C 175,130 185,250 175,320 
+             C 165,370 135,390 110,390 
+             C 85,390 55,370 45,320 
+             C 35,250 45,130 60,80 Z" 
+          fill="url(#mouse-grad)" stroke="#00E5FF" stroke-width="2"/>
 
     <!-- Left / Right Click Split Line -->
-    <line x1="150" y1="65" x2="150" y2="240" stroke="#00E5FF" stroke-width="2" stroke-opacity="0.5"/>
+    <line x1="110" y1="46" x2="110" y2="180" stroke="#00E5FF" stroke-width="1.5" stroke-opacity="0.6"/>
 
     <!-- Scroll Wheel Well & Wheel -->
-    <rect x="136" y="110" width="28" height="70" rx="14" fill="#090D16" stroke="#38BDF8" stroke-width="2"/>
-    <rect x="142" y="125" width="16" height="40" rx="8" fill="#38BDF8"/>
+    <rect x="99" y="80" width="22" height="55" rx="11" fill="#080C14" stroke="#38BDF8" stroke-width="1.5"/>
+    <rect x="104" y="92" width="12" height="30" rx="6" fill="#38BDF8"/>
 
     <!-- Mouse Thumb Buttons (Left Edge) -->
-    <rect x="44" y="210" width="14" height="45" rx="5" fill="#1E293B" stroke="#00E5FF" stroke-width="1.5"/>
-    <rect x="46" y="270" width="14" height="45" rx="5" fill="#1E293B" stroke="#00E5FF" stroke-width="1.5"/>
+    <rect x="33" y="160" width="12" height="35" rx="4" fill="#1E293B" stroke="#00E5FF" stroke-width="1.2"/>
+    <rect x="35" y="205" width="12" height="35" rx="4" fill="#1E293B" stroke="#00E5FF" stroke-width="1.2"/>
 
-    <!-- Mouse Palm Accent Light -->
-    <path d="M 110,410 C 130,440 170,440 190,410" fill="none" stroke="#00E5FF" stroke-width="3" stroke-linecap="round"/>
+    <!-- Mouse Labels -->
+    <text x="80" y="110" fill="#64748B" font-size="9" font-family="system-ui, sans-serif" font-weight="700">M1</text>
+    <text x="135" y="110" fill="#64748B" font-size="9" font-family="system-ui, sans-serif" font-weight="700">M2</text>
   </g>
 
-  <!-- Bottom Label -->
-  <text x="500" y="620" fill="#64748B" font-size="14" font-family="system-ui, sans-serif" font-weight="600" text-anchor="middle" letter-spacing="3">KEYBOARD &amp; MOUSE CONTROLS</text>
+  <!-- Section Labels -->
+  <text x="545" y="445" fill="#64748B" font-size="13" font-family="system-ui, sans-serif" font-weight="700" text-anchor="middle" letter-spacing="3">FULL ANSI 104-KEYBOARD</text>
+  <text x="1200" y="445" fill="#64748B" font-size="13" font-family="system-ui, sans-serif" font-weight="700" text-anchor="middle" letter-spacing="2">GAMING MOUSE</text>
 </svg>
-
