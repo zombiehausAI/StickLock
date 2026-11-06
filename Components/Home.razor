@@ -1066,6 +1066,12 @@
     private async Task ReloadDetailedMappingsAsync() {
         try {
             _detailedMappings = await XmlService.GetDetailedMappingsAsync();
+            if (!_detailedMappings.Any(m => m.StickInstance == _selectedSchematicStick)) {
+                var firstStick = _detailedMappings.FirstOrDefault(m => m.StickInstance < 100);
+                if (firstStick != null) {
+                    _selectedSchematicStick = firstStick.StickInstance;
+                }
+            }
         } catch {
             _detailedMappings = Array.Empty<ControllerMappingItem>();
         }
@@ -1140,6 +1146,22 @@
                 InvokeAsync(StateHasChanged);
             }, null, 650, Timeout.Infinite);
             InvokeAsync(StateHasChanged);
+        } else {
+            // Auto-switch schematic diagram if physical input arrived from another connected stick
+            var match = _detailedMappings
+                .Where(m => m.StickInstance < 100)
+                .FirstOrDefault(m => ResolveDirectInputSlot(m.StickInstance) == slot);
+
+            if (match != null && match.StickInstance != _selectedSchematicStick) {
+                _selectedSchematicStick = match.StickInstance;
+                _activePhysicalInput = inputCode;
+                _inputResetTimer?.Dispose();
+                _inputResetTimer = new System.Threading.Timer(_ => {
+                    _activePhysicalInput = null;
+                    InvokeAsync(StateHasChanged);
+                }, null, 650, Timeout.Infinite);
+                InvokeAsync(StateHasChanged);
+            }
         }
     }
 

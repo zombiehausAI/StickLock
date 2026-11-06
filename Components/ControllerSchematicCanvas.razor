@@ -75,6 +75,11 @@
                             <span class="badge-code">
                                 @FormatDisplayButtonNumber(spot.InputCode)
                             </span>
+                            @if (isBound && boundItem != null) {
+                                <span class="badge-bound-name">
+                                    @boundItem.DisplayAction
+                                </span>
+                            }
                         </button>
                     </MudTooltip>
                 </div>
@@ -179,10 +184,10 @@
     .callout-badge {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
+        gap: 4px;
         min-width: 26px;
-        height: 20px;
-        padding: 1px 4px;
+        height: 22px;
+        padding: 2px 6px;
         background: rgba(11, 15, 25, 0.9);
         border: 1.5px solid rgba(56, 189, 248, 0.6);
         border-radius: 4px;
@@ -196,7 +201,7 @@
         outline: none;
     }
     .callout-badge:hover {
-        transform: scale(1.22);
+        transform: scale(1.15);
         border-color: #00E5FF;
         box-shadow: 0 0 14px rgba(0, 229, 255, 0.9);
         z-index: 50;

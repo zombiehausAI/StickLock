@@ -19,7 +19,7 @@ public class DirectInputService : IDirectInputService, IDisposable {
     public event Action<IReadOnlyList<DirectInputDevice>>? DevicesRefreshed;
     public event Action<int, string>? ButtonInputDetected;
     private CancellationTokenSource? _monitoringCts;
-    private IDirectInputDevice8? _monitoredDevice;
+    private readonly List<(int Slot, IDirectInputDevice8 Device)> _monitoredDevices = new();
 
     public DirectInputService() {
         try {
@@ -83,19 +83,28 @@ public class DirectInputService : IDirectInputService, IDisposable {
                 return;
             }
 
-            var targetDev = _currentDevices.FirstOrDefault(d => d.SlotIndex == slotIndex);
-            if (targetDev == null) {
-                return;
+            var targets = slotIndex > 0
+                ? _currentDevices.Where(d => d.SlotIndex == slotIndex).ToList()
+                : _currentDevices.ToList();
+
+            // If requested slot wasn't found in current devices, monitor all available controllers as fallback
+            if (targets.Count == 0) {
+                targets = _currentDevices.ToList();
             }
 
-            try {
-                _monitoredDevice = _directInput.CreateDevice(targetDev.InstanceGuid);
-                _monitoredDevice.SetDataFormat<RawJoystickState>();
-                _monitoredDevice.SetCooperativeLevel(IntPtr.Zero, CooperativeLevel.NonExclusive | CooperativeLevel.Background);
-                _monitoredDevice.Acquire();
-            } catch {
-                _monitoredDevice?.Dispose();
-                _monitoredDevice = null;
+            foreach (var devInfo in targets) {
+                try {
+                    var dev = _directInput.CreateDevice(devInfo.InstanceGuid);
+                    dev.SetDataFormat<RawJoystickState>();
+                    dev.SetCooperativeLevel(IntPtr.Zero, CooperativeLevel.NonExclusive | CooperativeLevel.Background);
+                    dev.Acquire();
+                    _monitoredDevices.Add((devInfo.SlotIndex, dev));
+                } catch {
+                    // Ignore non-acquirable devices
+                }
+            }
+
+            if (_monitoredDevices.Count == 0) {
                 return;
             }
         }
@@ -106,45 +115,44 @@ public class DirectInputService : IDirectInputService, IDisposable {
         Task.Run(async () => {
             var state = new JoystickState();
             while (!token.IsCancellationRequested) {
-                try {
-                    lock (_lock) {
-                        if (_monitoredDevice == null) {
-                            break;
-                        }
-                        _monitoredDevice.Poll();
-                        _monitoredDevice.GetCurrentJoystickState(ref state);
-                    }
+                List<(int Slot, IDirectInputDevice8 Device)> pollList;
+                lock (_lock) {
+                    pollList = _monitoredDevices.ToList();
+                }
 
-                    if (state.Buttons != null) {
-                        for (int i = 0; i < state.Buttons.Length; i++) {
-                            if (state.Buttons[i]) {
-                                ButtonInputDetected?.Invoke(slotIndex, $"button{i + 1}");
+                if (pollList.Count == 0) {
+                    break;
+                }
+
+                foreach (var (slot, dev) in pollList) {
+                    try {
+                        dev.Poll();
+                        dev.GetCurrentJoystickState(ref state);
+
+                        if (state.Buttons != null) {
+                            for (int i = 0; i < state.Buttons.Length; i++) {
+                                if (state.Buttons[i]) {
+                                    ButtonInputDetected?.Invoke(slot, $"button{i + 1}");
+                                }
                             }
                         }
-                    }
 
-                    if (state.PointOfViewControllers != null && state.PointOfViewControllers.Length > 0) {
-                        var pov = state.PointOfViewControllers[0];
-                        if (pov >= 0) {
-                            string hatDir;
-                            if (pov > 31500 || pov < 4500) {
-                                hatDir = "hat1_up";
-                            } else if (pov >= 4500 && pov < 13500) {
-                                hatDir = "hat1_right";
-                            } else if (pov >= 13500 && pov < 22500) {
-                                hatDir = "hat1_down";
-                            } else {
-                                hatDir = "hat1_left";
+                        if (state.PointOfViewControllers != null && state.PointOfViewControllers.Length > 0) {
+                            var pov = state.PointOfViewControllers[0];
+                            if (pov >= 0) {
+                                string hatDir = (pov > 31500 || pov < 4500) ? "hat1_up" :
+                                                (pov >= 4500 && pov < 13500) ? "hat1_right" :
+                                                (pov >= 13500 && pov < 22500) ? "hat1_down" : "hat1_left";
+                                ButtonInputDetected?.Invoke(slot, hatDir);
                             }
-                            ButtonInputDetected?.Invoke(slotIndex, hatDir);
                         }
+                    } catch {
+                        // Ignore transient polling exceptions
                     }
-                } catch {
-                    // Ignore transient device polling exceptions
                 }
 
                 try {
-                    await Task.Delay(30, token);
+                    await Task.Delay(25, token);
                 } catch {
                     break;
                 }
@@ -158,13 +166,15 @@ public class DirectInputService : IDirectInputService, IDisposable {
         _monitoringCts = null;
 
         lock (_lock) {
-            try {
-                _monitoredDevice?.Unacquire();
-                _monitoredDevice?.Dispose();
-            } catch {
-                // Ignore disposal errors
+            foreach (var (_, dev) in _monitoredDevices) {
+                try {
+                    dev.Unacquire();
+                    dev.Dispose();
+                } catch {
+                    // Ignore disposal errors
+                }
             }
-            _monitoredDevice = null;
+            _monitoredDevices.Clear();
         }
     }
 
