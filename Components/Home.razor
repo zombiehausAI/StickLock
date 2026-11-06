@@ -695,7 +695,8 @@
                     <ControllerSchematicCanvas Layout="@GetActiveSchematicLayout()"
                                                Mappings="@_detailedMappings"
                                                StickSlot="@_selectedSchematicStick"
-                                               OnHotspotSelected="OnSchematicHotspotSelected" />
+                                               OnHotspotSelected="OnSchematicHotspotSelected"
+                                               OnClearBinding="ClearBindingAsync" />
                 </div>
             } else {
                 <!-- Filter Bar: Stick Selector & Search Text -->

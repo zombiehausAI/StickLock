@@ -42,3 +42,4 @@ public class ControllerLayoutServiceTests {
         Assert.Contains(layout.Hotspots, h => h.Label.Contains("Strafe Forward"));
     }
 }
+

@@ -1,6 +1,6 @@
 @using StickLock.Models
 
-<div class="schematic-container pa-4 rounded" style="background: radial-gradient(circle at 50% 30%, rgba(15, 23, 42, 0.95) 0%, rgba(7, 10, 19, 0.98) 100%); border: 1.5px solid rgba(0, 229, 255, 0.2); position: relative; overflow-x: auto;">
+<div class="schematic-container pa-4 rounded" style="background: radial-gradient(circle at 50% 30%, rgba(15, 23, 42, 0.95) 0%, rgba(7, 10, 19, 0.98) 100%); border: 1.5px solid rgba(0, 229, 255, 0.2); position: relative;">
     <!-- Schematic Header info -->
     <div class="d-flex flex-wrap align-center justify-space-between gap-2 mb-3">
         <div class="d-flex align-center gap-2">
@@ -9,7 +9,7 @@
                 @Layout.Name.ToUpperInvariant()
             </MudText>
             <MudChip T="string" Color="Color.Secondary" Size="Size.Small" Variant="Variant.Outlined">
-                Slot js@StickSlot
+                @($"Slot js{StickSlot}")
             </MudChip>
         </div>
 
@@ -22,80 +22,130 @@
         </div>
     </div>
 
-    <!-- Interactive SVG / Visual Canvas -->
-    <div style="position: relative; width: 100%; max-width: 900px; height: 560px; margin: 0 auto; background: rgba(11, 15, 25, 0.6); border: 1px solid rgba(0, 229, 255, 0.1); border-radius: 8px;">
-        <svg viewBox="0 0 900 560" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;">
+    <!-- Interactive SVG / Visual Canvas Container -->
+    <div style="position: relative; width: 100%; max-width: 1000px; height: 580px; margin: 0 auto; background: rgba(11, 15, 25, 0.75); border: 1px solid rgba(0, 229, 255, 0.15); border-radius: 8px; overflow: hidden;">
+        <svg viewBox="0 0 1000 600" preserveAspectRatio="none" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;">
             <defs>
-                <linearGradient id="grid-glow" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.12" />
-                    <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.04" />
+                <linearGradient id="card-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#0F172A" stop-opacity="0.9" />
+                    <stop offset="100%" stop-color="#070A13" stop-opacity="0.95" />
                 </linearGradient>
+                <linearGradient id="head-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#1E293B" />
+                    <stop offset="100%" stop-color="#0F172A" />
+                </linearGradient>
+                <radialGradient id="red-button-grad" cx="40%" cy="40%" r="60%">
+                    <stop offset="0%" stop-color="#F87171" />
+                    <stop offset="100%" stop-color="#DC2626" />
+                </radialGradient>
             </defs>
 
-            <!-- Background Grid -->
-            <rect width="900" height="560" fill="url(#grid-glow)" rx="8" />
-
             @if (Layout.AttachedModules.Contains("GNX-SEM")) {
-                <!-- GNX-SEM Module Outline (Left Box) -->
-                <rect x="30" y="40" width="240" height="470" rx="10" fill="rgba(15, 23, 42, 0.8)" stroke="#00E5FF" stroke-width="1.5" stroke-dasharray="4,4" />
-                <!-- Gear Lever Slot -->
-                <rect x="50" y="110" width="30" height="150" rx="15" fill="#1E293B" stroke="#64748B" stroke-width="1" />
-                <!-- Flaps Lever Slot -->
-                <rect x="190" y="110" width="30" height="150" rx="15" fill="#1E293B" stroke="#64748B" stroke-width="1" />
-                <!-- Rotary dials outline -->
-                <circle cx="90" cy="380" r="30" fill="#1E293B" stroke="#00E5FF" stroke-width="1" />
-                <circle cx="190" cy="380" r="30" fill="#1E293B" stroke="#00E5FF" stroke-width="1" />
+                <!-- ================= GNX-SEM MODULE (LEFT) ================= -->
+                <rect x="25" y="25" width="260" height="550" rx="12" fill="url(#card-grad)" stroke="#00E5FF" stroke-width="1.5" />
+                <!-- Lever Slots -->
+                <!-- Gear Slot (Left) -->
+                <rect x="68" y="80" width="34" height="200" rx="17" fill="#0B0F19" stroke="#334155" stroke-width="1.5" />
+                <!-- Flaps Slot (Right) -->
+                <rect x="208" y="80" width="34" height="200" rx="17" fill="#0B0F19" stroke="#334155" stroke-width="1.5" />
+                
+                <!-- Mode Buttons Area -->
+                <rect x="45" y="295" width="220" height="60" rx="8" fill="#131B2E" stroke="#334155" stroke-width="1" />
+                <!-- K-Switch Area -->
+                <rect x="68" y="375" width="60" height="95" rx="8" fill="#131B2E" stroke="#334155" stroke-width="1" />
+                <!-- Rotary Area -->
+                <circle cx="205" cy="422" r="38" fill="#131B2E" stroke="#00E5FF" stroke-width="1.5" stroke-dasharray="3,3" />
             }
 
-            <!-- Center: Gladiator Base & SCG Grip -->
-            <!-- Base Plate -->
-            <rect x="330" y="360" width="240" height="160" rx="12" fill="rgba(15, 23, 42, 0.9)" stroke="#00E5FF" stroke-width="2" />
-            <!-- Throttle wheel -->
-            <rect x="425" y="450" width="50" height="20" rx="4" fill="#334155" stroke="#00E5FF" stroke-width="1" />
+            <!-- ================= CENTER: VKB GLADIATOR EVO R ================= -->
+            <rect x="315" y="25" width="370" height="550" rx="12" fill="url(#card-grad)" stroke="#38BDF8" stroke-width="1.5" />
 
-            <!-- Stick Grip Silhouette -->
-            <path d="M 430 360 C 430 300, 420 220, 410 180 C 400 140, 420 80, 450 80 C 480 80, 500 140, 490 180 C 480 220, 470 300, 470 360 Z"
-                  fill="rgba(30, 41, 59, 0.85)" stroke="#38BDF8" stroke-width="2" />
+            <!-- Stick Head (Kosmosima Space Combat Grip Faceplate) -->
+            <!-- Ergonomic contoured head shape -->
+            <polygon points="430,65 570,65 565,160 520,180 435,160" fill="url(#head-grad)" stroke="#38BDF8" stroke-width="2" />
+            
+            <!-- A1 Hat Circle (Top Left of Head) -->
+            <circle cx="465" cy="108" r="26" fill="#0B0F19" stroke="#00E5FF" stroke-width="1.5" />
+            <!-- A2 Red Weapon Button (Top Right of Head) -->
+            <circle cx="535" cy="96" r="15" fill="url(#red-button-grad)" stroke="#EF4444" stroke-width="2" />
+            <!-- A3 Center Hat Circle -->
+            <circle cx="500" cy="138" r="16" fill="#0B0F19" stroke="#64748B" stroke-width="1.5" />
 
-            <!-- Head of Stick -->
-            <ellipse cx="450" cy="115" rx="45" ry="35" fill="rgba(15, 23, 42, 0.9)" stroke="#00E5FF" stroke-width="2" />
+            <!-- Left Thumb Shelf (Kosmosima C1) -->
+            <path d="M 430 160 C 390 170, 390 220, 430 220 Z" fill="#1E293B" stroke="#38BDF8" stroke-width="1.5" />
+
+            <!-- Stick Shaft -->
+            <path d="M 460 180 L 460 380 L 540 380 L 540 180 Z" fill="#1E293B" stroke="#334155" stroke-width="1" />
+            <!-- Trigger Housing (Front of Grip) -->
+            <rect x="480" y="195" width="40" height="95" rx="6" fill="#0B0F19" stroke="#64748B" stroke-width="1" />
+
+            <!-- Gimbal Center Axis Ring -->
+            <circle cx="500" cy="372" r="32" fill="#0B0F19" stroke="#38BDF8" stroke-width="1.5" stroke-dasharray="2,2" />
+
+            <!-- EVO Base -->
+            <rect x="340" y="420" width="320" height="135" rx="10" fill="#131B2E" stroke="#38BDF8" stroke-width="1.5" />
+            <!-- Left Encoder EN1 -->
+            <circle cx="390" cy="465" r="22" fill="#0B0F19" stroke="#00E5FF" stroke-width="1.5" />
+            <!-- Right Encoder EN2 -->
+            <circle cx="610" cy="465" r="22" fill="#0B0F19" stroke="#00E5FF" stroke-width="1.5" />
+            <!-- Base Throttle Slider -->
+            <rect x="475" y="505" width="50" height="24" rx="6" fill="#0B0F19" stroke="#38BDF8" stroke-width="1.5" />
 
             @if (Layout.AttachedModules.Contains("GNX-FSM-GA")) {
-                <!-- GNX-FSM-GA Module Outline (Right Box) -->
-                <rect x="630" y="40" width="240" height="470" rx="10" fill="rgba(15, 23, 42, 0.8)" stroke="#FFAB00" stroke-width="1.5" stroke-dasharray="4,4" />
-                <!-- HDG & ALT Dials -->
-                <circle cx="690" cy="140" r="28" fill="#1E293B" stroke="#FFAB00" stroke-width="1.5" />
-                <circle cx="810" cy="140" r="28" fill="#1E293B" stroke="#FFAB00" stroke-width="1.5" />
-                <!-- Autopilot Buttons -->
-                <rect x="655" y="240" width="190" height="60" rx="6" fill="#1E293B" stroke="#64748B" stroke-width="1" />
-                <!-- Light Toggles -->
-                <rect x="655" y="350" width="190" height="60" rx="6" fill="#1E293B" stroke="#64748B" stroke-width="1" />
+                <!-- ================= GNX-FSM-GA MODULE (RIGHT) ================= -->
+                <rect x="715" y="25" width="260" height="550" rx="12" fill="url(#card-grad)" stroke="#FFAB00" stroke-width="1.5" />
+                <!-- HDG Knob (Left) -->
+                <circle cx="780" cy="140" r="32" fill="#131B2E" stroke="#FFAB00" stroke-width="2" />
+                <!-- ALT Knob (Right) -->
+                <circle cx="910" cy="140" r="32" fill="#131B2E" stroke="#FFAB00" stroke-width="2" />
+
+                <!-- Autopilot Buttons Bezel -->
+                <rect x="735" y="240" width="220" height="60" rx="8" fill="#131B2E" stroke="#334155" stroke-width="1" />
+                <!-- Light Toggles Bezel -->
+                <rect x="735" y="380" width="220" height="70" rx="8" fill="#131B2E" stroke="#334155" stroke-width="1" />
             }
         </svg>
 
-        <!-- HTML Module Badges -->
+        <!-- HTML Module Title Banners -->
         @if (Layout.AttachedModules.Contains("GNX-SEM")) {
-            <div style="position: absolute; left: 45px; top: 50px; color: #38BDF8; font-weight: 700; font-size: 0.75rem; letter-spacing: 1px;">
+            <div style="position: absolute; left: 40px; top: 38px; color: #38BDF8; font-weight: 700; font-size: 0.72rem; letter-spacing: 1px;">
                 GNX-SEM MODULE
             </div>
+            <div style="position: absolute; left: 62px; top: 62px; color: #64748B; font-size: 0.65rem; font-weight: 600;">
+                GEAR
+            </div>
+            <div style="position: absolute; left: 202px; top: 62px; color: #64748B; font-size: 0.65rem; font-weight: 600;">
+                FLAPS
+            </div>
         }
-        <div style="position: absolute; left: 410px; top: 370px; color: #94A3B8; font-weight: 700; font-size: 0.75rem; letter-spacing: 1px;">
+        <div style="position: absolute; left: 440px; top: 38px; color: #38BDF8; font-weight: 700; font-size: 0.72rem; letter-spacing: 1px;">
+            KOSMOSIMA SCG
+        </div>
+        <div style="position: absolute; left: 472px; top: 428px; color: #94A3B8; font-weight: 700; font-size: 0.72rem; letter-spacing: 1px;">
             EVO BASE
         </div>
         @if (Layout.AttachedModules.Contains("GNX-FSM-GA")) {
-            <div style="position: absolute; left: 650px; top: 50px; color: #FFAB00; font-weight: 700; font-size: 0.75rem; letter-spacing: 1px;">
+            <div style="position: absolute; left: 730px; top: 38px; color: #FFAB00; font-weight: 700; font-size: 0.72rem; letter-spacing: 1px;">
                 GNX-FSM-GA MODULE
+            </div>
+            <div style="position: absolute; left: 765px; top: 62px; color: #94A3B8; font-size: 0.65rem; font-weight: 600;">
+                HDG KNOB
+            </div>
+            <div style="position: absolute; left: 895px; top: 62px; color: #94A3B8; font-size: 0.65rem; font-weight: 600;">
+                ALT KNOB
             </div>
         }
 
-        <!-- Hotspot interactive overlay pins -->
+        <!-- Hotspot Interactive Overlay Pins -->
         @foreach (var spot in Layout.Hotspots) {
             var boundItem = FindBoundItem(spot.InputCode);
             var isBound = boundItem != null;
+            var isSelected = _selectedHotspotId == spot.Id;
+            var isLiveActive = string.Equals(ActivePhysicalInput, spot.InputCode, StringComparison.OrdinalIgnoreCase);
 
-            <div style="position: absolute; left: calc(@spot.X% - 14px); top: calc(@spot.Y% - 14px); z-index: 10;">
+            <div style="position: absolute; left: calc(@spot.X% - 15px); top: calc(@spot.Y% - 15px); z-index: 10;">
                 <MudTooltip Text="@GetTooltipText(spot, boundItem)" Placement="Placement.Top">
-                    <button class="hotspot-pin @(isBound ? "bound" : "unbound")"
+                    <button class="hotspot-pin @(isBound ? "bound" : "unbound") @(isSelected ? "selected" : "") @(isLiveActive ? "live-active" : "")"
                             @onclick="() => OnPinClicked(spot, boundItem)">
                         @if (isBound) {
                             <span class="hotspot-dot bound-dot"></span>
@@ -107,6 +157,65 @@
             </div>
         }
     </div>
+
+    <!-- Active Control Inspector Bar (Instant Feedback on Click) -->
+    <div class="mt-3 pa-3 rounded d-flex flex-wrap align-center justify-space-between gap-3"
+         style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(0, 229, 255, 0.2);">
+        @if (_selectedHotspot != null) {
+            var bound = FindBoundItem(_selectedHotspot.InputCode);
+            <div class="d-flex align-center gap-3">
+                <div class="hotspot-preview-badge">
+                    <span class="mfd-code font-weight-bold" style="color: #FFD700; font-size: 0.9rem;">
+                        @_selectedHotspot.InputCode.ToUpperInvariant()
+                    </span>
+                </div>
+                <div>
+                    <div class="d-flex align-center gap-2">
+                        <MudText Typo="Typo.subtitle2" Class="mfd-title" Style="color: #00E5FF; font-weight: 700;">
+                            @_selectedHotspot.Label
+                        </MudText>
+                        <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Outlined" Style="font-size: 0.65rem; height: 18px;">
+                            @_selectedHotspot.ModuleName
+                        </MudChip>
+                    </div>
+                    <MudText Typo="Typo.caption" Style="color: #94A3B8;">
+                        @if (bound != null) {
+                            <span>Mapped to: <b style="color: #10B981;">@bound.DisplayCategory &gt; @bound.DisplayAction</b></span>
+                        } else {
+                            <span style="color: #64748B;">Not currently mapped in active actionmaps.xml</span>
+                        }
+                    </MudText>
+                </div>
+            </div>
+
+            <div class="d-flex align-center gap-2">
+                @if (bound != null) {
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Error"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Clear"
+                               OnClick="() => ClearSelectedBindingAsync(bound)">
+                        Clear
+                    </MudButton>
+                }
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Edit"
+                           OnClick="() => RebindSelectedAsync(_selectedHotspot, bound)"
+                           Style="color: #0B0F19; font-weight: 700;">
+                    @(bound != null ? "Rebind Action" : "Map Action")
+                </MudButton>
+            </div>
+        } else {
+            <div class="d-flex align-center gap-2">
+                <MudIcon Icon="@Icons.Material.Filled.TouchApp" Color="Color.Primary" Size="Size.Small" />
+                <MudText Typo="Typo.body2" Style="color: #94A3B8;">
+                    Click any pin on the schematic to inspect or rebind, or press any button on your physical stick to locate it!
+                </MudText>
+            </div>
+        }
+    </div>
 </div>
 
 <style>
@@ -114,16 +223,16 @@
         user-select: none;
     }
     .hotspot-pin {
-        width: 28px;
-        height: 28px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
-        background: rgba(15, 23, 42, 0.9);
+        background: rgba(15, 23, 42, 0.95);
         border: 2px solid #00E5FF;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.15s ease-out;
         padding: 0;
         outline: none;
         box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
@@ -142,6 +251,20 @@
         border-color: #34D399;
         box-shadow: 0 0 18px rgba(16, 185, 129, 0.9);
     }
+    .hotspot-pin.selected {
+        border-color: #FFD700 !important;
+        box-shadow: 0 0 20px #FFD700, 0 0 40px rgba(255, 215, 0, 0.6) !important;
+        transform: scale(1.35);
+        z-index: 25;
+        animation: pulse-gold 1.5s infinite;
+    }
+    .hotspot-pin.live-active {
+        border-color: #F59E0B !important;
+        background: #F59E0B !important;
+        box-shadow: 0 0 25px #F59E0B, 0 0 50px rgba(245, 158, 11, 0.9) !important;
+        transform: scale(1.5) !important;
+        z-index: 30;
+    }
     .hotspot-dot {
         width: 10px;
         height: 10px;
@@ -152,6 +275,17 @@
     }
     .hotspot-dot.bound-dot {
         background: #10B981;
+    }
+    .hotspot-preview-badge {
+        padding: 6px 12px;
+        background: rgba(11, 15, 25, 0.9);
+        border: 1px solid #FFD700;
+        border-radius: 6px;
+    }
+    @@keyframes pulse-gold {
+        0% { box-shadow: 0 0 10px #FFD700, 0 0 20px rgba(255, 215, 0, 0.4); }
+        50% { box-shadow: 0 0 22px #FFD700, 0 0 40px rgba(255, 215, 0, 0.8); }
+        100% { box-shadow: 0 0 10px #FFD700, 0 0 20px rgba(255, 215, 0, 0.4); }
     }
 </style>
 
@@ -166,7 +300,27 @@
     public int StickSlot { get; set; } = 1;
 
     [Parameter]
+    public string? ActivePhysicalInput { get; set; }
+
+    [Parameter]
     public EventCallback<(ControllerHotspot Hotspot, ControllerMappingItem? BoundItem)> OnHotspotSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<ControllerMappingItem> OnClearBinding { get; set; }
+
+    private string? _selectedHotspotId = null;
+    private ControllerHotspot? _selectedHotspot = null;
+
+    protected override void OnParametersSet() {
+        if (!string.IsNullOrWhiteSpace(ActivePhysicalInput)) {
+            var activeSpot = Layout.Hotspots.FirstOrDefault(h =>
+                string.Equals(h.InputCode, ActivePhysicalInput, StringComparison.OrdinalIgnoreCase));
+            if (activeSpot != null) {
+                _selectedHotspotId = activeSpot.Id;
+                _selectedHotspot = activeSpot;
+            }
+        }
+    }
 
     private ControllerMappingItem? FindBoundItem(string inputCode) {
         if (Mappings.Count == 0 || string.IsNullOrWhiteSpace(inputCode)) {
@@ -186,9 +340,20 @@
         return $"{spot.Label} ({spot.InputCode})\n[Unmapped - Click to Assign]";
     }
 
-    private async Task OnPinClicked(ControllerHotspot spot, ControllerMappingItem? boundItem) {
+    private void OnPinClicked(ControllerHotspot spot, ControllerMappingItem? boundItem) {
+        _selectedHotspotId = spot.Id;
+        _selectedHotspot = spot;
+    }
+
+    private async Task RebindSelectedAsync(ControllerHotspot spot, ControllerMappingItem? boundItem) {
         if (OnHotspotSelected.HasDelegate) {
             await OnHotspotSelected.InvokeAsync((spot, boundItem));
+        }
+    }
+
+    private async Task ClearSelectedBindingAsync(ControllerMappingItem boundItem) {
+        if (OnClearBinding.HasDelegate) {
+            await OnClearBinding.InvokeAsync(boundItem);
         }
     }
 }

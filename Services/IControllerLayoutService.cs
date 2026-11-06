@@ -6,3 +6,4 @@ public interface IControllerLayoutService {
     ControllerLayoutDefinition GetLayoutForDevice(string productName);
     IReadOnlyList<ControllerLayoutDefinition> GetAllLayouts();
 }
+

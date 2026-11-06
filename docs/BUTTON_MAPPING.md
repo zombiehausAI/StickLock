@@ -42,3 +42,4 @@ StickLock includes a comprehensive controller mapping inspector and visual remap
    * Hover over any pin to see the control label and its currently mapped action.
    * Click any pin to open the **Map / Rebind Action** dialog.
 4. Select your target controller and new input, then click **SAVE BINDING**.
+
