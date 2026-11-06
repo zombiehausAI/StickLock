@@ -114,6 +114,9 @@ public class DirectInputService : IDirectInputService, IDisposable {
 
         Task.Run(async () => {
             var state = new JoystickState();
+            var prevButtons = new Dictionary<int, bool[]>();
+            var prevPov = new Dictionary<int, int>();
+
             while (!token.IsCancellationRequested) {
                 List<(int Slot, IDirectInputDevice8 Device)> pollList;
                 lock (_lock) {
@@ -130,21 +133,39 @@ public class DirectInputService : IDirectInputService, IDisposable {
                         dev.GetCurrentJoystickState(ref state);
 
                         if (state.Buttons != null) {
-                            for (int i = 0; i < state.Buttons.Length; i++) {
-                                if (state.Buttons[i]) {
-                                    ButtonInputDetected?.Invoke(slot, $"button{i + 1}");
+                            if (!prevButtons.TryGetValue(slot, out var lastBtnState)) {
+                                // Capture baseline on first poll so held toggle switches don't flood on startup
+                                lastBtnState = new bool[state.Buttons.Length];
+                                Array.Copy(state.Buttons, lastBtnState, state.Buttons.Length);
+                                prevButtons[slot] = lastBtnState;
+                            } else {
+                                for (int i = 0; i < state.Buttons.Length; i++) {
+                                    var isDown = state.Buttons[i];
+                                    var wasDown = i < lastBtnState.Length && lastBtnState[i];
+                                    if (isDown && !wasDown) {
+                                        // Rising edge transition: newly pressed button or newly toggled switch
+                                        ButtonInputDetected?.Invoke(slot, $"button{i + 1}");
+                                    }
                                 }
+
+                                if (lastBtnState.Length != state.Buttons.Length) {
+                                    lastBtnState = new bool[state.Buttons.Length];
+                                }
+                                Array.Copy(state.Buttons, lastBtnState, state.Buttons.Length);
+                                prevButtons[slot] = lastBtnState;
                             }
                         }
 
                         if (state.PointOfViewControllers != null && state.PointOfViewControllers.Length > 0) {
                             var pov = state.PointOfViewControllers[0];
-                            if (pov >= 0) {
+                            prevPov.TryGetValue(slot, out var lastPov);
+                            if (pov >= 0 && pov != lastPov) {
                                 string hatDir = (pov > 31500 || pov < 4500) ? "hat1_up" :
                                                 (pov >= 4500 && pov < 13500) ? "hat1_right" :
                                                 (pov >= 13500 && pov < 22500) ? "hat1_down" : "hat1_left";
                                 ButtonInputDetected?.Invoke(slot, hatDir);
                             }
+                            prevPov[slot] = pov;
                         }
                     } catch {
                         // Ignore transient polling exceptions

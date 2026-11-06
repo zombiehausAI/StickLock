@@ -92,46 +92,46 @@ public class ControllerLayoutService : IControllerLayoutService {
     private static List<ControllerHotspot> CreateGladiatorRightHotspots(string moduleName) {
         return new List<ControllerHotspot> {
             // Triggers & Grip Buttons (Left Side Callout Boxes)
-            new ControllerHotspot { Id = "r_btn1", Label = "Fire 1 (Stage 1 Soft Pull)", InputCode = "button1", X = 32.5, Y = 72.5, Type = "button", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn2", Label = "Fire 2 (Stage 2 Full Pull)", InputCode = "button2", X = 31.3, Y = 75.5, Type = "button", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn3", Label = "A2 Red Weapon Release Button", InputCode = "button3", X = 27.4, Y = 28.0, Type = "button", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn4", Label = "B1 Upper Side Button", InputCode = "button4", X = 38.2, Y = 58.4, Type = "button", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn5", Label = "D1 Pinky Button", InputCode = "button5", X = 41.7, Y = 51.4, Type = "button", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn1", Label = "Fire 1 (Stage 1 Soft Pull)", InputCode = "button1", X = 22.2, Y = 74.6, Type = "button", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn2", Label = "Fire 2 (Stage 2 Full Pull)", InputCode = "button2", X = 18.4, Y = 78.2, Type = "button", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn3", Label = "A2 Red Weapon Release Button", InputCode = "button3", X = 24.5, Y = 28.7, Type = "button", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn4", Label = "B1 Upper Side Button", InputCode = "button4", X = 29.4, Y = 59.2, Type = "button", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn5", Label = "D1 Pinky Button", InputCode = "button5", X = 34.9, Y = 51.0, Type = "button", ModuleName = moduleName },
 
             // Center Hat A3
-            new ControllerHotspot { Id = "r_btn6", Label = "A3 Center Hat (UP)", InputCode = "button6", X = 62.9, Y = 20.9, Type = "hat", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn7", Label = "A3 Center Hat (RIGHT)", InputCode = "button7", X = 71.1, Y = 25.1, Type = "hat", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn8", Label = "A3 Center Hat (DOWN)", InputCode = "button8", X = 62.9, Y = 29.1, Type = "hat", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn9", Label = "A3 Center Hat (CLICK)", InputCode = "button9", X = 55.0, Y = 24.9, Type = "hat", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn10", Label = "A3 Center Hat (LEFT)", InputCode = "button10", X = 62.8, Y = 24.9, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn6", Label = "A3 Center Hat (UP)", InputCode = "button6", X = 71.2, Y = 21.8, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn7", Label = "A3 Center Hat (RIGHT)", InputCode = "button7", X = 82.3, Y = 25.5, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn8", Label = "A3 Center Hat (DOWN)", InputCode = "button8", X = 71.2, Y = 29.1, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn9", Label = "A3 Center Hat (CLICK)", InputCode = "button9", X = 60.1, Y = 25.5, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn10", Label = "A3 Center Hat (LEFT)", InputCode = "button10", X = 71.2, Y = 25.5, Type = "hat", ModuleName = moduleName },
 
             // Top Hat A4
-            new ControllerHotspot { Id = "r_btn11", Label = "A4 Top Hat (UP)", InputCode = "button11", X = 60.7, Y = 5.9, Type = "hat", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn12", Label = "A4 Top Hat (RIGHT)", InputCode = "button12", X = 68.5, Y = 10.0, Type = "hat", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn13", Label = "A4 Top Hat (DOWN)", InputCode = "button13", X = 60.6, Y = 14.0, Type = "hat", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn14", Label = "A4 Top Hat (CLICK)", InputCode = "button14", X = 53.1, Y = 10.0, Type = "hat", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn15", Label = "A4 Top Hat (LEFT)", InputCode = "button15", X = 60.7, Y = 10.0, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn11", Label = "A4 Top Hat (UP)", InputCode = "button11", X = 67.4, Y = 6.4, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn12", Label = "A4 Top Hat (RIGHT)", InputCode = "button12", X = 78.5, Y = 10.0, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn13", Label = "A4 Top Hat (DOWN)", InputCode = "button13", X = 67.4, Y = 13.6, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn14", Label = "A4 Top Hat (CLICK)", InputCode = "button14", X = 56.3, Y = 10.0, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn15", Label = "A4 Top Hat (LEFT)", InputCode = "button15", X = 67.4, Y = 10.0, Type = "hat", ModuleName = moduleName },
 
             // Thumb Hat C1
-            new ControllerHotspot { Id = "r_btn16", Label = "C1 Thumb Hat (UP)", InputCode = "button16", X = 64.5, Y = 35.5, Type = "hat", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn17", Label = "C1 Thumb Hat (RIGHT)", InputCode = "button17", X = 72.7, Y = 41.0, Type = "hat", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn18", Label = "C1 Thumb Hat (DOWN)", InputCode = "button18", X = 64.5, Y = 46.5, Type = "hat", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn19", Label = "C1 Thumb Hat (CLICK)", InputCode = "button19", X = 58.5, Y = 40.9, Type = "hat", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn20", Label = "C1 Thumb Hat (LEFT)", InputCode = "button20", X = 64.5, Y = 41.0, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn16", Label = "C1 Thumb Hat (UP)", InputCode = "button16", X = 73.9, Y = 36.4, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn17", Label = "C1 Thumb Hat (RIGHT)", InputCode = "button17", X = 85.0, Y = 41.2, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn18", Label = "C1 Thumb Hat (DOWN)", InputCode = "button18", X = 73.9, Y = 46.2, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn19", Label = "C1 Thumb Hat (CLICK)", InputCode = "button19", X = 62.9, Y = 41.2, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn20", Label = "C1 Thumb Hat (LEFT)", InputCode = "button20", X = 73.9, Y = 41.3, Type = "hat", ModuleName = moduleName },
 
             // SpeedFire Rapid Trigger
-            new ControllerHotspot { Id = "r_btn21", Label = "SpeedFire Rapid Trigger (PULL)", InputCode = "button21", X = 37.2, Y = 63.9, Type = "button", ModuleName = moduleName },
-            new ControllerHotspot { Id = "r_btn22", Label = "SpeedFire Rapid Trigger (PUSH)", InputCode = "button22", X = 36.1, Y = 68.0, Type = "button", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn21", Label = "SpeedFire Rapid Trigger (PULL)", InputCode = "button21", X = 29.5, Y = 65.5, Type = "button", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn22", Label = "SpeedFire Rapid Trigger (PUSH)", InputCode = "button22", X = 29.5, Y = 69.1, Type = "button", ModuleName = moduleName },
 
             // Base Encoders & Buttons
-            new ControllerHotspot { Id = "r_btn23", Label = "En2 Right Encoder (UP)", InputCode = "button23", X = 72.8, Y = 76.6, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "r_btn24", Label = "En2 Right Encoder (DOWN)", InputCode = "button24", X = 72.1, Y = 82.9, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "r_btn25", Label = "En1 Left Encoder (UP)", InputCode = "button25", X = 63.6, Y = 90.8, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "r_btn26", Label = "En1 Left Encoder (DOWN)", InputCode = "button26", X = 63.2, Y = 95.0, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "r_btn27", Label = "F1 Base Button", InputCode = "button27", X = 65.8, Y = 63.8, Type = "button", ModuleName = "Base" },
-            new ControllerHotspot { Id = "r_btn28", Label = "F2 Base Button", InputCode = "button28", X = 70.5, Y = 68.6, Type = "button", ModuleName = "Base" },
-            new ControllerHotspot { Id = "r_btn29", Label = "F3 Base Button", InputCode = "button29", X = 61.8, Y = 59.4, Type = "button", ModuleName = "Base" },
-            new ControllerHotspot { Id = "r_slider1", Label = "Throttle Slider", InputCode = "slider1", X = 68.2, Y = 86.4, Type = "axis", ModuleName = "Base" }
+            new ControllerHotspot { Id = "r_btn23", Label = "En2 Right Encoder (UP)", InputCode = "button23", X = 82.6, Y = 79.3, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_btn24", Label = "En2 Right Encoder (DOWN)", InputCode = "button24", X = 82.6, Y = 82.9, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_btn25", Label = "En1 Left Encoder (UP)", InputCode = "button25", X = 72.0, Y = 92.7, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_btn26", Label = "En1 Left Encoder (DOWN)", InputCode = "button26", X = 72.0, Y = 96.3, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_btn27", Label = "F1 Base Button", InputCode = "button27", X = 74.8, Y = 64.9, Type = "button", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_btn28", Label = "F2 Base Button", InputCode = "button28", X = 78.9, Y = 70.1, Type = "button", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_btn29", Label = "F3 Base Button", InputCode = "button29", X = 70.2, Y = 59.9, Type = "button", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_slider1", Label = "Throttle Slider", InputCode = "slider1", X = 77.2, Y = 87.9, Type = "axis", ModuleName = "Base" }
         };
     }
 
@@ -227,46 +227,46 @@ public class ControllerLayoutService : IControllerLayoutService {
 
         layout.Hotspots.AddRange(new[] {
             // Triggers & Buttons (Right Side Callout Boxes)
-            new ControllerHotspot { Id = "l_btn1", Label = "Fire 1 (Stage 1 Soft Pull)", InputCode = "button1", X = 68.6, Y = 72.1, Type = "button", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn2", Label = "Fire 2 (Stage 2 Full Pull)", InputCode = "button2", X = 69.2, Y = 75.8, Type = "button", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn3", Label = "A2 Red Weapon Button", InputCode = "button3", X = 73.8, Y = 26.4, Type = "button", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn4", Label = "B1 Upper Side Button", InputCode = "button4", X = 60.7, Y = 57.9, Type = "button", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn5", Label = "D1 Pinky Button", InputCode = "button5", X = 58.5, Y = 51.5, Type = "button", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn1", Label = "Fire 1 (Stage 1 Soft Pull)", InputCode = "button1", X = 84.9, Y = 75.2, Type = "button", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn2", Label = "Fire 2 (Stage 2 Full Pull)", InputCode = "button2", X = 88.7, Y = 78.8, Type = "button", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn3", Label = "A2 Red Weapon Button", InputCode = "button3", X = 84.4, Y = 38.1, Type = "button", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn4", Label = "B1 Upper Side Button", InputCode = "button4", X = 74.3, Y = 59.4, Type = "button", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn5", Label = "D1 Pinky Button", InputCode = "button5", X = 64.4, Y = 47.3, Type = "button", ModuleName = "Grip" },
 
             // SpeedFire Rapid Trigger
-            new ControllerHotspot { Id = "l_btn21", Label = "SpeedFire Rapid Trigger (PULL)", InputCode = "button21", X = 61.9, Y = 62.4, Type = "button", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn22", Label = "SpeedFire Rapid Trigger (PUSH)", InputCode = "button22", X = 64.9, Y = 66.7, Type = "button", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn21", Label = "SpeedFire Rapid Trigger (PULL)", InputCode = "button21", X = 74.5, Y = 65.6, Type = "button", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn22", Label = "SpeedFire Rapid Trigger (PUSH)", InputCode = "button22", X = 74.5, Y = 69.3, Type = "button", ModuleName = "Grip" },
 
             // Center Hat A3
-            new ControllerHotspot { Id = "l_btn6", Label = "A3 Center Hat (UP)", InputCode = "button6", X = 30.0, Y = 18.9, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn7", Label = "A3 Center Hat (RIGHT)", InputCode = "button7", X = 38.1, Y = 23.4, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn8", Label = "A3 Center Hat (DOWN)", InputCode = "button8", X = 30.1, Y = 28.5, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn9", Label = "A3 Center Hat (CLICK)", InputCode = "button9", X = 22.0, Y = 22.9, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn10", Label = "A3 Center Hat (LEFT)", InputCode = "button10", X = 30.2, Y = 23.4, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn6", Label = "A3 Center Hat (UP)", InputCode = "button6", X = 32.6, Y = 22.0, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn7", Label = "A3 Center Hat (RIGHT)", InputCode = "button7", X = 43.7, Y = 25.7, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn8", Label = "A3 Center Hat (DOWN)", InputCode = "button8", X = 32.6, Y = 29.3, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn9", Label = "A3 Center Hat (CLICK)", InputCode = "button9", X = 21.5, Y = 25.7, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn10", Label = "A3 Center Hat (LEFT)", InputCode = "button10", X = 32.6, Y = 25.7, Type = "hat", ModuleName = "Grip" },
 
             // Top Hat A4
-            new ControllerHotspot { Id = "l_btn11", Label = "A4 Top Hat (UP)", InputCode = "button11", X = 34.1, Y = 5.5, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn12", Label = "A4 Top Hat (RIGHT)", InputCode = "button12", X = 42.1, Y = 10.6, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn13", Label = "A4 Top Hat (DOWN)", InputCode = "button13", X = 34.1, Y = 15.0, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn14", Label = "A4 Top Hat (CLICK)", InputCode = "button14", X = 26.0, Y = 11.1, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn15", Label = "A4 Top Hat (LEFT)", InputCode = "button15", X = 34.2, Y = 10.7, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn11", Label = "A4 Top Hat (UP)", InputCode = "button11", X = 36.4, Y = 6.6, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn12", Label = "A4 Top Hat (RIGHT)", InputCode = "button12", X = 47.4, Y = 10.2, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn13", Label = "A4 Top Hat (DOWN)", InputCode = "button13", X = 36.4, Y = 13.8, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn14", Label = "A4 Top Hat (CLICK)", InputCode = "button14", X = 25.3, Y = 10.2, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn15", Label = "A4 Top Hat (LEFT)", InputCode = "button15", X = 36.4, Y = 10.2, Type = "hat", ModuleName = "Grip" },
 
             // Thumb Hat C1
-            new ControllerHotspot { Id = "l_btn16", Label = "C1 Thumb Hat (UP)", InputCode = "button16", X = 21.5, Y = 36.5, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn17", Label = "C1 Thumb Hat (RIGHT)", InputCode = "button17", X = 32.5, Y = 41.5, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn18", Label = "C1 Thumb Hat (DOWN)", InputCode = "button18", X = 21.5, Y = 46.5, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "l_btn19", Label = "C1 Thumb Hat (CLICK)", InputCode = "button19", X = 10.0, Y = 41.5, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn16", Label = "C1 Thumb Hat (UP)", InputCode = "button16", X = 21.5, Y = 36.7, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn17", Label = "C1 Thumb Hat (RIGHT)", InputCode = "button17", X = 32.6, Y = 41.4, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn18", Label = "C1 Thumb Hat (DOWN)", InputCode = "button18", X = 21.5, Y = 46.4, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn19", Label = "C1 Thumb Hat (CLICK)", InputCode = "button19", X = 10.4, Y = 41.4, Type = "hat", ModuleName = "Grip" },
             new ControllerHotspot { Id = "l_btn20", Label = "C1 Thumb Hat (LEFT)", InputCode = "button20", X = 21.5, Y = 41.5, Type = "hat", ModuleName = "Grip" },
 
             // Base Encoders & Buttons
-            new ControllerHotspot { Id = "l_btn29", Label = "F3 Base Button", InputCode = "button29", X = 38.1, Y = 58.9, Type = "button", ModuleName = "Base" },
-            new ControllerHotspot { Id = "l_btn27", Label = "F1 Base Button", InputCode = "button27", X = 33.9, Y = 64.3, Type = "button", ModuleName = "Base" },
-            new ControllerHotspot { Id = "l_btn28", Label = "F2 Base Button", InputCode = "button28", X = 29.9, Y = 68.4, Type = "button", ModuleName = "Base" },
-            new ControllerHotspot { Id = "l_btn23", Label = "En2 Right Encoder (UP)", InputCode = "button23", X = 28.4, Y = 76.1, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "l_btn24", Label = "En2 Right Encoder (DOWN)", InputCode = "button24", X = 28.2, Y = 82.1, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "l_slider1", Label = "Throttle Slider", InputCode = "slider1", X = 31.5, Y = 86.1, Type = "axis", ModuleName = "Base" },
-            new ControllerHotspot { Id = "l_btn25", Label = "En1 Left Encoder (UP)", InputCode = "button25", X = 35.4, Y = 89.7, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "l_btn26", Label = "En1 Left Encoder (DOWN)", InputCode = "button26", X = 35.8, Y = 94.5, Type = "encoder", ModuleName = "Base" }
+            new ControllerHotspot { Id = "l_btn28", Label = "F2 Base Button", InputCode = "button28", X = 33.6, Y = 60.1, Type = "button", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_btn27", Label = "F1 Base Button", InputCode = "button27", X = 29.0, Y = 65.1, Type = "button", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_btn29", Label = "F3 Base Button", InputCode = "button29", X = 24.9, Y = 70.3, Type = "button", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_btn25", Label = "En1 Left Encoder (UP)", InputCode = "button25", X = 21.2, Y = 79.5, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_btn26", Label = "En1 Left Encoder (DOWN)", InputCode = "button26", X = 21.2, Y = 83.1, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_slider1", Label = "Throttle Slider", InputCode = "slider1", X = 26.5, Y = 88.1, Type = "axis", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_btn23", Label = "En2 Right Encoder (UP)", InputCode = "button23", X = 31.8, Y = 92.9, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_btn24", Label = "En2 Right Encoder (DOWN)", InputCode = "button24", X = 31.8, Y = 96.5, Type = "encoder", ModuleName = "Base" }
         });
 
         return layout;
