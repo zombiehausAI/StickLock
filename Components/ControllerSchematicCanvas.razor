@@ -27,24 +27,24 @@
     <!-- Multi-Module View Selector Tabs (e.g. Stick vs SEM vs FSM-GA) -->
     @if (Layout.SubModules.Count > 0) {
         <div class="d-flex flex-wrap align-center gap-2 mb-3">
-            <MudButtonGroup Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small">
-                <MudButton Color="@(_selectedSubModuleIndex == 0 ? Color.Primary : Color.Default)"
-                           Variant="@(_selectedSubModuleIndex == 0 ? Variant.Filled : Variant.Outlined)"
-                           OnClick="() => SelectSubModule(0)"
-                           Style="@(_selectedSubModuleIndex == 0 ? "color: #0B0F19; font-weight: 700;" : "")">
+            <div class="module-tab-bar pa-1 rounded d-flex align-center gap-1">
+                <button type="button"
+                        class="module-tab-btn @(_selectedSubModuleIndex == 0 ? "active" : "")"
+                        @onclick="() => SelectSubModule(0)">
+                    <MudIcon Icon="@Icons.Material.Filled.SportsEsports" Size="Size.Small" Class="mr-1" />
                     Grip &amp; Base
-                </MudButton>
+                </button>
                 @for (int i = 0; i < Layout.SubModules.Count; i++) {
                     var idx = i + 1;
                     var sub = Layout.SubModules[i];
-                    <MudButton Color="@(_selectedSubModuleIndex == idx ? Color.Primary : Color.Default)"
-                               Variant="@(_selectedSubModuleIndex == idx ? Variant.Filled : Variant.Outlined)"
-                               OnClick="() => SelectSubModule(idx)"
-                               Style="@(_selectedSubModuleIndex == idx ? "color: #0B0F19; font-weight: 700;" : "")">
+                    <button type="button"
+                            class="module-tab-btn @(_selectedSubModuleIndex == idx ? "active" : "")"
+                            @onclick="() => SelectSubModule(idx)">
+                        <MudIcon Icon="@Icons.Material.Filled.DashboardCustomize" Size="Size.Small" Class="mr-1" />
                         @sub.Name
-                    </MudButton>
+                    </button>
                 }
-            </MudButtonGroup>
+            </div>
         </div>
     }
 
@@ -68,14 +68,14 @@
                 var isSelected = _selectedHotspotId == spot.Id;
                 var isLiveActive = string.Equals(ActivePhysicalInput, spot.InputCode, StringComparison.OrdinalIgnoreCase);
 
-                <div style="position: absolute; left: calc(@spot.X% - 20px); top: calc(@spot.Y% - 14px); z-index: 10; pointer-events: auto;">
+                <div style="position: absolute; left: @(spot.X)%; top: @(spot.Y)%; transform: translate(-50%, -50%); z-index: 10; pointer-events: auto;">
                     <MudTooltip Text="@GetTooltipText(spot, boundItem)" Placement="Placement.Top">
                         <button class="callout-badge @(isBound ? "bound" : "unbound") @(isSelected ? "selected" : "") @(isLiveActive ? "live-active" : "")"
                                 @onclick="() => OnBadgeClicked(spot, boundItem)">
                             <span class="badge-code">
                                 @FormatDisplayButtonNumber(spot.InputCode)
                             </span>
-                            @if (isBound) {
+                            @if (isBound && boundItem != null) {
                                 <span class="badge-bound-name">
                                     @boundItem.DisplayAction
                                 </span>
@@ -150,6 +150,36 @@
 <style>
     .schematic-container {
         user-select: none;
+    }
+    .module-tab-bar {
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(0, 229, 255, 0.25);
+        display: inline-flex;
+        border-radius: 6px;
+    }
+    .module-tab-btn {
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        color: #94A3B8;
+        padding: 6px 14px;
+        font-family: inherit;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease-in-out;
+    }
+    .module-tab-btn:hover {
+        color: #38BDF8;
+        background: rgba(0, 229, 255, 0.08);
+    }
+    .module-tab-btn.active {
+        background: #00E5FF;
+        color: #0B0F19;
+        font-weight: 800;
+        box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
     }
     .callout-badge {
         display: inline-flex;
@@ -256,16 +286,25 @@
     private int _selectedSubModuleIndex = 0;
     private string? _selectedHotspotId = null;
     private ControllerHotspot? _selectedHotspot = null;
+    private string? _lastHandledInput = null;
+
+    private IEnumerable<ControllerHotspot> GetAllHotspots() {
+        if (Layout.SubModules == null || Layout.SubModules.Count == 0) {
+            return Layout.Hotspots;
+        }
+        return Layout.Hotspots.Concat(Layout.SubModules.SelectMany(m => m.Hotspots));
+    }
 
     protected override void OnParametersSet() {
-        if (!string.IsNullOrWhiteSpace(ActivePhysicalInput)) {
-            var activeSpot = Layout.Hotspots.FirstOrDefault(h =>
+        if (!string.IsNullOrWhiteSpace(ActivePhysicalInput) && ActivePhysicalInput != _lastHandledInput) {
+            _lastHandledInput = ActivePhysicalInput;
+            var activeSpot = GetAllHotspots().FirstOrDefault(h =>
                 string.Equals(h.InputCode, ActivePhysicalInput, StringComparison.OrdinalIgnoreCase));
             if (activeSpot != null) {
                 _selectedHotspotId = activeSpot.Id;
                 _selectedHotspot = activeSpot;
 
-                // Auto-switch to submodule tab if the button belongs to SEM or FSM-GA
+                // Auto-switch to submodule tab ONLY when a NEW physical input is received
                 if (activeSpot.ModuleName.Contains("SEM", StringComparison.OrdinalIgnoreCase)) {
                     _selectedSubModuleIndex = 1;
                 } else if (activeSpot.ModuleName.Contains("FSM", StringComparison.OrdinalIgnoreCase)) {
@@ -274,11 +313,15 @@
                     _selectedSubModuleIndex = 0;
                 }
             }
+        } else if (string.IsNullOrWhiteSpace(ActivePhysicalInput)) {
+            _lastHandledInput = null;
         }
     }
 
     private void SelectSubModule(int index) {
         _selectedSubModuleIndex = index;
+        _selectedHotspot = null;
+        _selectedHotspotId = null;
     }
 
     private ControllerLayoutDefinition GetActiveLayout() {
