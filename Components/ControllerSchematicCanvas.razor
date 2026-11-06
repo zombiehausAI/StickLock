@@ -75,11 +75,6 @@
                             <span class="badge-code">
                                 @FormatDisplayButtonNumber(spot.InputCode)
                             </span>
-                            @if (isBound && boundItem != null) {
-                                <span class="badge-bound-name">
-                                    @boundItem.DisplayAction
-                                </span>
-                            }
                         </button>
                     </MudTooltip>
                 </div>
@@ -184,34 +179,36 @@
     .callout-badge {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        padding: 3px 8px;
-        background: rgba(15, 23, 42, 0.92);
-        border: 1.5px solid #00E5FF;
-        border-radius: 6px;
+        justify-content: center;
+        min-width: 26px;
+        height: 20px;
+        padding: 1px 4px;
+        background: rgba(11, 15, 25, 0.9);
+        border: 1.5px solid rgba(56, 189, 248, 0.6);
+        border-radius: 4px;
         color: #E2E8F0;
         font-family: 'Consolas', monospace;
-        font-size: 0.72rem;
+        font-size: 0.68rem;
         cursor: pointer;
         transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
         white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
         outline: none;
     }
     .callout-badge:hover {
-        transform: scale(1.18);
-        border-color: #38BDF8;
-        box-shadow: 0 0 16px rgba(0, 229, 255, 0.85);
+        transform: scale(1.22);
+        border-color: #00E5FF;
+        box-shadow: 0 0 14px rgba(0, 229, 255, 0.9);
         z-index: 50;
     }
     .callout-badge.bound {
         border-color: #10B981;
-        background: rgba(6, 78, 59, 0.88);
-        box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+        background: rgba(6, 78, 59, 0.92);
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
     }
     .callout-badge.bound:hover {
         border-color: #34D399;
-        box-shadow: 0 0 18px rgba(16, 185, 129, 0.9);
+        box-shadow: 0 0 16px rgba(16, 185, 129, 0.95);
     }
     .callout-badge.selected {
         border-color: #FFD700 !important;
