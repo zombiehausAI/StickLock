@@ -343,9 +343,27 @@
         }
 
         var cleanInput = inputCode.Trim().ToLowerInvariant();
-        return Mappings.FirstOrDefault(m =>
-            m.StickInstance == StickSlot &&
-            string.Equals(m.InputCode.ToLowerInvariant(), cleanInput, StringComparison.OrdinalIgnoreCase));
+        return Mappings.FirstOrDefault(m => {
+            if (m.StickInstance != StickSlot) {
+                return false;
+            }
+
+            var mCode = m.InputCode.ToLowerInvariant();
+            if (mCode == cleanInput) {
+                return true;
+            }
+
+            // Strip device prefix (e.g. js1_button1 -> button1, kb1_w -> w, mo1_mouse1 -> mouse1, gp1_button_a -> button_a)
+            var uIdx = mCode.IndexOf('_');
+            if (uIdx >= 0) {
+                var unprefixed = mCode[(uIdx + 1)..];
+                if (unprefixed == cleanInput) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
     }
 
     private string FormatDisplayButtonNumber(string inputCode) {
@@ -353,8 +371,21 @@
         if (lower.StartsWith("button")) {
             return $"B{lower.Replace("button", "")}";
         }
+        if (lower.StartsWith("mouse")) {
+            return $"M{lower.Replace("mouse", "")}";
+        }
         if (lower.StartsWith("slider")) {
             return "SLIDER";
+        }
+        if (lower == "space") return "SPC";
+        if (lower == "backspace") return "BKSP";
+        if (lower == "printscreen") return "PRT";
+        if (lower == "scrolllock") return "SCR";
+        if (lower == "pageup") return "PGUP";
+        if (lower == "pagedown") return "PGDN";
+        if (lower == "capslock") return "CAPS";
+        if (lower.StartsWith("np_")) {
+            return $"N{lower.Replace("np_", "").ToUpperInvariant()}";
         }
         return inputCode.ToUpperInvariant();
     }

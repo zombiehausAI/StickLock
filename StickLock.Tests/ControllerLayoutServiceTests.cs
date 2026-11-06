@@ -69,9 +69,34 @@ public class ControllerLayoutServiceTests {
 
         Assert.Equal("keyboard_mouse", layout.Id);
         Assert.Equal("Keyboard & Mouse", layout.Category);
-        Assert.Contains(layout.Hotspots, h => h.InputCode == "w");
-        Assert.Contains(layout.Hotspots, h => h.InputCode == "mouse1");
         Assert.Equal("images/layouts/keyboard_mouse.svg", layout.ImageUrl);
+
+        // Movement & Core Flight Keys
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "w");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "space");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "lshift");
+
+        // Function Keys
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "escape");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "f1");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "f12");
+
+        // Navigation & Arrow Cluster
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "insert");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "delete");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "up");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "down");
+
+        // Numpad Keys
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "numlock");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "np_7");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "np_enter");
+
+        // Mouse Controls
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "mouse1");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "mouse2");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "wheel_up");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "mouse4");
     }
 }
 
