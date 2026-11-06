@@ -21,3 +21,4 @@ public class DirectInputMonitoringTests {
         Assert.Equal("button3", receivedButton);
     }
 }
+

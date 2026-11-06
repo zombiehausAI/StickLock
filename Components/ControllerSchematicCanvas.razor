@@ -75,7 +75,7 @@
                             <span class="badge-code">
                                 @FormatDisplayButtonNumber(spot.InputCode)
                             </span>
-                            @if (isBound && boundItem != null) {
+                            @if (isBound) {
                                 <span class="badge-bound-name">
                                     @boundItem.DisplayAction
                                 </span>
@@ -257,16 +257,9 @@
     private string? _selectedHotspotId = null;
     private ControllerHotspot? _selectedHotspot = null;
 
-    private IEnumerable<ControllerHotspot> GetAllHotspots() {
-        if (Layout.SubModules == null || Layout.SubModules.Count == 0) {
-            return Layout.Hotspots;
-        }
-        return Layout.Hotspots.Concat(Layout.SubModules.SelectMany(m => m.Hotspots));
-    }
-
     protected override void OnParametersSet() {
         if (!string.IsNullOrWhiteSpace(ActivePhysicalInput)) {
-            var activeSpot = GetAllHotspots().FirstOrDefault(h =>
+            var activeSpot = Layout.Hotspots.FirstOrDefault(h =>
                 string.Equals(h.InputCode, ActivePhysicalInput, StringComparison.OrdinalIgnoreCase));
             if (activeSpot != null) {
                 _selectedHotspotId = activeSpot.Id;
