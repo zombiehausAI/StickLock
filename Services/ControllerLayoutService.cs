@@ -7,6 +7,14 @@ public class ControllerLayoutService : IControllerLayoutService {
         var clean = productName ?? string.Empty;
         var upper = clean.ToUpperInvariant();
 
+        if (upper.Contains("KEYBOARD") || upper.Contains("MOUSE") || upper.Contains("KB/M") || upper.Contains("KB1") || upper.Contains("MO1")) {
+            return CreateKeyboardMouseLayout();
+        }
+
+        if (upper.Contains("XBOX") || upper.Contains("GAMEPAD") || upper.Contains("CONTROLLER") || upper.Contains("XINPUT") || upper.Contains("GP1")) {
+            return CreateXboxControllerLayout();
+        }
+
         var isVkb = upper.Contains("VKB") || upper.Contains("GLADIATOR");
         var isLeft = upper.Contains(" L ") || upper.EndsWith(" L") || upper.Contains("LEFT") || upper.Contains("OT L");
         var isOmni = upper.Contains("OT") || upper.Contains("OMNI");
@@ -26,6 +34,8 @@ public class ControllerLayoutService : IControllerLayoutService {
         return new List<ControllerLayoutDefinition> {
             CreateVkbGladiatorRightCompositeLayout("VKBsim Gladiator EVO R SEM FSM.GA"),
             CreateVkbGladiatorOmniLeftLayout("VKBsim Gladiator EVO OT L"),
+            CreateXboxControllerLayout(),
+            CreateKeyboardMouseLayout(),
             CreateGenericFlightStickLayout("Generic Joystick")
         };
     }
@@ -257,6 +267,92 @@ public class ControllerLayoutService : IControllerLayoutService {
             new ControllerHotspot { Id = "l_slider1", Label = "Throttle Slider", InputCode = "slider1", X = 31.5, Y = 86.1, Type = "axis", ModuleName = "Base" },
             new ControllerHotspot { Id = "l_btn25", Label = "En1 Left Encoder (UP)", InputCode = "button25", X = 35.4, Y = 89.7, Type = "encoder", ModuleName = "Base" },
             new ControllerHotspot { Id = "l_btn26", Label = "En1 Left Encoder (DOWN)", InputCode = "button26", X = 35.8, Y = 94.5, Type = "encoder", ModuleName = "Base" }
+        });
+
+        return layout;
+    }
+
+    private static ControllerLayoutDefinition CreateXboxControllerLayout() {
+        var layout = new ControllerLayoutDefinition {
+            Id = "xbox_controller",
+            Name = "Xbox Wireless Controller (Gamepad)",
+            Category = "Gamepad",
+            Width = 1000,
+            Height = 650,
+            ImageUrl = "images/layouts/xbox_controller.svg",
+            AttachedModules = new List<string> { "Gamepad" }
+        };
+
+        layout.Hotspots.AddRange(new[] {
+            // Face Buttons
+            new ControllerHotspot { Id = "gp_btn_a", Label = "A Button", InputCode = "button_a", X = 68.0, Y = 46.0, Type = "button", ModuleName = "Face" },
+            new ControllerHotspot { Id = "gp_btn_b", Label = "B Button", InputCode = "button_b", X = 73.0, Y = 36.9, Type = "button", ModuleName = "Face" },
+            new ControllerHotspot { Id = "gp_btn_x", Label = "X Button", InputCode = "button_x", X = 63.0, Y = 36.9, Type = "button", ModuleName = "Face" },
+            new ControllerHotspot { Id = "gp_btn_y", Label = "Y Button", InputCode = "button_y", X = 68.0, Y = 28.0, Type = "button", ModuleName = "Face" },
+
+            // Bumpers & Triggers
+            new ControllerHotspot { Id = "gp_lb", Label = "Left Bumper (LB)", InputCode = "shoulderl", X = 33.5, Y = 17.5, Type = "button", ModuleName = "Bumpers" },
+            new ControllerHotspot { Id = "gp_rb", Label = "Right Bumper (RB)", InputCode = "shoulderr", X = 66.5, Y = 17.5, Type = "button", ModuleName = "Bumpers" },
+            new ControllerHotspot { Id = "gp_lt", Label = "Left Trigger (LT)", InputCode = "triggerl", X = 31.0, Y = 12.0, Type = "axis", ModuleName = "Triggers" },
+            new ControllerHotspot { Id = "gp_rt", Label = "Right Trigger (RT)", InputCode = "triggerr", X = 69.0, Y = 12.0, Type = "axis", ModuleName = "Triggers" },
+
+            // D-Pad
+            new ControllerHotspot { Id = "gp_dpad_up", Label = "D-Pad UP", InputCode = "dpad_up", X = 42.0, Y = 49.0, Type = "hat", ModuleName = "D-Pad" },
+            new ControllerHotspot { Id = "gp_dpad_down", Label = "D-Pad DOWN", InputCode = "dpad_down", X = 42.0, Y = 62.0, Type = "hat", ModuleName = "D-Pad" },
+            new ControllerHotspot { Id = "gp_dpad_left", Label = "D-Pad LEFT", InputCode = "dpad_left", X = 37.5, Y = 55.4, Type = "hat", ModuleName = "D-Pad" },
+            new ControllerHotspot { Id = "gp_dpad_right", Label = "D-Pad RIGHT", InputCode = "dpad_right", X = 46.5, Y = 55.4, Type = "hat", ModuleName = "D-Pad" },
+
+            // Thumbsticks
+            new ControllerHotspot { Id = "gp_ls_click", Label = "Left Stick Click (LS)", InputCode = "thumble", X = 33.0, Y = 36.9, Type = "button", ModuleName = "Sticks" },
+            new ControllerHotspot { Id = "gp_rs_click", Label = "Right Stick Click (RS)", InputCode = "thumbr", X = 58.0, Y = 58.5, Type = "button", ModuleName = "Sticks" },
+
+            // Center Buttons
+            new ControllerHotspot { Id = "gp_view", Label = "View / Back Button", InputCode = "back", X = 43.0, Y = 36.9, Type = "button", ModuleName = "Center" },
+            new ControllerHotspot { Id = "gp_menu", Label = "Menu / Start Button", InputCode = "start", X = 57.0, Y = 36.9, Type = "button", ModuleName = "Center" }
+        });
+
+        return layout;
+    }
+
+    private static ControllerLayoutDefinition CreateKeyboardMouseLayout() {
+        var layout = new ControllerLayoutDefinition {
+            Id = "keyboard_mouse",
+            Name = "Keyboard & Mouse",
+            Category = "Keyboard & Mouse",
+            Width = 1000,
+            Height = 650,
+            ImageUrl = "images/layouts/keyboard_mouse.svg",
+            AttachedModules = new List<string> { "Keyboard", "Mouse" }
+        };
+
+        layout.Hotspots.AddRange(new[] {
+            // Movement Keys
+            new ControllerHotspot { Id = "km_w", Label = "W (Strafe Up / Forward)", InputCode = "w", X = 25.7, Y = 31.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_a", Label = "A (Strafe Left)", InputCode = "a", X = 19.7, Y = 41.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_s", Label = "S (Strafe Down / Back)", InputCode = "s", X = 26.7, Y = 41.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_d", Label = "D (Strafe Right)", InputCode = "d", X = 33.7, Y = 41.5, Type = "key", ModuleName = "Keyboard" },
+
+            // Combat & Flight Keys
+            new ControllerHotspot { Id = "km_q", Label = "Q (Roll Left)", InputCode = "q", X = 18.7, Y = 31.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_e", Label = "E (Roll Right)", InputCode = "e", X = 32.7, Y = 31.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_r", Label = "R (Target Nearest)", InputCode = "r", X = 39.7, Y = 31.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_f", Label = "F (Interaction)", InputCode = "f", X = 40.7, Y = 41.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_c", Label = "C (Cruise Control)", InputCode = "c", X = 35.7, Y = 51.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_space", Label = "Spacebar (Strafe UP / Boost)", InputCode = "space", X = 35.5, Y = 61.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_lshift", Label = "Left Shift (Boost / Afterburner)", InputCode = "lshift", X = 12.5, Y = 51.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_lctrl", Label = "Left Ctrl (Strafe DOWN)", InputCode = "lctrl", X = 11.0, Y = 61.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_lalt", Label = "Left Alt (Modifier)", InputCode = "lalt", X = 19.0, Y = 61.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_tab", Label = "Tab (Scan Mode)", InputCode = "tab", X = 11.0, Y = 31.5, Type = "key", ModuleName = "Keyboard" },
+            new ControllerHotspot { Id = "km_esc", Label = "Esc (Game Menu)", InputCode = "escape", X = 10.2, Y = 21.5, Type = "key", ModuleName = "Keyboard" },
+
+            // Mouse Buttons
+            new ControllerHotspot { Id = "km_mouse1", Label = "Left Click (Primary Fire)", InputCode = "mouse1", X = 79.0, Y = 22.0, Type = "mouse", ModuleName = "Mouse" },
+            new ControllerHotspot { Id = "km_mouse2", Label = "Right Click (Secondary Fire / Zoom)", InputCode = "mouse2", X = 87.0, Y = 22.0, Type = "mouse", ModuleName = "Mouse" },
+            new ControllerHotspot { Id = "km_mouse3", Label = "Middle Click (Lock Missile)", InputCode = "mouse3", X = 83.0, Y = 22.0, Type = "mouse", ModuleName = "Mouse" },
+            new ControllerHotspot { Id = "km_wheel_up", Label = "Wheel UP (Speed Limiter UP)", InputCode = "wheel_up", X = 83.0, Y = 16.0, Type = "mouse", ModuleName = "Mouse" },
+            new ControllerHotspot { Id = "km_wheel_down", Label = "Wheel DOWN (Speed Limiter DOWN)", InputCode = "wheel_down", X = 83.0, Y = 28.0, Type = "mouse", ModuleName = "Mouse" },
+            new ControllerHotspot { Id = "km_mouse4", Label = "Thumb Button 1", InputCode = "mouse4", X = 71.0, Y = 35.5, Type = "mouse", ModuleName = "Mouse" },
+            new ControllerHotspot { Id = "km_mouse5", Label = "Thumb Button 2", InputCode = "mouse5", X = 71.5, Y = 45.0, Type = "mouse", ModuleName = "Mouse" }
         });
 
         return layout;

@@ -1,9 +1,13 @@
 namespace StickLock.Models;
 
 public class ControllerMappingItem {
+    public const int KeyboardMouseSlot = 100;
+    public const int GamepadSlot = 200;
+
     public int StickInstance { get; set; }
     public string DeviceName { get; set; } = string.Empty;
     public string DeviceGuid { get; set; } = string.Empty;
+    public string DeviceCategory { get; set; } = "Joystick";
     public string InputCode { get; set; } = string.Empty;
     public string InputType { get; set; } = "Button";
     public string DisplayInput { get; set; } = string.Empty;

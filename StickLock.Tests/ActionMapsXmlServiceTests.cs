@@ -841,6 +841,77 @@ public class ActionMapsXmlServiceTests : IDisposable {
         Assert.DoesNotContain("js2_button4", clearedXml);
     }
 
+    [Fact]
+    public async Task GetDetailedMappingsAsync_ExtractsKeyboardMouseAndGamepadMappings() {
+        var xmlContent = @"<ActionMaps>
+            <actionmap name=""spaceship_movement"">
+                <action name=""v_forward""><rebind input=""kb1_w""/></action>
+                <action name=""v_fire_primary""><rebind input=""mo1_mouse1""/></action>
+                <action name=""v_boost""><rebind input=""gp1_button_a""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(_xmlPath, xmlContent);
+
+        var configService = new AppConfigService(Path.Combine(_tempDir, ".sticklock", "config.json"));
+        await configService.SetStarCitizenPathAsync(_xmlPath);
+        var xmlService = new ActionMapsXmlService(configService, new TestDirectInputService(), new TestStarCitizenDetector(), new ActivityLogService());
+
+        var mappings = await xmlService.GetDetailedMappingsAsync();
+
+        Assert.Equal(3, mappings.Count);
+
+        var kbItem = mappings.FirstOrDefault(m => m.InputCode == "kb1_w");
+        Assert.NotNull(kbItem);
+        Assert.Equal(ControllerMappingItem.KeyboardMouseSlot, kbItem.StickInstance);
+        Assert.Equal("Keyboard & Mouse", kbItem.DeviceName);
+        Assert.Equal("Key", kbItem.InputType);
+        Assert.Equal("W", kbItem.DisplayInput);
+
+        var mouseItem = mappings.FirstOrDefault(m => m.InputCode == "mo1_mouse1");
+        Assert.NotNull(mouseItem);
+        Assert.Equal(ControllerMappingItem.KeyboardMouseSlot, mouseItem.StickInstance);
+        Assert.Equal("Mouse", mouseItem.InputType);
+        Assert.Contains("Left Click", mouseItem.DisplayInput);
+
+        var gpItem = mappings.FirstOrDefault(m => m.InputCode == "gp1_button_a");
+        Assert.NotNull(gpItem);
+        Assert.Equal(ControllerMappingItem.GamepadSlot, gpItem.StickInstance);
+        Assert.Equal("Xbox Controller (Gamepad)", gpItem.DeviceName);
+        Assert.Equal("A Button", gpItem.DisplayInput);
+    }
+
+    [Fact]
+    public async Task RebindActionAsync_SupportsKeyboardMouseAndGamepad() {
+        var xmlContent = @"<ActionMaps>
+            <actionmap name=""spaceship_general"">
+                <action name=""v_eject""><rebind input=""kb1_y""/></action>
+            </actionmap>
+        </ActionMaps>";
+        await File.WriteAllTextAsync(_xmlPath, xmlContent);
+
+        var configService = new AppConfigService(Path.Combine(_tempDir, ".sticklock", "config.json"));
+        await configService.SetStarCitizenPathAsync(_xmlPath);
+        var xmlService = new ActionMapsXmlService(configService, new TestDirectInputService(), new TestStarCitizenDetector(), new ActivityLogService());
+
+        // Rebind to Keyboard space
+        var kbResult = await xmlService.RebindActionAsync("spaceship_general", "v_eject", ControllerMappingItem.KeyboardMouseSlot, "space");
+        Assert.True(kbResult.Success);
+        var xml1 = await File.ReadAllTextAsync(_xmlPath);
+        Assert.Contains(@"<rebind input=""kb1_space""", xml1);
+
+        // Rebind to Gamepad A
+        var gpResult = await xmlService.RebindActionAsync("spaceship_general", "v_eject", ControllerMappingItem.GamepadSlot, "button_a");
+        Assert.True(gpResult.Success);
+        var xml2 = await File.ReadAllTextAsync(_xmlPath);
+        Assert.Contains(@"<rebind input=""gp1_button_a""", xml2);
+
+        // Rebind to Mouse 2
+        var mouseResult = await xmlService.RebindActionAsync("spaceship_general", "v_eject", ControllerMappingItem.KeyboardMouseSlot, "mouse2");
+        Assert.True(mouseResult.Success);
+        var xml3 = await File.ReadAllTextAsync(_xmlPath);
+        Assert.Contains(@"<rebind input=""mo1_mouse2""", xml3);
+    }
+
     public void Dispose() {
         try {
             if (Directory.Exists(_tempDir)) {

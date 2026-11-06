@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650" width="1000" height="650">
+  <defs>
+    <linearGradient id="chassis-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0B0F19"/>
+    </linearGradient>
+    <linearGradient id="mouse-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <filter id="cyan-glow">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Keyboard Chassis (Left Side) -->
+  <rect x="40" y="80" width="580" height="490" rx="14" fill="url(#chassis-grad)" stroke="#00E5FF" stroke-width="2"/>
+  <rect x="55" y="95" width="550" height="460" rx="10" fill="#090D16" stroke="#334155" stroke-width="1"/>
+
+  <!-- Key Rows Visual Placeholder / Clusters -->
+  <!-- Top Row (Esc, 1-6) -->
+  <g fill="#1E293B" stroke="#38BDF8" stroke-width="1.5" rx="6">
+    <rect x="75" y="115" width="55" height="45" rx="6"/>
+    <rect x="150" y="115" width="55" height="45" rx="6"/>
+    <rect x="220" y="115" width="55" height="45" rx="6"/>
+    <rect x="290" y="115" width="55" height="45" rx="6"/>
+    <rect x="360" y="115" width="55" height="45" rx="6"/>
+    <rect x="430" y="115" width="55" height="45" rx="6"/>
+    <rect x="500" y="115" width="55" height="45" rx="6"/>
+  </g>
+  <g fill="#94A3B8" font-size="14" font-weight="700" font-family="system-ui, sans-serif" text-anchor="middle">
+    <text x="102" y="143">ESC</text>
+    <text x="177" y="143">1</text>
+    <text x="247" y="143">2</text>
+    <text x="317" y="143">3</text>
+    <text x="387" y="143">4</text>
+    <text x="457" y="143">5</text>
+    <text x="527" y="143">6</text>
+  </g>
+
+  <!-- Row 2: Tab, Q, W, E, R, T -->
+  <g fill="#1E293B" stroke="#38BDF8" stroke-width="1.5">
+    <rect x="75" y="180" width="70" height="50" rx="6"/>
+    <rect x="160" y="180" width="55" height="50" rx="6"/>
+    <rect x="230" y="180" width="55" height="50" rx="6" fill="#00E5FF" fill-opacity="0.15" stroke="#00E5FF" stroke-width="2"/>
+    <rect x="300" y="180" width="55" height="50" rx="6"/>
+    <rect x="370" y="180" width="55" height="50" rx="6"/>
+    <rect x="440" y="180" width="55" height="50" rx="6"/>
+    <rect x="510" y="180" width="55" height="50" rx="6"/>
+  </g>
+  <g fill="#94A3B8" font-size="15" font-weight="700" font-family="system-ui, sans-serif" text-anchor="middle">
+    <text x="110" y="211">TAB</text>
+    <text x="187" y="211">Q</text>
+    <text x="257" y="211" fill="#00E5FF">W</text>
+    <text x="327" y="211">E</text>
+    <text x="397" y="211">R</text>
+    <text x="467" y="211">T</text>
+    <text x="537" y="211">Y</text>
+  </g>
+
+  <!-- Row 3: Caps, A, S, D, F, G, H -->
+  <g fill="#1E293B" stroke="#38BDF8" stroke-width="1.5">
+    <rect x="75" y="245" width="80" height="50" rx="6"/>
+    <rect x="170" y="245" width="55" height="50" rx="6" fill="#00E5FF" fill-opacity="0.15" stroke="#00E5FF" stroke-width="2"/>
+    <rect x="240" y="245" width="55" height="50" rx="6" fill="#00E5FF" fill-opacity="0.15" stroke="#00E5FF" stroke-width="2"/>
+    <rect x="310" y="245" width="55" height="50" rx="6" fill="#00E5FF" fill-opacity="0.15" stroke="#00E5FF" stroke-width="2"/>
+    <rect x="380" y="245" width="55" height="50" rx="6"/>
+    <rect x="450" y="245" width="55" height="50" rx="6"/>
+    <rect x="520" y="245" width="55" height="50" rx="6"/>
+  </g>
+  <g fill="#94A3B8" font-size="15" font-weight="700" font-family="system-ui, sans-serif" text-anchor="middle">
+    <text x="115" y="276">CAPS</text>
+    <text x="197" y="276" fill="#00E5FF">A</text>
+    <text x="267" y="276" fill="#00E5FF">S</text>
+    <text x="337" y="276" fill="#00E5FF">D</text>
+    <text x="407" y="276">F</text>
+    <text x="477" y="276">G</text>
+    <text x="547" y="276">H</text>
+  </g>
+
+  <!-- Row 4: LShift, Z, X, C, V, B, N -->
+  <g fill="#1E293B" stroke="#38BDF8" stroke-width="1.5">
+    <rect x="75" y="310" width="100" height="50" rx="6"/>
+    <rect x="190" y="310" width="55" height="50" rx="6"/>
+    <rect x="260" y="310" width="55" height="50" rx="6"/>
+    <rect x="330" y="310" width="55" height="50" rx="6"/>
+    <rect x="400" y="310" width="55" height="50" rx="6"/>
+    <rect x="470" y="310" width="55" height="50" rx="6"/>
+    <rect x="540" y="310" width="55" height="50" rx="6"/>
+  </g>
+  <g fill="#94A3B8" font-size="14" font-weight="700" font-family="system-ui, sans-serif" text-anchor="middle">
+    <text x="125" y="341">SHIFT</text>
+    <text x="217" y="341">Z</text>
+    <text x="287" y="341">X</text>
+    <text x="357" y="341">C</text>
+    <text x="427" y="341">V</text>
+    <text x="497" y="341">B</text>
+    <text x="567" y="341">N</text>
+  </g>
+
+  <!-- Row 5: LCtrl, LAlt, Space, RAlt, RCtrl -->
+  <g fill="#1E293B" stroke="#38BDF8" stroke-width="1.5">
+    <rect x="75" y="375" width="70" height="50" rx="6"/>
+    <rect x="160" y="375" width="60" height="50" rx="6"/>
+    <rect x="235" y="375" width="240" height="50" rx="6" fill="#00E5FF" fill-opacity="0.15" stroke="#00E5FF" stroke-width="2"/>
+    <rect x="490" y="375" width="60" height="50" rx="6"/>
+  </g>
+  <g fill="#94A3B8" font-size="14" font-weight="700" font-family="system-ui, sans-serif" text-anchor="middle">
+    <text x="110" y="406">CTRL</text>
+    <text x="190" y="406">ALT</text>
+    <text x="355" y="406" fill="#00E5FF">SPACEBAR</text>
+    <text x="520" y="406">ALT</text>
+  </g>
+
+  <!-- Gaming Mouse (Right Side) -->
+  <g transform="translate(680, 80)">
+    <!-- Mouse Chassis -->
+    <path d="M 80,100 
+             C 100,50 200,50 220,100 
+             C 240,160 255,300 240,400 
+             C 225,480 180,510 150,510 
+             C 120,510 75,480 60,400 
+             C 45,300 60,160 80,100 Z" 
+          fill="url(#mouse-grad)" stroke="#00E5FF" stroke-width="2.5"/>
+
+    <!-- Left / Right Click Split Line -->
+    <line x1="150" y1="65" x2="150" y2="240" stroke="#00E5FF" stroke-width="2" stroke-opacity="0.5"/>
+
+    <!-- Scroll Wheel Well & Wheel -->
+    <rect x="136" y="110" width="28" height="70" rx="14" fill="#090D16" stroke="#38BDF8" stroke-width="2"/>
+    <rect x="142" y="125" width="16" height="40" rx="8" fill="#38BDF8"/>
+
+    <!-- Mouse Thumb Buttons (Left Edge) -->
+    <rect x="44" y="210" width="14" height="45" rx="5" fill="#1E293B" stroke="#00E5FF" stroke-width="1.5"/>
+    <rect x="46" y="270" width="14" height="45" rx="5" fill="#1E293B" stroke="#00E5FF" stroke-width="1.5"/>
+
+    <!-- Mouse Palm Accent Light -->
+    <path d="M 110,410 C 130,440 170,440 190,410" fill="none" stroke="#00E5FF" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Bottom Label -->
+  <text x="500" y="620" fill="#64748B" font-size="14" font-family="system-ui, sans-serif" font-weight="600" text-anchor="middle" letter-spacing="3">KEYBOARD &amp; MOUSE CONTROLS</text>
+</svg>

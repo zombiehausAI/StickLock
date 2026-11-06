@@ -678,14 +678,16 @@
                                        Dense="true"
                                        Class="mfd-code"
                                        Style="font-size: 0.8rem;">
-                                @foreach (var group in _detailedMappings.GroupBy(m => m.StickInstance).OrderBy(g => g.Key)) {
+                                @foreach (var group in _detailedMappings.Where(m => m.StickInstance < 100).GroupBy(m => m.StickInstance).OrderBy(g => g.Key)) {
                                     var devName = group.First().DeviceName;
                                     <MudSelectItem Value="group.Key">js@(group.Key): @devName</MudSelectItem>
                                 }
-                                @if (!_detailedMappings.Any()) {
+                                @if (!_detailedMappings.Any(m => m.StickInstance < 100)) {
                                     <MudSelectItem Value="1">js1: Right Stick (EVO R + SEM + FSM-GA)</MudSelectItem>
                                     <MudSelectItem Value="2">js2: Left Stick (Omni Throttle)</MudSelectItem>
                                 }
+                                <MudSelectItem Value="ControllerMappingItem.GamepadSlot">Xbox Controller (Gamepad)</MudSelectItem>
+                                <MudSelectItem Value="ControllerMappingItem.KeyboardMouseSlot">Keyboard &amp; Mouse</MudSelectItem>
                             </MudSelect>
                         </div>
                         <MudText Typo="Typo.caption" Style="color: #94A3B8;">
@@ -713,10 +715,11 @@
                                    Dense="true"
                                    Class="mfd-code"
                                    Style="font-size: 0.8rem;">
-                            <MudSelectItem Value="0">All Controllers (@_detailedMappings.Count)</MudSelectItem>
+                            <MudSelectItem Value="0">All Controllers &amp; Inputs (@_detailedMappings.Count)</MudSelectItem>
                             @foreach (var group in _detailedMappings.GroupBy(m => m.StickInstance).OrderBy(g => g.Key)) {
                                 var devName = group.First().DeviceName;
-                                <MudSelectItem Value="group.Key">js@(group.Key): @devName (@group.Count())</MudSelectItem>
+                                var prefix = group.Key < 100 ? $"js{group.Key}: " : "";
+                                <MudSelectItem Value="group.Key">@($"{prefix}{devName} ({group.Count()})")</MudSelectItem>
                             }
                         </MudSelect>
                     </div>
@@ -1069,6 +1072,12 @@
     }
 
     private ControllerLayoutDefinition GetActiveSchematicLayout() {
+        if (_selectedSchematicStick == ControllerMappingItem.GamepadSlot) {
+            return LayoutService.GetLayoutForDevice("Xbox Wireless Controller");
+        }
+        if (_selectedSchematicStick == ControllerMappingItem.KeyboardMouseSlot) {
+            return LayoutService.GetLayoutForDevice("Keyboard & Mouse");
+        }
         var dev = _detailedMappings.FirstOrDefault(m => m.StickInstance == _selectedSchematicStick);
         var devName = dev?.DeviceName ?? (_selectedSchematicStick == 1 ? "VKBsim Gladiator EVO R SEM FSM.GA" : "VKBsim Gladiator EVO OT L");
         return LayoutService.GetLayoutForDevice(devName);
@@ -1113,6 +1122,10 @@
     }
 
     private void StartMonitoringSchematicStick() {
+        if (_selectedSchematicStick >= 100) {
+            DirectInputService.StopInputMonitoring();
+            return;
+        }
         var dinputSlot = ResolveDirectInputSlot(_selectedSchematicStick);
         DirectInputService.StartInputMonitoring(dinputSlot);
     }
@@ -1132,6 +1145,7 @@
 
     private async Task OpenRebindDialogAsync(ControllerMappingItem item) {
         var availableSticks = _detailedMappings
+            .Where(m => m.StickInstance < 100)
             .GroupBy(m => m.StickInstance)
             .Select(g => (Slot: g.Key, Name: g.First().DeviceName))
             .ToList();
@@ -1161,6 +1175,7 @@
 
     private async Task OnSchematicHotspotSelected((ControllerHotspot Hotspot, ControllerMappingItem? BoundItem) args) {
         var availableSticks = _detailedMappings
+            .Where(m => m.StickInstance < 100)
             .GroupBy(m => m.StickInstance)
             .Select(g => (Slot: g.Key, Name: g.First().DeviceName))
             .ToList();

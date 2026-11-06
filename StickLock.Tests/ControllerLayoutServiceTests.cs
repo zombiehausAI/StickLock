@@ -49,5 +49,29 @@ public class ControllerLayoutServiceTests {
         Assert.Contains(layout.Hotspots, h => h.InputCode == "button1");
         Assert.Equal("images/layouts/vkb_gladiator_omni_left.jpg", layout.ImageUrl);
     }
+
+    [Fact]
+    public void GetLayoutForDevice_XboxController_ReturnsGamepadLayout() {
+        var service = new ControllerLayoutService();
+        var layout = service.GetLayoutForDevice("Xbox Wireless Controller (Gamepad)");
+
+        Assert.Equal("xbox_controller", layout.Id);
+        Assert.Equal("Gamepad", layout.Category);
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "button_a");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "shoulderl");
+        Assert.Equal("images/layouts/xbox_controller.svg", layout.ImageUrl);
+    }
+
+    [Fact]
+    public void GetLayoutForDevice_KeyboardMouse_ReturnsKeyboardMouseLayout() {
+        var service = new ControllerLayoutService();
+        var layout = service.GetLayoutForDevice("Keyboard & Mouse");
+
+        Assert.Equal("keyboard_mouse", layout.Id);
+        Assert.Equal("Keyboard & Mouse", layout.Category);
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "w");
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "mouse1");
+        Assert.Equal("images/layouts/keyboard_mouse.svg", layout.ImageUrl);
+    }
 }
 

@@ -774,6 +774,9 @@ public class ActionMapsXmlService : IActionMapsXmlService {
 
                 var items = new List<ControllerMappingItem>();
                 var jsInputRegex = new Regex(@"^js(\d+)_(.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                var kbInputRegex = new Regex(@"^kb\d*_(.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                var mouseInputRegex = new Regex(@"^(?:mo\d*_|mouse_)(.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                var gpInputRegex = new Regex(@"^gp\d*_(.+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
                 foreach (var map in doc.Descendants("actionmap")) {
                     var mapName = (string?)map.Attribute("name") ?? "general";
@@ -789,9 +792,9 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                                 continue;
                             }
 
-                            var match = jsInputRegex.Match(input);
-                            if (match.Success && int.TryParse(match.Groups[1].Value, out var stickInst)) {
-                                var rawInput = match.Groups[2].Value;
+                            var jsMatch = jsInputRegex.Match(input);
+                            if (jsMatch.Success && int.TryParse(jsMatch.Groups[1].Value, out var stickInst)) {
+                                var rawInput = jsMatch.Groups[2].Value;
                                 var (inputType, displayInput) = FormatInputTypeAndDisplay(rawInput);
 
                                 var devName = deviceLookup.TryGetValue(stickInst, out var devInfo)
@@ -803,9 +806,70 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                                     StickInstance = stickInst,
                                     DeviceName = devName,
                                     DeviceGuid = devGuid,
+                                    DeviceCategory = "Joystick",
                                     InputCode = input,
                                     InputType = inputType,
                                     DisplayInput = displayInput,
+                                    ActionMap = mapName,
+                                    ActionName = actionName,
+                                    DisplayCategory = displayCategory,
+                                    DisplayAction = displayAction,
+                                    IsInverted = (string?)rebind.Attribute("invert") == "1",
+                                    MultiTap = (string?)rebind.Attribute("multiTap") == "2" ? "Double Tap" : ""
+                                });
+                                continue;
+                            }
+
+                            var kbMatch = kbInputRegex.Match(input);
+                            if (kbMatch.Success) {
+                                var rawKey = kbMatch.Groups[1].Value;
+                                items.Add(new ControllerMappingItem {
+                                    StickInstance = ControllerMappingItem.KeyboardMouseSlot,
+                                    DeviceName = "Keyboard & Mouse",
+                                    DeviceCategory = "KeyboardMouse",
+                                    InputCode = input,
+                                    InputType = "Key",
+                                    DisplayInput = FormatKeyDisplay(rawKey),
+                                    ActionMap = mapName,
+                                    ActionName = actionName,
+                                    DisplayCategory = displayCategory,
+                                    DisplayAction = displayAction,
+                                    IsInverted = (string?)rebind.Attribute("invert") == "1",
+                                    MultiTap = (string?)rebind.Attribute("multiTap") == "2" ? "Double Tap" : ""
+                                });
+                                continue;
+                            }
+
+                            var moMatch = mouseInputRegex.Match(input);
+                            if (moMatch.Success) {
+                                var rawMouse = moMatch.Groups[1].Value;
+                                items.Add(new ControllerMappingItem {
+                                    StickInstance = ControllerMappingItem.KeyboardMouseSlot,
+                                    DeviceName = "Keyboard & Mouse",
+                                    DeviceCategory = "KeyboardMouse",
+                                    InputCode = input,
+                                    InputType = "Mouse",
+                                    DisplayInput = FormatMouseDisplay(rawMouse),
+                                    ActionMap = mapName,
+                                    ActionName = actionName,
+                                    DisplayCategory = displayCategory,
+                                    DisplayAction = displayAction,
+                                    IsInverted = (string?)rebind.Attribute("invert") == "1",
+                                    MultiTap = (string?)rebind.Attribute("multiTap") == "2" ? "Double Tap" : ""
+                                });
+                                continue;
+                            }
+
+                            var gpMatch = gpInputRegex.Match(input);
+                            if (gpMatch.Success) {
+                                var rawGp = gpMatch.Groups[1].Value;
+                                items.Add(new ControllerMappingItem {
+                                    StickInstance = ControllerMappingItem.GamepadSlot,
+                                    DeviceName = "Xbox Controller (Gamepad)",
+                                    DeviceCategory = "Gamepad",
+                                    InputCode = input,
+                                    InputType = "Gamepad",
+                                    DisplayInput = FormatGamepadDisplay(rawGp),
                                     ActionMap = mapName,
                                     ActionName = actionName,
                                     DisplayCategory = displayCategory,
@@ -866,17 +930,56 @@ public class ActionMapsXmlService : IActionMapsXmlService {
                 map.Add(action);
             }
 
-            // Normalize input string: e.g. "button1" -> "js1_button1"
+            // Normalize input string based on target device
             var cleanInput = inputCode.Trim();
-            if (cleanInput.StartsWith("js", StringComparison.OrdinalIgnoreCase) && cleanInput.Contains('_')) {
-                var underscoreIdx = cleanInput.IndexOf('_');
-                cleanInput = cleanInput[(underscoreIdx + 1)..];
-            }
-            var fullInputStr = $"js{stickSlot}_{cleanInput}";
+            string fullInputStr;
+            string targetDeviceLabel;
+            XElement? existingRebind;
 
-            // Find existing joystick rebind on this action, or add new
-            var existingRebind = action.Elements("rebind")
-                .FirstOrDefault(r => ((string?)r.Attribute("input") ?? "").StartsWith("js", StringComparison.OrdinalIgnoreCase));
+            if (stickSlot == ControllerMappingItem.KeyboardMouseSlot) {
+                var clean = cleanInput;
+                if (clean.StartsWith("kb1_", StringComparison.OrdinalIgnoreCase)) {
+                    clean = clean[4..];
+                } else if (clean.StartsWith("mo1_", StringComparison.OrdinalIgnoreCase)) {
+                    clean = clean[4..];
+                }
+
+                if (clean.StartsWith("mouse", StringComparison.OrdinalIgnoreCase) || clean.StartsWith("wheel", StringComparison.OrdinalIgnoreCase) || clean.StartsWith("maxis", StringComparison.OrdinalIgnoreCase)) {
+                    fullInputStr = clean.StartsWith("mo1_", StringComparison.OrdinalIgnoreCase) ? clean : $"mo1_{clean}";
+                    targetDeviceLabel = "Mouse";
+                } else {
+                    fullInputStr = $"kb1_{clean}";
+                    targetDeviceLabel = "Keyboard";
+                }
+
+                existingRebind = action.Elements("rebind")
+                    .FirstOrDefault(r => {
+                        var inp = (string?)r.Attribute("input") ?? "";
+                        return inp.StartsWith("kb", StringComparison.OrdinalIgnoreCase) || inp.StartsWith("mo", StringComparison.OrdinalIgnoreCase) || inp.StartsWith("mouse", StringComparison.OrdinalIgnoreCase);
+                    });
+            } else if (stickSlot == ControllerMappingItem.GamepadSlot) {
+                var clean = cleanInput;
+                if (clean.StartsWith("gp1_", StringComparison.OrdinalIgnoreCase) || clean.StartsWith("gp_", StringComparison.OrdinalIgnoreCase)) {
+                    var uIdx = clean.IndexOf('_');
+                    clean = clean[(uIdx + 1)..];
+                }
+                fullInputStr = $"gp1_{clean}";
+                targetDeviceLabel = "Xbox Controller";
+
+                existingRebind = action.Elements("rebind")
+                    .FirstOrDefault(r => ((string?)r.Attribute("input") ?? "").StartsWith("gp", StringComparison.OrdinalIgnoreCase));
+            } else {
+                var clean = cleanInput;
+                if (clean.StartsWith("js", StringComparison.OrdinalIgnoreCase) && clean.Contains('_')) {
+                    var underscoreIdx = clean.IndexOf('_');
+                    clean = clean[(underscoreIdx + 1)..];
+                }
+                fullInputStr = $"js{stickSlot}_{clean}";
+                targetDeviceLabel = $"Stick {stickSlot}";
+
+                existingRebind = action.Elements("rebind")
+                    .FirstOrDefault(r => ((string?)r.Attribute("input") ?? "").StartsWith("js", StringComparison.OrdinalIgnoreCase));
+            }
 
             if (existingRebind != null) {
                 existingRebind.SetAttributeValue("input", fullInputStr);
@@ -896,7 +999,7 @@ public class ActionMapsXmlService : IActionMapsXmlService {
             }
 
             _logService.LogSuccess($"Rebound [{actionName}] -> {fullInputStr}");
-            return SyncResult.Ok($"Rebound {actionName} to Stick {stickSlot} ({cleanInput})", changesMade: true, status: SyncStatus.Aligned);
+            return SyncResult.Ok($"Rebound {actionName} to {targetDeviceLabel} ({cleanInput})", changesMade: true, status: SyncStatus.Aligned);
         } catch (Exception ex) {
             _logService.LogError($"Failed to rebind action {actionName}: {ex.Message}");
             return SyncResult.Fail($"Failed to rebind action: {ex.Message}");
@@ -989,6 +1092,70 @@ public class ActionMapsXmlService : IActionMapsXmlService {
         if (lower.StartsWith("slider")) return ("Axis", $"Slider {lower.Replace("slider", "")}");
 
         return ("Input", rawInput);
+    }
+
+    private static string FormatKeyDisplay(string rawKey) {
+        var lower = rawKey.ToLowerInvariant();
+        return lower switch {
+            "space" => "Spacebar",
+            "lctrl" => "Left Ctrl",
+            "rctrl" => "Right Ctrl",
+            "lshift" => "Left Shift",
+            "rshift" => "Right Shift",
+            "lalt" => "Left Alt",
+            "ralt" => "Right Alt",
+            "capslock" => "Caps Lock",
+            "tab" => "Tab",
+            "enter" => "Enter",
+            "backspace" => "Backspace",
+            "escape" => "Esc",
+            "pageup" => "Page Up",
+            "pagedown" => "Page Down",
+            _ => rawKey.Length == 1 ? rawKey.ToUpperInvariant() : char.ToUpper(rawKey[0]) + rawKey[1..]
+        };
+    }
+
+    private static string FormatMouseDisplay(string rawMouse) {
+        var lower = rawMouse.ToLowerInvariant();
+        return lower switch {
+            "mouse1" or "button1" => "Left Click (Mouse 1)",
+            "mouse2" or "button2" => "Right Click (Mouse 2)",
+            "mouse3" or "button3" => "Middle Click (Mouse 3)",
+            "mouse4" or "button4" => "Thumb 1 (Mouse 4)",
+            "mouse5" or "button5" => "Thumb 2 (Mouse 5)",
+            "wheel_up" or "mwheelup" => "Wheel Scroll UP",
+            "wheel_down" or "mwheeldown" => "Wheel Scroll DOWN",
+            "maxis_x" or "x" => "Mouse X (Yaw)",
+            "maxis_y" or "y" => "Mouse Y (Pitch)",
+            _ => rawMouse
+        };
+    }
+
+    private static string FormatGamepadDisplay(string rawGp) {
+        var lower = rawGp.ToLowerInvariant();
+        return lower switch {
+            "button_a" or "a" => "A Button",
+            "button_b" or "b" => "B Button",
+            "button_x" or "x" => "X Button",
+            "button_y" or "y" => "Y Button",
+            "shoulderl" or "lb" => "Left Bumper (LB)",
+            "shoulderr" or "rb" => "Right Bumper (RB)",
+            "triggerl" or "lt" or "triggerl_val" => "Left Trigger (LT)",
+            "triggerr" or "rt" or "triggerr_val" => "Right Trigger (RT)",
+            "dpad_up" => "D-Pad UP",
+            "dpad_down" => "D-Pad DOWN",
+            "dpad_left" => "D-Pad LEFT",
+            "dpad_right" => "D-Pad RIGHT",
+            "thumble" or "ls" => "Left Stick Click (LS)",
+            "thumbr" or "rs" => "Right Stick Click (RS)",
+            "thumblx" => "Left Stick X",
+            "thumbly" => "Left Stick Y",
+            "thumbrx" => "Right Stick X",
+            "thumbry" => "Right Stick Y",
+            "back" or "view" => "View / Back Button",
+            "start" or "menu" => "Menu / Start Button",
+            _ => rawGp
+        };
     }
 
     private static string FormatActionMapCategory(string rawMap) {
