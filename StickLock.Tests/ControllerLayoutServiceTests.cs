@@ -23,13 +23,20 @@ public class ControllerLayoutServiceTests {
         Assert.Contains("GNX-SEM", layout.AttachedModules);
         Assert.Contains("GNX-FSM-GA", layout.AttachedModules);
 
-        // Verify SEM hotspots exist
-        Assert.Contains(layout.Hotspots, h => h.ModuleName == "GNX-SEM" && h.InputCode == "button33"); // Gear UP
-        Assert.Contains(layout.Hotspots, h => h.ModuleName == "GNX-SEM" && h.InputCode == "button35"); // Flaps UP
+        // Verify Grip hotspots exist
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "button1");
 
-        // Verify FSM-GA hotspots exist
-        Assert.Contains(layout.Hotspots, h => h.ModuleName == "GNX-FSM-GA" && h.InputCode == "button51"); // AP
-        Assert.Contains(layout.Hotspots, h => h.ModuleName == "GNX-FSM-GA" && h.InputCode == "button55"); // Strobe
+        // Verify SEM submodule exists and has official VKB diagram button numbers
+        var semModule = layout.SubModules.FirstOrDefault(m => m.Id == "vkb_gnx_sem");
+        Assert.NotNull(semModule);
+        Assert.Contains(semModule.Hotspots, h => h.InputCode == "button61"); // Flaps UP
+        Assert.Contains(semModule.Hotspots, h => h.InputCode == "button64"); // Gear UP
+
+        // Verify FSM-GA submodule exists and has official VKB diagram button numbers
+        var fsmModule = layout.SubModules.FirstOrDefault(m => m.Id == "vkb_fsm_ga");
+        Assert.NotNull(fsmModule);
+        Assert.Contains(fsmModule.Hotspots, h => h.InputCode == "button9");  // AP
+        Assert.Contains(fsmModule.Hotspots, h => h.InputCode == "button13"); // Avionics BUS 1
     }
 
     [Fact]
@@ -39,7 +46,8 @@ public class ControllerLayoutServiceTests {
 
         Assert.Equal("vkb_gladiator_evo_ot_l", layout.Id);
         Assert.Contains("Omni-Throttle", layout.AttachedModules);
-        Assert.Contains(layout.Hotspots, h => h.Label.Contains("Strafe Forward"));
+        Assert.Contains(layout.Hotspots, h => h.InputCode == "button1");
+        Assert.Equal("images/layouts/vkb_gladiator_omni_left.jpg", layout.ImageUrl);
     }
 }
 

@@ -640,14 +640,14 @@
                         <MudButton Color="@(!_isSchematicView ? Color.Primary : Color.Default)"
                                    Variant="@(!_isSchematicView ? Variant.Filled : Variant.Outlined)"
                                    StartIcon="@Icons.Material.Filled.List"
-                                   OnClick="() => _isSchematicView = false"
+                                   OnClick="() => SetSchematicView(false)"
                                    Style="@(!_isSchematicView ? "color: #0B0F19; font-weight: 700;" : "")">
                             List View
                         </MudButton>
                         <MudButton Color="@(_isSchematicView ? Color.Primary : Color.Default)"
                                    Variant="@(_isSchematicView ? Variant.Filled : Variant.Outlined)"
                                    StartIcon="@Icons.Material.Filled.Memory"
-                                   OnClick="() => _isSchematicView = true"
+                                   OnClick="() => SetSchematicView(true)"
                                    Style="@(_isSchematicView ? "color: #0B0F19; font-weight: 700;" : "")">
                             Visual Schematic
                         </MudButton>
@@ -670,7 +670,8 @@
                         <div class="d-flex align-center gap-2" style="min-width: 280px;">
                             <MudIcon Icon="@Icons.Material.Filled.SportsEsports" Color="Color.Primary" Size="Size.Small" />
                             <MudSelect T="int"
-                                       @bind-Value="_selectedSchematicStick"
+                                       Value="_selectedSchematicStick"
+                                       ValueChanged="OnSchematicStickChanged"
                                        Label="Select Controller Diagram"
                                        Variant="Variant.Outlined"
                                        Margin="Margin.Dense"
@@ -695,6 +696,7 @@
                     <ControllerSchematicCanvas Layout="@GetActiveSchematicLayout()"
                                                Mappings="@_detailedMappings"
                                                StickSlot="@_selectedSchematicStick"
+                                               ActivePhysicalInput="@_activePhysicalInput"
                                                OnHotspotSelected="OnSchematicHotspotSelected"
                                                OnClearBinding="ClearBindingAsync" />
                 </div>
@@ -1025,6 +1027,8 @@
     private string _mappingSearchTerm = string.Empty;
     private bool _isSchematicView = false;
     private int _selectedSchematicStick = 1;
+    private string? _activePhysicalInput;
+    private System.Threading.Timer? _inputResetTimer;
     private MappingAlignmentCheck _alignmentCheck = new();
     private string? _lastFixedBackupPath = null;
     private SyncStatus _status = SyncStatus.Unknown;
@@ -1068,6 +1072,62 @@
         var dev = _detailedMappings.FirstOrDefault(m => m.StickInstance == _selectedSchematicStick);
         var devName = dev?.DeviceName ?? (_selectedSchematicStick == 1 ? "VKBsim Gladiator EVO R SEM FSM.GA" : "VKBsim Gladiator EVO OT L");
         return LayoutService.GetLayoutForDevice(devName);
+    }
+
+    private int ResolveDirectInputSlot(int stickSlot) {
+        var mappedDev = _detailedMappings.FirstOrDefault(m => m.StickInstance == stickSlot);
+        if (mappedDev != null && !string.IsNullOrWhiteSpace(mappedDev.DeviceName)) {
+            var match = _liveDevices.FirstOrDefault(d =>
+                d.ProductName.Contains(mappedDev.DeviceName, StringComparison.OrdinalIgnoreCase) ||
+                mappedDev.DeviceName.Contains(d.ProductName, StringComparison.OrdinalIgnoreCase));
+            if (match != null) {
+                return match.SlotIndex;
+            }
+        }
+        var lockedStick = ConfigService.Config.CanonicalSticks.FirstOrDefault(s => s.RoleSlot == stickSlot);
+        if (lockedStick != null && lockedStick.InstanceGuid != Guid.Empty) {
+            var match = _liveDevices.FirstOrDefault(d => d.InstanceGuid == lockedStick.InstanceGuid);
+            if (match != null) {
+                return match.SlotIndex;
+            }
+        }
+        return stickSlot;
+    }
+
+    private void SetSchematicView(bool enabled) {
+        _isSchematicView = enabled;
+        if (enabled) {
+            StartMonitoringSchematicStick();
+        } else {
+            DirectInputService.StopInputMonitoring();
+            _activePhysicalInput = null;
+        }
+    }
+
+    private void OnSchematicStickChanged(int newStick) {
+        _selectedSchematicStick = newStick;
+        _activePhysicalInput = null;
+        if (_isSchematicView) {
+            StartMonitoringSchematicStick();
+        }
+    }
+
+    private void StartMonitoringSchematicStick() {
+        var dinputSlot = ResolveDirectInputSlot(_selectedSchematicStick);
+        DirectInputService.StartInputMonitoring(dinputSlot);
+    }
+
+    private void OnPhysicalButtonInputDetected(int slot, string inputCode) {
+        var activeSlot = ResolveDirectInputSlot(_selectedSchematicStick);
+        if (slot == activeSlot) {
+            _activePhysicalInput = inputCode;
+            _inputResetTimer?.Dispose();
+            _inputResetTimer = new System.Threading.Timer(_ => {
+                _activePhysicalInput = null;
+                InvokeAsync(StateHasChanged);
+            }, null, 650, Timeout.Infinite);
+            InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task OpenRebindDialogAsync(ControllerMappingItem item) {
@@ -1191,6 +1251,7 @@
 
     protected override async Task OnInitializedAsync() {
         DirectInputService.DevicesRefreshed += OnDevicesChanged;
+        DirectInputService.ButtonInputDetected += OnPhysicalButtonInputDetected;
         ConfigService.ConfigChanged += OnConfigChanged;
         PluginManager.ActivePluginChanged += OnActivePluginChanged;
         LogService.EntryAdded += _ => InvokeAsync(StateHasChanged);
@@ -1842,6 +1903,9 @@
 
     public void Dispose() {
         DirectInputService.DevicesRefreshed -= OnDevicesChanged;
+        DirectInputService.ButtonInputDetected -= OnPhysicalButtonInputDetected;
+        DirectInputService.StopInputMonitoring();
+        _inputResetTimer?.Dispose();
         ConfigService.ConfigChanged -= OnConfigChanged;
         PluginManager.ActivePluginChanged -= OnActivePluginChanged;
     }

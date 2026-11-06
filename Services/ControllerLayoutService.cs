@@ -33,120 +33,179 @@ public class ControllerLayoutService : IControllerLayoutService {
     private static ControllerLayoutDefinition CreateVkbGladiatorRightCompositeLayout(string fullProductName) {
         var detectedModules = ControllerLayoutDefinition.DetectModulesFromProductName(fullProductName);
 
-        var layout = new ControllerLayoutDefinition {
+        var root = new ControllerLayoutDefinition {
             Id = "vkb_gladiator_evo_r",
-            Name = "VKB Gladiator EVO Right",
+            Name = "VKB Gladiator EVO Right (Space Combat)",
             Category = "Flight Stick",
             Width = 1000,
-            Height = 600,
+            Height = 770,
+            ImageUrl = "images/layouts/vkb_gladiator_right.jpg",
             AttachedModules = detectedModules
         };
 
-        // 1. Grip Controls (Space Combat Grip - Kosmosima)
-        // Center stick is centered at X=50%, Head is Y=10% to 28%
-        layout.Hotspots.AddRange(new[] {
-            // A1 Analog Mini-Stick / Hat (Top-Left of Head)
-            new ControllerHotspot { Id = "hat_a1_click", Label = "A1 Hat / Mini-Stick (Click)", InputCode = "button10", X = 46.5, Y = 18, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "hat_a1_up", Label = "A1 Hat (Up)", InputCode = "hat1_up", X = 46.5, Y = 15, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "hat_a1_down", Label = "A1 Hat (Down)", InputCode = "hat1_down", X = 46.5, Y = 21, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "hat_a1_left", Label = "A1 Hat (Left)", InputCode = "hat1_left", X = 44.5, Y = 18, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "hat_a1_right", Label = "A1 Hat (Right)", InputCode = "hat1_right", X = 48.5, Y = 18, Type = "hat", ModuleName = "Grip" },
+        // Primary Module: Gladiator NXT / EVO Right Stick (Kosmosima SCG Grip + Base)
+        root.Hotspots.AddRange(CreateGladiatorRightHotspots("Grip"));
 
-            // A4 Top Hat (Top Center Edge of Head)
-            new ControllerHotspot { Id = "hat_a4_click", Label = "A4 Top Hat (Click)", InputCode = "button14", X = 50, Y = 13.5, Type = "hat", ModuleName = "Grip" },
-
-            // A2 Red Weapon Release Button (Top-Right of Head)
-            new ControllerHotspot { Id = "red_weapon_button", Label = "A2 Red Weapon Button", InputCode = "button5", X = 53.5, Y = 16, Type = "button", ModuleName = "Grip" },
-
-            // A3 Center Hat (Middle Faceplate)
-            new ControllerHotspot { Id = "hat_a3_click", Label = "A3 Center Hat (Click)", InputCode = "button16", X = 50, Y = 23, Type = "hat", ModuleName = "Grip" },
-
-            // C1 Thumb Shelf Hat / Button (Left Ergonomic Shelf)
-            new ControllerHotspot { Id = "thumb_c1", Label = "C1 Thumb Shelf Switch", InputCode = "button18", X = 41.5, Y = 32, Type = "button", ModuleName = "Grip" },
-
-            // Triggers (Front of Grip)
-            new ControllerHotspot { Id = "trigger_rapid_push", Label = "Rapid Fire Trigger (Push)", InputCode = "button4", X = 50, Y = 33, Type = "button", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "trigger_rapid_pull", Label = "Rapid Fire Trigger (Pull)", InputCode = "button3", X = 50, Y = 37, Type = "button", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "trigger_primary_1", Label = "Primary Trigger (Stage 1)", InputCode = "button1", X = 50, Y = 42, Type = "button", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "trigger_primary_2", Label = "Primary Trigger (Stage 2)", InputCode = "button2", X = 50, Y = 46, Type = "button", ModuleName = "Grip" },
-
-            // Pinky Button (Lower Grip Right)
-            new ControllerHotspot { Id = "pinky_button", Label = "Pinky Button (D1)", InputCode = "button22", X = 44, Y = 56, Type = "button", ModuleName = "Grip" },
-
-            // Primary Axes
-            new ControllerHotspot { Id = "axis_pitch", Label = "Y Axis (Pitch)", InputCode = "y", X = 50, Y = 62, Type = "axis", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "axis_roll", Label = "X Axis (Roll / Yaw)", InputCode = "x", X = 54, Y = 62, Type = "axis", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "axis_twist", Label = "Z Twist Axis (Yaw / Roll)", InputCode = "rotz", X = 46, Y = 62, Type = "axis", ModuleName = "Grip" }
-        });
-
-        // 2. Base Controls (EVO Base X: 35% to 65%, Y: 70% to 92%)
-        layout.Hotspots.AddRange(new[] {
-            new ControllerHotspot { Id = "base_enc1_cw", Label = "Base Encoder 1 (CW)", InputCode = "button28", X = 39, Y = 75, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "base_enc1_ccw", Label = "Base Encoder 1 (CCW)", InputCode = "button29", X = 39, Y = 80, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "base_enc2_cw", Label = "Base Encoder 2 (CW)", InputCode = "button30", X = 61, Y = 75, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "base_enc2_ccw", Label = "Base Encoder 2 (CCW)", InputCode = "button31", X = 61, Y = 80, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "base_b1", Label = "Base Button B1", InputCode = "button25", X = 46, Y = 78, Type = "button", ModuleName = "Base" },
-            new ControllerHotspot { Id = "base_b2", Label = "Base Button B2", InputCode = "button26", X = 50, Y = 78, Type = "button", ModuleName = "Base" },
-            new ControllerHotspot { Id = "base_b3", Label = "Base Button B3", InputCode = "button27", X = 54, Y = 78, Type = "button", ModuleName = "Base" },
-            new ControllerHotspot { Id = "base_throttle", Label = "Base Throttle Lever", InputCode = "slider1", X = 50, Y = 87, Type = "axis", ModuleName = "Base" }
-        });
-
-        // 3. Side Extension Module (GNX-SEM - Left Panel X: 3% to 28%)
+        // SubModule 1: GNX-SEM (Side Extension Module) if detected
         if (detectedModules.Contains("GNX-SEM") || true) {
-            layout.Hotspots.AddRange(new[] {
-                // Landing Gear Lever (Left Slot X: 8.5%)
-                new ControllerHotspot { Id = "sem_gear_up", Label = "Landing Gear Switch (UP)", InputCode = "button33", X = 8.5, Y = 22, Type = "switch", ModuleName = "GNX-SEM" },
-                new ControllerHotspot { Id = "sem_gear_down", Label = "Landing Gear Switch (DOWN)", InputCode = "button34", X = 8.5, Y = 38, Type = "switch", ModuleName = "GNX-SEM" },
-
-                // Flaps Lever (Right Slot X: 22.5%)
-                new ControllerHotspot { Id = "sem_flaps_up", Label = "Flaps Lever (UP)", InputCode = "button35", X = 22.5, Y = 20, Type = "switch", ModuleName = "GNX-SEM" },
-                new ControllerHotspot { Id = "sem_flaps_mid", Label = "Flaps Lever (MID)", InputCode = "button36", X = 22.5, Y = 30, Type = "switch", ModuleName = "GNX-SEM" },
-                new ControllerHotspot { Id = "sem_flaps_down", Label = "Flaps Lever (DOWN)", InputCode = "button37", X = 22.5, Y = 40, Type = "switch", ModuleName = "GNX-SEM" },
-
-                // Mode Push Buttons Row (Y: 52%)
-                new ControllerHotspot { Id = "sem_mode_b1", Label = "Mode Button B1 (START)", InputCode = "button38", X = 7, Y = 52, Type = "button", ModuleName = "GNX-SEM" },
-                new ControllerHotspot { Id = "sem_mode_b2", Label = "Mode Button B2", InputCode = "button39", X = 12.5, Y = 52, Type = "button", ModuleName = "GNX-SEM" },
-                new ControllerHotspot { Id = "sem_mode_b3", Label = "Mode Button B3", InputCode = "button40", X = 18, Y = 52, Type = "button", ModuleName = "GNX-SEM" },
-                new ControllerHotspot { Id = "sem_mode_b4", Label = "Mode Button B4", InputCode = "button41", X = 23.5, Y = 52, Type = "button", ModuleName = "GNX-SEM" },
-
-                // K-Switch Rocker (Y: 67%)
-                new ControllerHotspot { Id = "sem_ksw_up", Label = "K-Switch (UP)", InputCode = "button42", X = 10, Y = 66, Type = "switch", ModuleName = "GNX-SEM" },
-                new ControllerHotspot { Id = "sem_ksw_down", Label = "K-Switch (DOWN)", InputCode = "button43", X = 10, Y = 74, Type = "switch", ModuleName = "GNX-SEM" },
-
-                // Rotary Selector (Y: 78%)
-                new ControllerHotspot { Id = "sem_rot_cw", Label = "Rotary Mode (CW)", InputCode = "button44", X = 20, Y = 66, Type = "encoder", ModuleName = "GNX-SEM" },
-                new ControllerHotspot { Id = "sem_rot_ccw", Label = "Rotary Mode (CCW)", InputCode = "button45", X = 20, Y = 74, Type = "encoder", ModuleName = "GNX-SEM" }
-            });
+            var semModule = new ControllerLayoutDefinition {
+                Id = "vkb_gnx_sem",
+                Name = "GNX-SEM (Side Extension Module)",
+                Category = "Module",
+                Width = 1000,
+                Height = 770,
+                ImageUrl = "images/layouts/vkb_gnx_sem.jpg",
+                AttachedModules = new List<string> { "GNX-SEM" },
+                Hotspots = CreateGnxSemHotspots()
+            };
+            root.SubModules.Add(semModule);
+            // Also include SEM hotspots in root for flat mapping lookups
+            root.Hotspots.AddRange(semModule.Hotspots);
         }
 
-        // 4. Front Side Module - General Aviation (GNX-FSM-GA - Right Panel X: 72% to 97%)
+        // SubModule 2: GNX-FSM-GA (Front Side Module - General Aviation) if detected
         if (detectedModules.Contains("GNX-FSM-GA") || true) {
-            layout.Hotspots.AddRange(new[] {
-                // HDG Knob (Left X: 78%, Y: 24%)
-                new ControllerHotspot { Id = "fsm_hdg_click", Label = "HDG Heading Knob (Click)", InputCode = "button45", X = 78, Y = 22, Type = "encoder", ModuleName = "GNX-FSM-GA" },
-                new ControllerHotspot { Id = "fsm_hdg_cw", Label = "HDG Heading Knob (CW)", InputCode = "button46", X = 81, Y = 25, Type = "encoder", ModuleName = "GNX-FSM-GA" },
-                new ControllerHotspot { Id = "fsm_hdg_ccw", Label = "HDG Heading Knob (CCW)", InputCode = "button47", X = 75, Y = 25, Type = "encoder", ModuleName = "GNX-FSM-GA" },
-
-                // ALT Knob (Right X: 91%, Y: 24%)
-                new ControllerHotspot { Id = "fsm_alt_click", Label = "ALT Altitude Knob (Click)", InputCode = "button48", X = 91, Y = 22, Type = "encoder", ModuleName = "GNX-FSM-GA" },
-                new ControllerHotspot { Id = "fsm_alt_cw", Label = "ALT Altitude Knob (CW)", InputCode = "button49", X = 94, Y = 25, Type = "encoder", ModuleName = "GNX-FSM-GA" },
-                new ControllerHotspot { Id = "fsm_alt_ccw", Label = "ALT Altitude Knob (CCW)", InputCode = "button50", X = 88, Y = 25, Type = "encoder", ModuleName = "GNX-FSM-GA" },
-
-                // Autopilot Buttons Row (Y: 44%)
-                new ControllerHotspot { Id = "fsm_ap_btn", Label = "AP Autopilot Button", InputCode = "button51", X = 76, Y = 44, Type = "button", ModuleName = "GNX-FSM-GA" },
-                new ControllerHotspot { Id = "fsm_fd_btn", Label = "FD Flight Director Button", InputCode = "button52", X = 81.5, Y = 44, Type = "button", ModuleName = "GNX-FSM-GA" },
-                new ControllerHotspot { Id = "fsm_nav_btn", Label = "NAV Navigation Button", InputCode = "button53", X = 87.5, Y = 44, Type = "button", ModuleName = "GNX-FSM-GA" },
-                new ControllerHotspot { Id = "fsm_apr_btn", Label = "APR Approach Button", InputCode = "button54", X = 93, Y = 44, Type = "button", ModuleName = "GNX-FSM-GA" },
-
-                // Light Toggle Switches Row (Y: 68%)
-                new ControllerHotspot { Id = "fsm_strobe_switch", Label = "Strobe Light Switch", InputCode = "button55", X = 76, Y = 68, Type = "switch", ModuleName = "GNX-FSM-GA" },
-                new ControllerHotspot { Id = "fsm_beacon_switch", Label = "Beacon Light Switch", InputCode = "button56", X = 81.5, Y = 68, Type = "switch", ModuleName = "GNX-FSM-GA" },
-                new ControllerHotspot { Id = "fsm_nav_switch", Label = "Nav Light Switch", InputCode = "button57", X = 87.5, Y = 68, Type = "switch", ModuleName = "GNX-FSM-GA" },
-                new ControllerHotspot { Id = "fsm_taxi_switch", Label = "Taxi Light Switch", InputCode = "button58", X = 93, Y = 68, Type = "switch", ModuleName = "GNX-FSM-GA" }
-            });
+            var fsmModule = new ControllerLayoutDefinition {
+                Id = "vkb_fsm_ga",
+                Name = "GNX-FSM-GA (Front Switchboard Module)",
+                Category = "Module",
+                Width = 1000,
+                Height = 770,
+                ImageUrl = "images/layouts/vkb_fsm_ga.jpg",
+                AttachedModules = new List<string> { "GNX-FSM-GA" },
+                Hotspots = CreateGnxFsmGaHotspots()
+            };
+            root.SubModules.Add(fsmModule);
+            // Also include FSM hotspots in root for flat mapping lookups
+            root.Hotspots.AddRange(fsmModule.Hotspots);
         }
 
-        return layout;
+        return root;
+    }
+
+    private static List<ControllerHotspot> CreateGladiatorRightHotspots(string moduleName) {
+        return new List<ControllerHotspot> {
+            // Triggers (Bottom Left Callout Box)
+            new ControllerHotspot { Id = "r_btn1", Label = "Fire 1 (Stage 1 Soft Pull)", InputCode = "button1", X = 20.5, Y = 73.8, Type = "button", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn2", Label = "Fire 2 (Stage 2 Full Pull)", InputCode = "button2", X = 20.5, Y = 77.8, Type = "button", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn3", Label = "A2 Red Weapon Release Button", InputCode = "button3", X = 23.5, Y = 28.8, Type = "button", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn4", Label = "B1 Upper Side Button", InputCode = "button4", X = 28.5, Y = 59.8, Type = "button", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn5", Label = "D1 Pinky Button", InputCode = "button5", X = 35.0, Y = 51.5, Type = "button", ModuleName = moduleName },
+
+            // Center Hat A3
+            new ControllerHotspot { Id = "r_btn6", Label = "A3 Center Hat (UP)", InputCode = "button6", X = 71.2, Y = 21.8, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn7", Label = "A3 Center Hat (RIGHT)", InputCode = "button7", X = 80.5, Y = 25.2, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn8", Label = "A3 Center Hat (DOWN)", InputCode = "button8", X = 71.2, Y = 28.5, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn9", Label = "A3 Center Hat (CLICK)", InputCode = "button9", X = 60.0, Y = 25.2, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn10", Label = "A3 Center Hat (LEFT)", InputCode = "button10", X = 71.2, Y = 25.2, Type = "hat", ModuleName = moduleName },
+
+            // Top Hat A4
+            new ControllerHotspot { Id = "r_btn11", Label = "A4 Top Hat (UP)", InputCode = "button11", X = 67.2, Y = 6.8, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn12", Label = "A4 Top Hat (RIGHT)", InputCode = "button12", X = 78.2, Y = 10.2, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn13", Label = "A4 Top Hat (DOWN)", InputCode = "button13", X = 67.2, Y = 13.5, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn14", Label = "A4 Top Hat (CLICK)", InputCode = "button14", X = 56.5, Y = 10.2, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn15", Label = "A4 Top Hat (LEFT)", InputCode = "button15", X = 67.2, Y = 10.2, Type = "hat", ModuleName = moduleName },
+
+            // Thumb Hat C1
+            new ControllerHotspot { Id = "r_btn16", Label = "C1 Thumb Hat (UP)", InputCode = "button16", X = 73.8, Y = 36.2, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn17", Label = "C1 Thumb Hat (RIGHT)", InputCode = "button17", X = 84.8, Y = 41.2, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn18", Label = "C1 Thumb Hat (DOWN)", InputCode = "button18", X = 73.8, Y = 46.2, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn19", Label = "C1 Thumb Hat (CLICK)", InputCode = "button19", X = 63.0, Y = 41.2, Type = "hat", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn20", Label = "C1 Thumb Hat (LEFT)", InputCode = "button20", X = 73.8, Y = 41.2, Type = "hat", ModuleName = moduleName },
+
+            // SpeedFire Rapid Trigger
+            new ControllerHotspot { Id = "r_btn21", Label = "SpeedFire Rapid Trigger (PULL)", InputCode = "button21", X = 27.5, Y = 64.5, Type = "button", ModuleName = moduleName },
+            new ControllerHotspot { Id = "r_btn22", Label = "SpeedFire Rapid Trigger (PUSH)", InputCode = "button22", X = 27.5, Y = 68.5, Type = "button", ModuleName = moduleName },
+
+            // Base Encoders & Buttons
+            new ControllerHotspot { Id = "r_btn23", Label = "En2 Right Encoder (UP)", InputCode = "button23", X = 80.5, Y = 79.5, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_btn24", Label = "En2 Right Encoder (DOWN)", InputCode = "button24", X = 80.5, Y = 82.5, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_btn25", Label = "En1 Left Encoder (UP)", InputCode = "button25", X = 72.0, Y = 92.5, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_btn26", Label = "En1 Left Encoder (DOWN)", InputCode = "button26", X = 72.0, Y = 95.8, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_btn27", Label = "F1 Base Button", InputCode = "button27", X = 74.8, Y = 64.5, Type = "button", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_btn28", Label = "F2 Base Button", InputCode = "button28", X = 79.0, Y = 70.0, Type = "button", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_btn29", Label = "F3 Base Button", InputCode = "button29", X = 70.0, Y = 59.8, Type = "button", ModuleName = "Base" },
+            new ControllerHotspot { Id = "r_slider1", Label = "Throttle Slider", InputCode = "slider1", X = 78.0, Y = 88.0, Type = "axis", ModuleName = "Base" }
+        };
+    }
+
+    private static List<ControllerHotspot> CreateGnxSemHotspots() {
+        return new List<ControllerHotspot> {
+            // Left Buttons
+            new ControllerHotspot { Id = "sem_btn41", Label = "SEM Button A1", InputCode = "button41", X = 8.0, Y = 48.0, Type = "button", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn42", Label = "SEM Button A2", InputCode = "button42", X = 8.0, Y = 53.0, Type = "button", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn52", Label = "SEM Red START Button", InputCode = "button52", X = 8.0, Y = 58.0, Type = "button", ModuleName = "GNX-SEM" },
+
+            // Middle Buttons
+            new ControllerHotspot { Id = "sem_btn43", Label = "SEM Button B1", InputCode = "button43", X = 88.0, Y = 50.5, Type = "button", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn44", Label = "SEM Button B2", InputCode = "button44", X = 88.0, Y = 46.5, Type = "button", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn45", Label = "SEM Button B3", InputCode = "button45", X = 88.0, Y = 41.5, Type = "button", ModuleName = "GNX-SEM" },
+
+            // SW1 K-Switch (Left Rocker)
+            new ControllerHotspot { Id = "sem_btn46", Label = "SW1 K-Switch (DOWN)", InputCode = "button46", X = 32.0, Y = 26.0, Type = "switch", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn47", Label = "SW1 K-Switch (CENTER)", InputCode = "button47", X = 36.5, Y = 21.0, Type = "switch", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn48", Label = "SW1 K-Switch (UP)", InputCode = "button48", X = 38.0, Y = 16.5, Type = "switch", ModuleName = "GNX-SEM" },
+
+            // SW2 K-Switch (Right Rocker)
+            new ControllerHotspot { Id = "sem_btn49", Label = "SW2 K-Switch (DOWN)", InputCode = "button49", X = 49.0, Y = 7.5, Type = "switch", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn50", Label = "SW2 K-Switch (CENTER)", InputCode = "button50", X = 51.5, Y = 12.0, Type = "switch", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn51", Label = "SW2 K-Switch (UP)", InputCode = "button51", X = 53.5, Y = 16.5, Type = "switch", ModuleName = "GNX-SEM" },
+
+            // Rotary Knob Modes & C1
+            new ControllerHotspot { Id = "sem_btn53", Label = "Mode Rotary Knob (Position 1)", InputCode = "button53", X = 82.0, Y = 83.5, Type = "encoder", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn54", Label = "Mode Rotary Knob (Position 2)", InputCode = "button54", X = 82.0, Y = 79.5, Type = "encoder", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn55", Label = "Mode Rotary Knob (Position 3)", InputCode = "button55", X = 82.0, Y = 75.5, Type = "encoder", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn56", Label = "Mode Rotary Knob (Position 4)", InputCode = "button56", X = 82.0, Y = 71.5, Type = "encoder", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn57", Label = "SEM Button C1", InputCode = "button57", X = 82.0, Y = 67.5, Type = "button", ModuleName = "GNX-SEM" },
+
+            // Flaps Lever
+            new ControllerHotspot { Id = "sem_btn58", Label = "Flaps Lever (DOWN)", InputCode = "button58", X = 75.5, Y = 24.5, Type = "switch", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn59", Label = "Flaps Lever (CENTER)", InputCode = "button59", X = 75.5, Y = 20.5, Type = "switch", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn61", Label = "Flaps Lever (UP)", InputCode = "button61", X = 75.5, Y = 16.5, Type = "switch", ModuleName = "GNX-SEM" },
+
+            // Landing Gear Lever
+            new ControllerHotspot { Id = "sem_btn62", Label = "Landing Gear Switch (DOWN)", InputCode = "button62", X = 88.0, Y = 63.5, Type = "switch", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn63", Label = "Landing Gear Switch (CENTER)", InputCode = "button63", X = 88.0, Y = 59.5, Type = "switch", ModuleName = "GNX-SEM" },
+            new ControllerHotspot { Id = "sem_btn64", Label = "Landing Gear Switch (UP)", InputCode = "button64", X = 88.0, Y = 55.5, Type = "switch", ModuleName = "GNX-SEM" }
+        };
+    }
+
+    private static List<ControllerHotspot> CreateGnxFsmGaHotspots() {
+        return new List<ControllerHotspot> {
+            // Left Column
+            new ControllerHotspot { Id = "fsm_btn1", Label = "HDG Button", InputCode = "button1", X = 8.5, Y = 43.8, Type = "button", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn2", Label = "TRK Button", InputCode = "button2", X = 8.5, Y = 51.5, Type = "button", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn3", Label = "NAV Button", InputCode = "button3", X = 8.5, Y = 59.5, Type = "button", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn4", Label = "APR Button", InputCode = "button4", X = 8.5, Y = 66.8, Type = "button", ModuleName = "GNX-FSM-GA" },
+
+            // Right Column
+            new ControllerHotspot { Id = "fsm_btn5", Label = "ALT Button", InputCode = "button5", X = 87.5, Y = 33.5, Type = "button", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn6", Label = "LVL Button", InputCode = "button6", X = 87.5, Y = 41.5, Type = "button", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn7", Label = "VNAV Button", InputCode = "button7", X = 87.5, Y = 49.5, Type = "button", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn8", Label = "IAS Button", InputCode = "button8", X = 87.5, Y = 56.5, Type = "button", ModuleName = "GNX-FSM-GA" },
+
+            // Center Autopilot Buttons
+            new ControllerHotspot { Id = "fsm_btn9", Label = "AP Autopilot Button", InputCode = "button9", X = 48.5, Y = 14.5, Type = "button", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn10", Label = "YD Yaw Damper Button", InputCode = "button10", X = 53.5, Y = 18.5, Type = "button", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn11", Label = "FD Flight Director Button", InputCode = "button11", X = 53.5, Y = 28.5, Type = "button", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn12", Label = "VS Vertical Speed Button", InputCode = "button12", X = 28.5, Y = 88.5, Type = "button", ModuleName = "GNX-FSM-GA" },
+
+            // Bottom Avionics & Lights
+            new ControllerHotspot { Id = "fsm_btn13", Label = "AVIONIC Switch", InputCode = "button13", X = 38.5, Y = 83.5, Type = "switch", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn14", Label = "LANDING LIGHTS Switch", InputCode = "button14", X = 47.5, Y = 88.5, Type = "switch", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn15", Label = "STROBE LIGHTS Switch", InputCode = "button15", X = 57.0, Y = 83.5, Type = "switch", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn16", Label = "NAV LIGHTS Switch", InputCode = "button16", X = 65.5, Y = 88.5, Type = "switch", ModuleName = "GNX-FSM-GA" },
+
+            // HDG & ALT Knobs
+            new ControllerHotspot { Id = "fsm_btn17", Label = "HDG/TRK Knob (LEFT)", InputCode = "button17", X = 36.5, Y = 10.5, Type = "encoder", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn18", Label = "HDG/TRK Knob (RIGHT)", InputCode = "button18", X = 36.5, Y = 14.5, Type = "encoder", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn19", Label = "ALT SEL Knob (LEFT)", InputCode = "button19", X = 63.0, Y = 10.5, Type = "encoder", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn20", Label = "ALT SEL Knob (RIGHT)", InputCode = "button20", X = 63.0, Y = 14.5, Type = "encoder", ModuleName = "GNX-FSM-GA" },
+
+            // Thumb Wheel
+            new ControllerHotspot { Id = "fsm_btn21", Label = "Center Thumb Wheel (UP)", InputCode = "button21", X = 88.0, Y = 61.5, Type = "encoder", ModuleName = "GNX-FSM-GA" },
+            new ControllerHotspot { Id = "fsm_btn22", Label = "Center Thumb Wheel (DOWN)", InputCode = "button22", X = 88.0, Y = 65.5, Type = "encoder", ModuleName = "GNX-FSM-GA" }
+        };
     }
 
     private static ControllerLayoutDefinition CreateVkbGladiatorOmniLeftLayout(string fullProductName) {
@@ -154,31 +213,54 @@ public class ControllerLayoutService : IControllerLayoutService {
             Id = "vkb_gladiator_evo_ot_l",
             Name = "VKB Gladiator EVO Omni Throttle Left",
             Category = "Omni Throttle",
-            Width = 600,
-            Height = 650,
+            Width = 1000,
+            Height = 770,
+            ImageUrl = "images/layouts/vkb_gladiator_omni_left.jpg",
             AttachedModules = new List<string> { "Omni-Throttle" }
         };
 
         layout.Hotspots.AddRange(new[] {
-            new ControllerHotspot { Id = "ot_trigger_1", Label = "Primary Trigger (Stage 1)", InputCode = "button1", X = 50, Y = 32, Type = "button", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "ot_trigger_rapid", Label = "Rapid Fire Trigger (Pull)", InputCode = "button3", X = 45, Y = 28, Type = "button", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "ot_thumb_hat_click", Label = "A1 Center Hat (Click)", InputCode = "button10", X = 48, Y = 24, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "ot_thumb_hat_up", Label = "A1 Center Hat (Up)", InputCode = "hat1_up", X = 48, Y = 20, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "ot_thumb_hat_down", Label = "A1 Center Hat (Down)", InputCode = "hat1_down", X = 48, Y = 28, Type = "hat", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "ot_pinky_button", Label = "Pinky Button", InputCode = "button22", X = 40, Y = 46, Type = "button", ModuleName = "Grip" },
+            // Triggers (Callout Box on Right)
+            new ControllerHotspot { Id = "l_btn1", Label = "Fire 1 (Stage 1 Soft Pull)", InputCode = "button1", X = 84.5, Y = 75.0, Type = "button", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn2", Label = "Fire 2 (Stage 2 Full Pull)", InputCode = "button2", X = 88.5, Y = 78.5, Type = "button", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn3", Label = "A2 Red Weapon Button", InputCode = "button3", X = 84.5, Y = 38.0, Type = "button", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn4", Label = "B1 Upper Side Button", InputCode = "button4", X = 74.5, Y = 59.5, Type = "button", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn5", Label = "D1 Pinky Button", InputCode = "button5", X = 64.5, Y = 56.5, Type = "button", ModuleName = "Grip" },
 
-            // Omni Throttle Strafe Axes
-            new ControllerHotspot { Id = "ot_axis_forward", Label = "Y Axis (Strafe Forward / Backward)", InputCode = "y", X = 48, Y = 56, Type = "axis", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "ot_axis_lateral", Label = "X Axis (Strafe Left / Right)", InputCode = "x", X = 56, Y = 56, Type = "axis", ModuleName = "Grip" },
-            new ControllerHotspot { Id = "ot_axis_vertical", Label = "Z Twist Axis (Strafe Up / Down)", InputCode = "rotz", X = 48, Y = 50, Type = "axis", ModuleName = "Grip" },
+            // SpeedFire Rapid Trigger
+            new ControllerHotspot { Id = "l_btn21", Label = "SpeedFire Rapid Trigger (PULL)", InputCode = "button21", X = 74.5, Y = 65.0, Type = "button", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn22", Label = "SpeedFire Rapid Trigger (PUSH)", InputCode = "button22", X = 74.5, Y = 68.5, Type = "button", ModuleName = "Grip" },
 
-            // Base Buttons & Encoders
-            new ControllerHotspot { Id = "ot_base_b1", Label = "Base Button B1", InputCode = "button25", X = 40, Y = 78, Type = "button", ModuleName = "Base" },
-            new ControllerHotspot { Id = "ot_base_b2", Label = "Base Button B2", InputCode = "button26", X = 48, Y = 78, Type = "button", ModuleName = "Base" },
-            new ControllerHotspot { Id = "ot_base_b3", Label = "Base Button B3", InputCode = "button27", X = 56, Y = 78, Type = "button", ModuleName = "Base" },
-            new ControllerHotspot { Id = "ot_base_enc1_cw", Label = "Encoder 1 (CW)", InputCode = "button28", X = 36, Y = 74, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "ot_base_enc2_cw", Label = "Encoder 2 (CW)", InputCode = "button30", X = 60, Y = 74, Type = "encoder", ModuleName = "Base" },
-            new ControllerHotspot { Id = "ot_base_slider", Label = "Base Throttle Lever", InputCode = "slider1", X = 48, Y = 86, Type = "axis", ModuleName = "Base" }
+            // Center Hat A3
+            new ControllerHotspot { Id = "l_btn6", Label = "A3 Center Hat (UP)", InputCode = "button6", X = 32.5, Y = 22.0, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn7", Label = "A3 Center Hat (RIGHT)", InputCode = "button7", X = 43.0, Y = 25.5, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn8", Label = "A3 Center Hat (DOWN)", InputCode = "button8", X = 32.5, Y = 29.0, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn9", Label = "A3 Center Hat (CLICK)", InputCode = "button9", X = 20.0, Y = 25.5, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn10", Label = "A3 Center Hat (LEFT)", InputCode = "button10", X = 32.5, Y = 25.5, Type = "hat", ModuleName = "Grip" },
+
+            // Top Hat A4
+            new ControllerHotspot { Id = "l_btn11", Label = "A4 Top Hat (UP)", InputCode = "button11", X = 36.0, Y = 6.8, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn12", Label = "A4 Top Hat (RIGHT)", InputCode = "button12", X = 47.0, Y = 10.5, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn13", Label = "A4 Top Hat (DOWN)", InputCode = "button13", X = 36.0, Y = 13.5, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn14", Label = "A4 Top Hat (CLICK)", InputCode = "button14", X = 25.0, Y = 10.5, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn15", Label = "A4 Top Hat (LEFT)", InputCode = "button15", X = 36.0, Y = 10.5, Type = "hat", ModuleName = "Grip" },
+
+            // Thumb Hat C1
+            new ControllerHotspot { Id = "l_btn16", Label = "C1 Thumb Hat (UP)", InputCode = "button16", X = 21.5, Y = 36.5, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn17", Label = "C1 Thumb Hat (RIGHT)", InputCode = "button17", X = 32.5, Y = 41.5, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn18", Label = "C1 Thumb Hat (DOWN)", InputCode = "button18", X = 21.5, Y = 46.5, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn19", Label = "C1 Thumb Hat (CLICK)", InputCode = "button19", X = 10.0, Y = 41.5, Type = "hat", ModuleName = "Grip" },
+            new ControllerHotspot { Id = "l_btn20", Label = "C1 Thumb Hat (LEFT)", InputCode = "button20", X = 21.5, Y = 41.5, Type = "hat", ModuleName = "Grip" },
+
+            // Base Encoders & Buttons
+            new ControllerHotspot { Id = "l_btn28", Label = "F2 Base Button", InputCode = "button28", X = 33.5, Y = 60.0, Type = "button", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_btn27", Label = "F1 Base Button", InputCode = "button27", X = 28.5, Y = 65.0, Type = "button", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_btn29", Label = "F3 Base Button", InputCode = "button29", X = 25.0, Y = 70.0, Type = "button", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_btn25", Label = "En1 Left Encoder (UP)", InputCode = "button25", X = 21.0, Y = 79.5, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_btn26", Label = "En1 Left Encoder (DOWN)", InputCode = "button26", X = 21.0, Y = 82.5, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_slider1", Label = "Throttle Slider", InputCode = "slider1", X = 23.5, Y = 88.0, Type = "axis", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_btn23", Label = "En2 Right Encoder (UP)", InputCode = "button23", X = 31.5, Y = 92.5, Type = "encoder", ModuleName = "Base" },
+            new ControllerHotspot { Id = "l_btn24", Label = "En2 Right Encoder (DOWN)", InputCode = "button24", X = 31.5, Y = 95.8, Type = "encoder", ModuleName = "Base" }
         });
 
         return layout;
@@ -206,4 +288,3 @@ public class ControllerLayoutService : IControllerLayoutService {
         return layout;
     }
 }
-

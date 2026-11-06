@@ -8,6 +8,14 @@ public class TestDirectInputService : IDirectInputService {
 
     public IReadOnlyList<DirectInputDevice> CurrentDevices => _devices;
     public event Action<IReadOnlyList<DirectInputDevice>>? DevicesRefreshed;
+    public event Action<int, string>? ButtonInputDetected;
+
+    public void StartInputMonitoring(int slotIndex) { }
+    public void StopInputMonitoring() { }
+
+    public void TriggerButtonInput(int slot, string button) {
+        ButtonInputDetected?.Invoke(slot, button);
+    }
 
     public void SetDevices(List<DirectInputDevice> devices) {
         _devices = devices;

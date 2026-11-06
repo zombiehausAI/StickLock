@@ -17,8 +17,10 @@ public class ControllerLayoutDefinition {
     public string Category { get; set; } = string.Empty; // "Stick", "Module", "Throttle"
     public double Width { get; set; } = 400;
     public double Height { get; set; } = 600;
+    public string? ImageUrl { get; set; }
     public List<ControllerHotspot> Hotspots { get; set; } = new();
     public List<string> AttachedModules { get; set; } = new();
+    public List<ControllerLayoutDefinition> SubModules { get; set; } = new();
 
     public static List<string> DetectModulesFromProductName(string productName) {
         var modules = new List<string>();
