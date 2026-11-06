@@ -1029,7 +1029,7 @@
     private int _selectedStickFilter = 0;
     private string _mappingSearchTerm = string.Empty;
     private bool _isSchematicView = false;
-    private int _selectedSchematicStick = 1;
+    private int _selectedSchematicStick = 0;
     private string? _activePhysicalInput;
     private System.Threading.Timer? _inputResetTimer;
     private MappingAlignmentCheck _alignmentCheck = new();
@@ -1066,18 +1066,59 @@
     private async Task ReloadDetailedMappingsAsync() {
         try {
             _detailedMappings = await XmlService.GetDetailedMappingsAsync();
-            if (!_detailedMappings.Any(m => m.StickInstance == _selectedSchematicStick)) {
-                var firstStick = _detailedMappings.FirstOrDefault(m => m.StickInstance < 100);
-                if (firstStick != null) {
-                    _selectedSchematicStick = firstStick.StickInstance;
-                }
-            }
+            EnsureValidSchematicStick();
         } catch {
             _detailedMappings = Array.Empty<ControllerMappingItem>();
         }
     }
 
+    private void EnsureValidSchematicStick() {
+        if (_selectedSchematicStick > 0) {
+            if (_selectedSchematicStick >= 100) {
+                return; // Gamepad or Keyboard/Mouse
+            }
+            if (_detailedMappings.Any(m => m.StickInstance == _selectedSchematicStick)) {
+                return;
+            }
+        }
+
+        // First preference: the first actual mapped flight stick in Star Citizen actionmaps
+        var firstMapped = _detailedMappings
+            .Where(m => m.StickInstance < 100)
+            .OrderBy(m => m.StickInstance)
+            .FirstOrDefault();
+
+        if (firstMapped != null) {
+            _selectedSchematicStick = firstMapped.StickInstance;
+            return;
+        }
+
+        // Second preference: canonical sticks configured
+        var firstCanonical = ConfigService.Config.CanonicalSticks
+            .OrderBy(s => s.RoleSlot)
+            .FirstOrDefault();
+
+        if (firstCanonical != null && firstCanonical.RoleSlot > 0) {
+            _selectedSchematicStick = firstCanonical.RoleSlot;
+            return;
+        }
+
+        // Third preference: first live connected DirectInput device
+        var firstLive = _liveDevices
+            .OrderBy(d => d.SlotIndex)
+            .FirstOrDefault();
+
+        if (firstLive != null && firstLive.SlotIndex > 0) {
+            _selectedSchematicStick = firstLive.SlotIndex;
+            return;
+        }
+
+        // Default fallback: Keyboard & Mouse
+        _selectedSchematicStick = ControllerMappingItem.KeyboardMouseSlot;
+    }
+
     private ControllerLayoutDefinition GetActiveSchematicLayout() {
+        EnsureValidSchematicStick();
         if (_selectedSchematicStick == ControllerMappingItem.GamepadSlot) {
             return LayoutService.GetLayoutForDevice("Xbox Wireless Controller");
         }
@@ -1085,7 +1126,7 @@
             return LayoutService.GetLayoutForDevice("Keyboard & Mouse");
         }
         var dev = _detailedMappings.FirstOrDefault(m => m.StickInstance == _selectedSchematicStick);
-        var devName = dev?.DeviceName ?? (_selectedSchematicStick == 1 ? "VKBsim Gladiator EVO R SEM FSM.GA" : "VKBsim Gladiator EVO OT L");
+        var devName = dev?.DeviceName ?? (_liveDevices.FirstOrDefault(d => d.SlotIndex == _selectedSchematicStick)?.ProductName ?? "VKBsim Gladiator EVO R SEM FSM.GA");
         return LayoutService.GetLayoutForDevice(devName);
     }
 
@@ -1112,6 +1153,7 @@
     private void SetSchematicView(bool enabled) {
         _isSchematicView = enabled;
         if (enabled) {
+            EnsureValidSchematicStick();
             StartMonitoringSchematicStick();
         } else {
             DirectInputService.StopInputMonitoring();
